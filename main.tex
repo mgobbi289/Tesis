@@ -2,25 +2,16 @@
 \documentclass{article}
 % Utilizar Símbolos
 \usepackage[utf8]{inputenc}
-% Fondos de Color
-\usepackage{xcolor}
+% Elegir Idioma
+\usepackage[spanish]{babel}
 % Enumerar en Párrafo
 \usepackage[inline]{enumitem}
-% Mostrar Código
-\usepackage{listings}
-\lstdefinestyle{style}{ backgroundcolor = \color{lightgray}, language = Pascal }
-\lstset{style = style, mathescape}
+% To Do's
+\usepackage{todonotes}
 % Mis Comandos
-\newcommand{\Lang}{FritoLang} % Pendiente de cambio!
-\newcommand{\Materia}{\textit{Algoritmos y Estructura de Datos II}}
-\newcommand{\type}[1]{\colorbox{lightgray}{\textbf{#1}}}
-\newcommand{\snot}{$\neg$}
-\newcommand{\sand}{$\land$}
-\newcommand{\sor}{$\lor$}
-\newcommand{\pinf}{$+\infty$}
-\newcommand{\ninf}{$-\infty$}
-\newcommand{\gbajo}{\textunderscore}
-\newcommand{\card}{\textbar \space \textbar}
+\usepackage{commands}
+% Configuración Código
+\usepackage{lang}
 
 \begin{document}
 
@@ -29,31 +20,41 @@
 \maketitle
 
 \section*{Fundamentos}
-Antes de comenzar propiamente con la descripción y desarrollo de nuestro intérprete, lo correcto sería dar una introducción al funcionamiento del lenguaje.
-Por lo tanto, en la siguiente sección nos dedicaremos a dar una explicación intuitiva de las distintas construcciones que ofrece el \Lang.
+
+Antes de comenzar propiamente con la definición formal e implementación de nuestro intérprete, lo correcto es dar una introducción al lenguaje.
+Por lo tanto, en la siguiente sección nos dedicaremos a dar el significado intuitivo de las distintas construcciones que ofrece el \Lang.
+Detallaremos de forma general distintos aspectos sintácticos y semánticos del mismo.
+\todo{¡Buscar un nombre mejor para el lenguaje!}
 
 \section{Introducción}
-El \Lang\space es un lenguaje imperativo teórico diseñado para el desarrollo de la materia \Materia.
-Por lo tanto, su uso está orientado para la enseñanza de los contenidos de la asignatura.
-Los ejes principales de la materia consisten del análisis de algoritmos, la creación de estructuras de datos y la comprensión de algoritmos avanzados.
 
-Con el \Lang\space se busca poder introducir a los estudiantes a nuevos conceptos, y fomentar buenas técnicas de programación.
-El lenguaje posee construcciones sintácticas sencillas, un formato estructurado y un sistema de tipos fuerte, lo que permite que los programas sean fáciles de leer e interpretar.
+El \Lang\space es un lenguaje imperativo diseñado para el desarrollo de la materia \Mat.
+Por lo tanto, su uso está orientado para la enseñanza de los contenidos de la asignatura.
+Los ejes principales de la materia consisten en el análisis de algoritmos, la definición de estructuras de datos y la comprensión de algoritmos avanzados.
+
+El objetivo del \Lang\space es poder introducir a los estudiantes a nuevos conceptos, y fomentar buenas técnicas de programación.
+Posee construcciones sintácticas de alto nivel, un formato estructurado y un sistema de tipos fuerte, lo que permite que los programas sean fáciles de leer e interpretar.
+
+Hay que destacar que el lenguaje es un \textit{pseudocódigo}.
+Por lo tanto, se utiliza para describir de forma informal principios operacionales de los distintos algoritmos estudiados en la materia.
+Típicamente, se omiten detalles esenciales para la implementación de los programas para favorecer el entendimiento de los mismos.
+No existe ningún estándar para la sintaxis o semántica de \Lang, por lo que un programa en este lenguaje no es un programa ejecutable. 
 
 \subsection{Características Principales}
-Como mencionamos al comienzo, el \Lang\space es un lenguaje teórico.
-Esto significa que no existe ninguna implementación concreta del lenguaje, lo cual posee ciertas consecuencias importantes.
-La más inmediata es que el lenguaje es flexible en cuanto al nivel de abstracción que maneja.
-A lo largo de la materia se emplea el \Lang\space variando el mismo.
-Se diseñan algoritmos que trabajan con arreglos y manejo dinámico de memoria, pero también se permite utilizar grafos y conjuntos para los conceptos más complejos.
+
+\Lang\space es un lenguaje teórico, esto significa que no existe ninguna implementación concreta del lenguaje, y tampoco hay una defición formal de ninguna de sus componentes.
+Todo esto tiene ciertas consecuencias importantes.
+La más inmediata es que el lenguaje es flexible en cuanto al nivel de abstracción que maneja, lo cual resulta conveniente a lo largo de la materia.
+En la cátedra se suelen omitir los detalles de implementación de distintas funciones y procedimientos para poder concentrarse en los conceptos propios de algoritmos.
+Por lo tanto, \Lang\space permite trabajar con estructuras como los arreglos y manejar memoria de forma dinámica, pero también permite utilizar grafos y conjuntos para los algoritmos de mayor nivel.
 Obviamente, esto facilita la enseñanza de la materia pero posee una complicación fundamental para el desarrollo de un intérprete, la \textbf{ambigüedad}.
 
 Otra característica importante del lenguaje es el tipado fuerte.
 Toda expresión posee un tipo, y la misma debe ser respetada.
-Por ejemplo, si una variable \textit{x} es de tipo \textit{int} la misma no podrá ser usada como \textit{real}.
+Por ejemplo, si una variable \textit{x} es de tipo \textit{int} la misma no podrá ser usada como \textit{bool}.
 Al mismo tiempo, el lenguaje ofrece varias construcciones polimórficas que funcionan para un rango de tipos distintos.
 
-Al ser un lenguaje formativo, el \Lang\space no ofrece ciertas construcciones que en la actualidad son básicas para cualquier lenguaje de programación.
+Debido a que no podemos ejecutar un programa de \Lang, ya que no existe ningún intérprete ni compilador para este lenguaje en pseudocódigo, el mismo no ofrece ciertas construcciones que en la actualidad son básicas para cualquier lenguaje de programación.
 A continuación enumeramos algunas:
 \begin{enumerate*}
 \item Canales de input y output, ya sea con archivos o mediante interacción del usuario.
@@ -62,100 +63,105 @@ A continuación enumeramos algunas:
 \end{enumerate*}
 
 \subsection{Tipos Nativos Simples}
-Ahora comenzaremos propiamente con la descripción del lenguaje.
-El \Lang\space ofrece una gran variedad de tipos nativos.
+
+Comencemos propiamente con la descripción del lenguaje.
+El \Lang\space ofrece una variedad básica de tipos nativos.
 Cada uno de los mismos representa un conjunto de valores distinto y posee operaciones propias que los manipulan.
 
 Los tipos numéricos son los siguientes: \type{nat}, \type{int} y \type{real}.
 Estos representan los conjuntos de los números naturales, números enteros y números reales, respectivamente.
 A diferencia de su definición matemática, estos conjuntos están acotados.
-En el lenguaje se encuentran definidas las constantes \ninf\space y \pinf, que representan los límites inferior y superior de los conjuntos.
+En el lenguaje se encuentran definidas las constantes \ninf\space y \pinf, que representan los límites inferior y superior de los conjuntos de enteros y reales.
+Para el conjunto de los naturales, las cotas comprenden el \textit{0} y el \pinf.
 Los operadores que se ofrecen son los aritméticos y los de comparación clásicos.
 
 Los aritméticos son los que evalúan a un valor numérico.
 Estos son la suma +, la multiplicación *, la resta -, la división /, el módulo \%, y los operadores de máximo \textit{max} y mínimo \textit{min}.
 
 \begin{lstlisting}
-> 8 + 4
+@ 8 + 4
 12
-> 8.0 * 4.0
+@ 8.0 * 4.0
 32.0
-> 8 - 4
+@ 8 - 4
 4
-> 8.0 / 4.0
+@ 8.0 / 4.0
 2.0
-> 8 % 4
+@ 8 % 4
 0
-> max (8, 4)
+@ max (8, 4)
 8
-> min (8, 4)
-4
+@ min (8.0, 4.0)
+4.0
 \end{lstlisting}
 
 En cambio, los operadores de comparación son aquellos que evalúan a un valor booleano.
 Entre ellos están la igualdad =, el menor $<$, el mayor $>$, y sus respectivas negaciones.
 
 \begin{lstlisting}
-> 8 < 4
+@ 8 < 4
 False
-> 8.0 > 4.0
+@ 8.0 > 4.0
 True
-> 8 = 4
+@ 8 = 4
 False
-> 8.0 $\leq$ 4.0
+@ 8.0 $\leq$ 4.0
 False
-> 8 $\geq$ 4
+@ 8 $\geq$ 4
 True
-> 8 $\neq$ 4
+@ 8 $\neq$ 4
 True
 \end{lstlisting}
 
-Hay que notar que las operaciones para números son polimórficas.
+Notar que las operaciones para números son polimórficas.
 Esto significa que las funciones numéricas están definidas para naturales, enteros y reales.
 Por ejemplo, la suma + se puede utilizar tanto para sumar naturales entre sí, como con reales o enteros.
 Lo que el lenguaje no permite son las operaciones con distintos tipos de valores, es decir, no se puede sumar un natural con un entero, por ejemplo.
+\todo{En ninguna de las filminas utiliza operadores numéricos con argumentos de distinto tipo}
 
 El tipo \type{bool} representa al conjunto de valores booleanos.
-Puede adoptar los valores \textbf{True} y \textbf{False}.
+Puede adoptar los valores \textit{True} y \textit{False}.
 También se ofrecen las operaciones clásicas para manejo de booleanos como la negación \snot, la disyunción \sor, y la conjunción \sand.
 
 \begin{lstlisting}
-> $\neg$ True
+@ $\neg$ True
 False
-> True $\lor$ False
+@ True $\lor$ False
 True
-> True $\land$ False
+@ True $\land$ False
 False
 \end{lstlisting}
 
-Un detalle importante que hay que notar en estas operaciones es el uso de la llamada evaluación por \textit{short-circuit}.
+Un detalle importante en estas operaciones es el uso de la llamada evaluación por \textit{short-circuit} (correspondiente a un modo de evaluación \textit{lazy}).
 La misma determina que el segundo argumento de una operación binaria será evaluado solo si el valor del primer argumento no puede determinar el valor de la expresión completa.
 
 El tipo \type{char} representa al conjunto de caracteres.
-Los valores que puede adoptar se representan encerrados entre comillas, de la forma \textbf{'a'}.
+Los valores que puede adoptar se representan encerrados entre comillas simples, de la forma \textit{'a'}.
 Por sí solo, este tipo de datos no presenta mucha utilidad en el lenguaje y quedará relegado en un segundo plano.
 Inicialmente, las únicas operaciones que se pueden realizar entre caracteres son las comparativas.
 
 \begin{lstlisting}
-> 'a' = 'b'
+@ 'a' = 'b'
 False
-> '(' $\neq$ ')'
+@ '{' $\neq$ '}'
 True
-> 'a' < 'z'
+@ 'a' < 'z'
 True
 \end{lstlisting}
 
 \subsection{Declaración y Asignación de Variables}
+
 Como todo lenguaje imperativo, \Lang\space permite declaración de variables.
-Para crear una variable nueva se utiliza la keyword \textbf{var}, seguida del identificador de variable y el tipo de datos que almacenará la misma.
+Para crear una variable nueva se utiliza la palabra clave (keyword) \textbf{var}, seguida del identificador de variable y su tipo.
 
 \begin{lstlisting}
 var i: nat
 var j: bool
-\end{lstlisting}{}
+\end{lstlisting}
 
 En el ejemplo anterior, se declaró una variable de tipo natural llamada \textit{i}, y una variable de tipo bool llamada \textit{j}.
-Es responsabilidad del programador asignarles un valor correspondientes a las mismas.
+Es responsabilidad del programador asignarles un valor inicial correspondientes a las mismas.
+Si en una hipotética ejecución del programa, se utiliza una variable sin inicialización entonces no se puede continuar con la ejecución del mismo.
 Para la asignación se utiliza el símbolo \textbf{:=}, precedido por el nombre de variable y sucedido por un valor del mismo tipo de la variable a asignar.
 
 \begin{lstlisting}
@@ -163,7 +169,7 @@ i := 1
 j := True
 \end{lstlisting}
 
-Siguiendo con el ejemplo, se asigna el valor \textit{1} a la variable de tipo natural \textit{i}, y el valor \textit{True} a la variable booleana \textit{j}.
+En la primer línea se asigna el valor \textit{1} a la variable de tipo natural \textit{i}, y en la segunda, el valor \textit{True} a la variable booleana \textit{j}.
 
 Finalmente, la noción de estado es un concepto fundamental para la programación imperativa.
 Las variables son utilizadas para almacenar los resultados de la computación del programa.
@@ -172,21 +178,24 @@ Las variables son utilizadas para almacenar los resultados de la computación de
 j := True $\land$ (i > 1)
 \end{lstlisting}
 
-En el ejemplo anterior, se evalúa la expresión de la derecha de la asignación y el resultado de la misma es almacenado en la variable booleana \textit{j}.
-Al remplazar el valor almacenado por la variable, el estado del programa fue modificado.
-Esta construcción posee un rol fundamental en el desarrollo de programas imperativos.
+En este ejemplo, se evalúa la expresión de la derecha de la asignación y el resultado de la misma es almacenado en la variable booleana \textit{j}.
+Se consulta el estado de la variable \textit{i}, cuyo valor es \textit{1}.
+Luego, al realizar la comparación obtenemos el valor \textit{False}.
+Finalmente, al aplicar la conjunción obtenemos el valor \textit{False} y actualizamos el estado de la variable \textit{j} con este nuevo valor.
 
-Cuando se tienen que declarar múltiples variables del mismo tipo, se puede utilizar declaración múltiple.
-En el ejemplo siguiente, se declaran dos variables nuevas, \textit{aux} y \textit{tmp} de tipo entero.
+Una característica de \Lang\space es la capacidad de declarar múltiples variables del mismo tipo en una línea.
+En el siguiente ejemplo, se declaran dos variables nuevas, \textit{aux} y \textit{tmp} de tipo entero.
+\todo{No vi ningún ejemplo de asignación múltiple. ¿Hay en el práctico?}
 
 \begin{lstlisting}
 var aux, tmp: int
 \end{lstlisting}
 
 \subsection{Arreglos}
+
 Uno de los tipos más importantes de la materia es el \type{array}.
-Se puede pensar a un arreglo como una lista estática de elementos indexados.
-Para declarar un arreglo se necesita el rango de los índices en los que el mismo estará definido y el tipo de los datos que almacenará.
+Se puede pensar a un arreglo como una lista finita y estática de elementos, indexados por algún conjunto de valores enumerables.
+Para declarar una variable de tipo arreglo se necesitan el conjunto de los índices en los que estará definida y el tipo de los datos que almacenará.
 
 \begin{lstlisting}
 var A: array [1..4] of int
@@ -196,10 +205,13 @@ A[3] := 6
 A[4] := 10
 \end{lstlisting}
 
-Lo anterior crea un arreglo \textit{A} que estará definido para los índices \textit{1}, \textit{2}, \textit{3}, y \textit{4}.
-Luego, en cada posición \textit{i} del arreglo se almacenará la sumatoria de los primeros \textit{i} números naturales.
+En este ejemplo, creamos un arreglo \textit{A} que estará definido para los índices \textit{1}, \textit{2}, \textit{3}, y \textit{4}, y almacenará en cada posición valores de tipo entero.
+Luego, en cada posición \textit{i} del arreglo se guardará la sumatoria de los primeros \textit{i} números naturales.
 
-Otra forma de hacer lo mismo, haciendo uso de la noción de estado es la siguiente:
+Un detalle importante a destacar es que el lenguaje \Lang\space es \textit{case sensitive}.
+Esto significa que si una variable posee identificador \textit{a} y otra identificador \textit{A} entonces estamos tratando con dos variables distintas.
+
+Notar que el siguiente programa es equivalente al anterior, donde utilizamos el estado del arreglo para el cómputo del mismo.
 
 \begin{lstlisting}
 var A: array [1..4] of int
@@ -215,37 +227,42 @@ Hasta ahora solo vimos los números naturales, los enteros y los caracteres, per
 
 \begin{lstlisting}
 var B: array ['a'..'z'] of bool
-B['g'] := True
 var C: array [-4..12] of char
+B['g'] := True
 C[-2] := 'v'
 \end{lstlisting}
 
 En el ejemplo se declaran dos arreglos distintos.
-Los índices del arreglo \textit{B} son todos los caracteres ordenados alfabéticamente desde la letra \textit{a} hasta la \textit{z}.
-Notar que este es un arreglo de booleanos.
-El otro arreglo \textit{C} tendrá índices que irán desde el número \textit{-4} hasta el \textit{12}.
-Este último es un arreglo de caracteres.
+Los índices del arreglo de booleanos \textit{B} son todos los caracteres ordenados alfabéticamente desde la letra \textit{a} hasta la \textit{z}.
+El arreglo de caracteres  \textit{C} tendrá índices que irán desde el número \textit{-4} hasta el \textit{12}.
 
-Por último, hay que mencionar que los arreglos en \Lang\space no están limitados a una dimensión.
+Un par de observaciones que es importante rescatar en este ejemplo son:
+\begin{enumerate*}
+\item Si el conjunto de índices de un arreglo es vacío, entonces el mismo tendrá longitud cero. Lo que sería similar a tener un tipo vacío.
+\item En el lenguaje no está definido si se permiten mezclar declaraciones de variables y sentencias. A la hora de diseñar el intérprete se tendrá que tomar una decisión.
+\end{enumerate*}
+
+Por último, los arreglos en \Lang\space no están limitados a una dimensión.
 En particular, uno puede crear arreglos multidimensionales simplemente especificando los rangos de las dimensiones necesarias al momento de declarar un nuevo arreglo.
 
+\todo{Nunca se usa D[1][1]. Al menos no en el teórico}
 \begin{lstlisting}
 var D: array [1..5, 1..5] of int
-D[1, 1] := 4
 var E: array [1..3, 'a'..'e', 10..20] of real
+D[1, 1] := 4
 E[2, 'b', 15] := 4.0
 \end{lstlisting}
+\todo{No dicen nada en el teórico sobre E[2, 'b'] :: array[10..20] of real, sería como una aplicación parcial de función, pero con arreglos :P}
 
-Se puede ver que el arreglo \textit{D} posee dos dimensiones, ambas indexadas desde el número \textit{1} al \textit{5}.
-Para la asignación de valores del arreglo simplemente se separan con \textit{,} las distintas coordenadas que se quieren acceder.
+El arreglo \textit{D} posee dos dimensiones, ambas indexadas desde el número \textit{1} al \textit{5}.
+Para la asignación de valores del arreglo simplemente se separan con '\textit{,}' las distintas coordenadas que se quieren acceder o actualizar.
 El arreglo \textit{E}, en cambio, tiene 3 dimensiones.
-La primera está indexada del \textit{1} al \textit{3}.
-La segunda por los caracteres de la \textit{a} a la \textit{e}.
-Y la última, va del \textit{10} al \textit{20}.
+La primera está indexada del \textit{1} al \textit{3}, la segunda por los caracteres de la \textit{a} a la \textit{e}, y la última, va del \textit{10} al \textit{20}.
 
 \subsection{Condicionales}
-Otra de las construcciones básicas que todo lenguaje imperativo implementa es el condicional.
-El mismo sirve para separar el flujo de ejecución del programa en base a si una condición es satisfecha o no.
+
+Todo lenguaje imperativo implementa algún tipo de expresión condicional.
+La misma sirve para realizar ejecuciones diferentes dependiendo del valor de una condición.
 
 \begin{lstlisting}
 if i < j then
@@ -254,12 +271,15 @@ fi
 \end{lstlisting}
 
 En el ejemplo, si el valor de la variable \textit{i} es menor al de \textit{j} se ejecutará la asignación aumentando en uno el valor de \textit{i}.
-Caso contrario, se finalizará la ejecución del programa.
+Caso contrario, la asignación que se encuentra dentro del \textit{if} no es ejecutada.
 
-Obviamente, \Lang\space ofrece otras varias construcciones para utilizar condicionales además de la ilustrada anteriormente.
-Para el condicional básico se usa la keyword \textbf{if} seguida de una expresión booleana, sucedida por la palabra clave \textbf{then} y finalmente las instrucciones a ejecutar en el caso que la condición se cumpla.
-Para el caso de querer realizar una división del flujo de ejecución más refinada se pueden especificar múltiples guardas utilizando \textbf{else if} e incluso se puede hacer uso de la keyword \textbf{else} para ejecutar un bloque de código cuando todas las otras guardas no se cumplieron.
+Para la sentencia condicional básica se usa la palabra clave \textbf{if} seguida de una expresión booleana (también denominada \textit{guarda}), sucedida por la palabra clave \textbf{then} y finalmente las instrucciones a ejecutar en el caso que la condición se cumpla.
+El bloque condicional finaliza con la palabra clave \textbf{fi}.
 
+Además de la sentencia condicional compacta que vimos anteriormente, el lenguaje posee otros tipos más complejos de expresiones condicionales.
+Para el caso de querer realizar una división del flujo de ejecución más refinada se pueden especificar múltiples guardas utilizando \textbf{else if} e incluso se puede hacer uso de la palabra clave \textbf{else} para ejecutar un bloque de código cuando todas las demás guardas resultaron falsas.
+
+\todo{No utilizo ejemplos auto contenidos porque pensaba que se iban a extender demasiado algunos (y solo me quiero concentrar en presentar las instrucciones) }
 \begin{lstlisting}
 var menor, igual, mayor: bool
 menor := False
@@ -279,7 +299,8 @@ Debido a que la ejecución del programa es secuencial se ejecutará el bloque de
 Luego de esto, el programa saltará al final del condicional ignorando todas las otras guardas con sus respectivas instrucciones.
 
 \subsection{Iteradores}
-Las intrucciones más importantes de un lenguaje imperativo son las que permiten realizar una serie de comandos de forma iterativa.
+
+Las sentencias más importantes de un lenguaje imperativo son las que permiten ejecutar un conjunto de instrucciones una cantidad finita o infinita de veces.
 \Lang\space ofrece una amplia variedad de estas construcciones.
 
 \begin{lstlisting}
@@ -292,11 +313,11 @@ while i $\leq$ 5 do
 od
 \end{lstlisting}
 
-En el ejemplo, creamos una variable \textit{i} que tomará distintos valores en el rango del arreglo \textit{A} e irá inicializando los valores del mismo en \textit{1}.
-Notar que la sintaxis de esta instrucción consiste de la keyword \textbf{while} seguida de una expresión booleana, y luego un bloque de código encerrado entre las palabras claves \textbf{do} y \textbf{od}.
+El ejemplo inicializa los valores del arreglo en \textit{1}.
+Esto lo hace, creando una variabla \textit{i} que toma distintos valores en el conjunto de índices del arreglo \textit{A} e irá inicializando los valores del mismo.
+Notar que la sintaxis de esta instrucción consiste de la palabra clave \textbf{while} seguida de una expresión booleana (también denominada \textit{guarda}), y luego un bloque de código encerrado entre las palabras claves \textbf{do} y \textbf{od}.
 
-Otra notación diferente a la anterior pero con el mismo significado es la siguiente.
-También válida en el lenguaje.
+Otra sintaxis válida en el lenguaje, pero con el mismo significado semántico es la siguiente.
 
 \begin{lstlisting}
 var A: array[1..5] of int
@@ -308,11 +329,11 @@ do i $\leq$ 5 $\rightarrow$
 od
 \end{lstlisting}
 
-La semántica intuitiva de las dos construcciones anteriores, es que se ejecutará el segmento de código de forma reiterada, siempre y cuando la expresión booleana siga siendo verdadera.
-Esta abstracción nos permite realizar una serie de cambios de estados de forma extensiva,  mientras que la condición se satisfaga.
+La semántica intuitiva de esta construcción es la ejecución reiterada del bloque de código mientras la expresión booleana sea verdadera
+Esta abstracción nos permite realizar una serie de cambios de estados hasta obtener un resultado, momento donde la guarda deja de valer.
 
-En otras situaciones, interesa solamente ejecutar una serie de instrucciones para distintos valores de una variable en un rango determinado.
-Es decir, si se quiere realizar de forma reiterativa ciertos cambios de estados conociendo de antemano la cantidad de los mismos.
+En otras situaciones, interesa ejecutar un conjunto de sentencias para distintos valores de una variable en un rango determinado.
+Es decir, si se quiere realizar de forma reiterativa ciertos cambios de estados conociendo de antemano la cantidad de veces que queremos iterar.
 
 \begin{lstlisting}
 var A: array[1..5] of int
@@ -321,19 +342,20 @@ for i := 1 to 5 do
 od
 \end{lstlisting}
 
-Notar que con la keyword \textbf{for}, uno puede especificar los límites de valores que puede tomar cierta variable dentro del segmento de código siguiente.
-Hay una serie de consideraciones que hay que tener al utilizar esta instrucción.
+Notar que con la sentencia \textbf{for}, uno puede especificar los límites de valores que puede tomar cierta variable dentro de su bloque.
+Hay una serie de consideraciones a tener en cuenta al utilizar esta instrucción.
 
 \begin{itemize}
-\item La variable a iterar es declarada de forma implícita en el mismo \textbf{for}, por lo que no es necesario especificar su tipo ya que el mismo es inferido de los límites especificados en la instrucción.
-\item La visibilidad de la variable estará restringida a la ejecución del ciclo.
+\item La variable a iterar es declarada de forma implícita en el mismo \textbf{for}, por lo que no es necesario especificar su tipo.
+En una futura implementación del lenguaje, se deberá tomar una decisión sobre si el tipo es inferido o debe ser especificado.
+\item El alcance (scope) estará restringido al bloque de la sentencia.
 Esto significa que una vez finalizada la ejecución de la instrucción la variable \textit{i} dejará de ser accesible.
-\item En el cuerpo del \textbf{for} no se modificará el valor de la variable de control.
-La alteración del estado de \textit{i} solo se realizará al iniciar cada bucle y se limitará al rango especificado.
+\item En el cuerpo del \textbf{for} no se modificará el valor de la variable a iterar.
+La alteración del estado de \textit{i} solo se realiza de forma implícita al finalizar cada iteración.
 \end{itemize}
 
-Hay muchas más formas de especificar la instrucción anterior.
-A continuación mencionaremos algunas, y a lo largo del desarrollo de los temas siguientes señalaremos otras en la medida que sea adecuado.
+Hay más versiones de la sentencia \textbf{for}.
+A continuación mencionaremos algunas, y a lo largo del desarrollo de los temas siguientes señalaremos otras en la medida vaya siendo conveniente o necesario.
 
 \begin{lstlisting}
 var A: array[1..5] of int
@@ -344,8 +366,9 @@ od
 
 La semántica de este ejemplo es la misma a todos los ejemplos anteriores.
 La particularidad es que se puede especificar un rango descendente de valores para la variable de control.
+En los anteriores, \textit{i} tomaba valores de forma ascendente.
 
-Otra característica muy interesante es que la instrucción \textbf{for} es polimórfica.
+Otra característica muy interesante, es que la instrucción \textbf{for} permite definir cualquier tipo enumerable para la variable iteradora.
 Esto permite que los límites de valores para la variable de control no sean estrictamente numéricos.
 Todo conjunto de valores que pueda ser enumerado puede ser utilizado para especificar los límites de la iteración.
 
@@ -357,10 +380,11 @@ od
 \end{lstlisting}
 
 Notar que para este ejemplo, se puede inferir el tipo de la variable \textit{k} sin necesidad de especificar el mismo.
+En cambio para los ejemplos anteriores, con los límites \textit{1} a \textit{5} no queda claro si se refieren a los números naturales o a los enteros.
 
 Finalmente, describiremos el uso de un iterador un poco más abstracto.
 Es muy común cuando trabajamos con arreglos acceder a los diferentes valores del mismo y operar luego con los mismos.
-Para tener un código más prolijo, se puede usar algo similar al ejemplo siguiente.
+Para tener un código con mayor nivel de abstracción, se puede usar algo similar al ejemplo siguiente.
 
 \begin{lstlisting}
 var sumatoria: int
@@ -371,13 +395,16 @@ od
 \end{lstlisting}
 
 Asumiendo que \textit{A} es un arreglo de enteros.
-De esta forma, como solo nos interesan los valores que se almacenan en el arreglo, podemos calcular la sumatoria de todos sus elementos ignorando los índices.
+Este ejemplo suma todos los elementos del mismo.
+Dado que solo nos interesan los valores que almacena el arreglo, podemos calcular la sumatoria iterando directamente sobre el arreglo, ignorando de esta manera los índices.
 
 \subsection{Funciones}
-Para definir rutinas determinísticas a fin de automatizar una tarea particular, \Lang\space ofrece la posibilidad de especificar funciones.
+
+Para definir rutinas determinísticas, es decir, secuencias de instrucciones que no dependen del estado del programa, \Lang\space ofrece la posibilidad de especificar funciones.
 Las mismas realizan una computación, en base a un conjunto de parámetros, y devuelven un resultado.
 Las funciones son independientes del estado del programa, en el sentido que su comportamiento es determinado por los valores de entrada que recibe.
-También es importante notar que no modifican el estado de la computación.
+Es importante notar que no modifican el estado de las variables que son pasadas como parámetros.
+\todo{No se usan nunca variables globales. Lo más lógico me parece es que no existan}
 
 \begin{lstlisting}
 fun factorial (n: nat) ret fact: nat
@@ -389,11 +416,17 @@ end fun
 \end{lstlisting}
 
 En el ejemplo, se especifica una función que calcula el factorial de un número natural \textit{n}.
-Para la sintaxis, se usa la keyword \textbf{fun} seguida del nombre de la función.
+La variable \textit{i} tomará distintos valores de \textit{1} hasta \textit{n}, mientras que en la variable \textit{fact} se irá almacenando la productoria de estos números.
+
+Para la sintaxis, se usa la palabra clave \textbf{fun} seguida del nombre de la función.
 Luego, entre paréntesis se especifican los parámetros de entrada (separados por \textbf{,}).
 Se tienen que detallar los tipos y los identificadores para cada una de las entradas que necesitará la función para su cómputo.
-Con la keyword \textbf{ret} se especifica el valor de retorno, además del nombre y tipo de la variable asociada al mismo.
-Finalmente, en el cuerpo de la función se pueden usar todas las instrucciones que vimos hasta ahora para calcular el resultado deseado.
+Con la palabra clave \textbf{ret} se especifica el valor de retorno, además del nombre y tipo de la variable asociada al mismo.
+Finalmente, en el cuerpo de la función se pueden usar todas las sentencias y expresiones que vimos hasta ahora para escribir el programa deseado.
+Para cerrar el bloque de la función, se utiliza \textbf{end fun}.
+
+Sobre los identificadores de funciones y sus variables, no hay ninguna restricción especificada.
+Para la implementación del intérprete se deberá tomar una decisión sobre que nombres son válidos y en base a qué criterios se permitirán.
 
 \begin{lstlisting}
 fun es_par (n: nat) ret b: bool
@@ -409,9 +442,10 @@ end fun
 \end{lstlisting}
 
 En este último ejemplo se ilustran un par de características de las funciones.
-La función \textit{es\gbajo par} calcula, dado un número natural, si el mismo es par.
-En cambio, \textit{existe\gbajo par} chequea si dado un arreglo de naturales, alguno es par.
+La función \textit{es\gbajo par} calcula si un numero natural pasado como parámetro es par.
+En cambio, \textit{existe\gbajo par} chequea si existe algún número par en el arreglo pasado como parámetro.
 Notar que para los arreglos, uno puede establecer límites fijos como en el caso del límite inferior \textit{1}, o límites variables \textit{n}.
+\todo{¡Feature Importante!}
 También se ve que para llamar una función anteriormente definida solo se especifica el nombre seguido entre paréntesis de todos sus parámetros.
 
 Las funciones también pueden ser definidas de forma recursiva.
@@ -429,7 +463,7 @@ fun es_par (n: nat) ret b: bool
 end fun
 \end{lstlisting}
 
-Una forma (muy ineficiente) de definiar la función \textit{es\gbajo par} es como en el ejemplo de arriba.
+Este ejemplo muestra una manera no recomendable de definir la función \textit{es\gbajo par} utilizando recursión.
 Se definen los dos casos bases, cuando \textit{n} es \textit{0} o \textit{1} y si no se cumple ninguno se decrementa la variable en \textit{2} realizando la llamada recursiva.
 
 Finalmente, una última característica importante de las funciones es la definición polimórfica.
@@ -448,9 +482,15 @@ end fun
 
 La función devuelve el índice en el arreglo del valor más chico.
 Se puede ver que se utiliza la variable de tipo \textbf{T} para especificar que la función puede tomar valores de cualquier tipo.
-En particular, esta función puede ser usada para encontrar el índice del mínimo de un arreglo de enteros, caracteres, naturales, entre otros.
+En particular, esta función puede ser usada para encontrar el índice del mínimo de un arreglo de enteros, caracteres, naturales, entre otros (siempre y cuando la comparación esté definida para el conjunto de valores).
+
+Una salvedad importante sobre las variables de tipos, es que no siempre pueden tomar \textit{cualquier} tipo concreto.
+Usando el ejemplo anterior, la variable \textbf{T} no podría ser de tipo booleano.
+Esto se debe a que se utilizan operaciones de comparación entre valores de tipo \textbf{T}, y para los booleanos estas no están definidas.
+Esto comprenderá otra de las decisiones que se deberá tomar a la hora de la implementación del intérprete.
 
 \subsection{Procedimientos}
+
 Una construccion similar a las funciones son los procedimientos.
 Ambas representan formas de especificar rutinas reusables para realizar tareas particulares.
 Pero la diferencia fundamental entre ambos es que los procedimientos pueden modificar el estado del programa en su accionar.
@@ -458,10 +498,12 @@ En base a un conjunto de parámetros (algunos de entrada, y otros de salida), un
 
 \begin{lstlisting}
 proc p_sumatoria (in a, b: nat, out k: nat)
-  k := 0
+  var sum: nat
+  sum := 0
   for i := a to b do
-    k := k + i
+    sum := sum + i
   od
+  k := sum
 end proc
 
 fun f_sumatoria (a, b: nat) ret k: nat
@@ -472,18 +514,19 @@ fun f_sumatoria (a, b: nat) ret k: nat
 end fun
 \end{lstlisting}
 
-En lo anterior, se muestra un ejemplo trivial donde se define una función \textit{f\gbajo sumatoria} y un procedimiento \textit{p\gbajo sumatoria} que hacen prácticamente lo mismo.
+Este ejemplo, muestra un programa donde se define una función \textit{f\gbajo sumatoria} y un procedimiento \textit{p\gbajo sumatoria} que hacen prácticamente lo mismo.
 Calcular la sumatoria de los números naturales desde \textit{a} hasta \textit{b}.
 La diferencia fundamental en estas dos construcciones es que la función devuelve un valor (el cual está almacenado en la variable local \textit{k}), en cambio, el procedimiento está modificando el valor de una variable global \textit{k}, que fue definida fuera del mismo.
+\todo{Lo que suelen hacer en el teórico, es declarar una variable sin inicializar y luego llamar a un proceso que la modifica}
 
-La sintaxis de un procedimiento es similar al de una función salvo por el uso de las keywords \textbf{proc} y \textbf{end proc} que encierran al mismo, y la especificación de entradas y salidas.
+La sintaxis de un procedimiento es similar al de una función salvo por el uso de las palabras claves \textbf{proc} y \textbf{end proc} que encierran al mismo, y la especificación de entradas y salidas.
 Para cada parámetro del procedimiento hay tres opciones:
 
 \begin{itemize}
 \item \textbf{in} determina que las variables de entrada serán utilizadas solo para lectura.
 Por lo tanto, su valor no será modificado.
 \item \textbf{out} significa que el valor asociado a la variable será alterado por la llamada al procedimiento.
-Su valor no será utilizado para la realización del cómputo.
+Su valor no será utilizado para la evaluación de una expresión o sentencia.
 \item \textbf{in / out} establece que la variable va a ser empleada para lectura y escritura.
 Su valor inicial determinará la computación, pero el mismo será modificado a lo largo del procedimiento.
 \end{itemize}
@@ -529,12 +572,21 @@ end proc
 \end{lstlisting}
 
 \subsection{Tipos Nativos Complejos}
+
 Al comienzo de esta unidad se describieron los tipos nativos más simples, como los numéricos, los booleanos, o los arreglos.
 En esta sección explicaremos tipos más abstractos, los cuales no son fundamentales para el desarrollo de la materia, pero que son universalmente utilizados en los distintos lenguajes de programación existentes.
 
 \subsubsection{Listas}
-Una lista es idéntica a un arreglo, salvo por el hecho que su longitud no está predefinida.
-Por lo tanto, una lista se puede pensar como un arreglo dinámico cuyo tamaño puede ir variando a lo largo de la ejecución de un programa.
+
+Una lista es similar a un arreglo, salvo por algunas diferencias fundamentales:
+\begin{enumerate*}
+\item La longitud de una lista no está predefinida.
+Esto significa que el tamaño de la misma puede variar a lo largo de la ejecución de un programa.
+\item Los valores de una lista no necesariamente se alojan en espacios contiguos de memoria.
+Este detalle es propio de la implementación.
+\end{enumerate*}
+Por lo tanto, una lista se puede pensar como un arreglo dinámico.
+
 Las operaciones que se pueden realizar sobre listas comprenden:
 
 \begin{itemize}
@@ -576,7 +628,12 @@ fun existe_par (L: list of nat) ret b: bool
 end fun
 \end{lstlisting}
 
+La función \textit{sumatoria} devuelve la sumatoria de todos los elementos de una lista.
+La función \textit{inicializar\gbajo lista} construye una lista con los primeros \textit{n} números naturales.
+La función \textit{existe\gbajo par} calcula si hay un número par en una lista determinada.
+
 \subsubsection{Tuplas}
+
 El siguiente tipo interesante son las tuplas, también denominadas estructuras.
 Son utilizadas para empaquetar una serie de valores de distintos tipos.
 La única operación disponible para trabajar con tuplas es la de obtener \textbf{.} un elemento.
@@ -592,10 +649,12 @@ var t: tuple
 
 En el ejemplo, se declara una variable \textit{t} de tipo tupla.
 Los alias son \textit{inicial}, \textit{edad}, y \textit{peso}, de tipos \type{char}, \type{nat}, y \type{real}, respectivamente.
+Notar el uso de las palabras claves \textbf{tuple} y \textbf{end tuple} para definir la misma.
 Las tuplas tendrán mayor importancia cuando se detalle como definir nuevos tipos de datos.
 
 \subsubsection{Conjuntos}
-Uno de los tipos más abstractos que ofrece \Lang, es el de conjuntos.
+
+Uno de los tipos de más alto nivel que ofrece \Lang, es el de conjuntos.
 La intuición detrás de los mismos, es igual a la de matemática.
 Las operaciones que se pueden realizar sobre conjuntos comprenden:
 
@@ -609,12 +668,31 @@ Las operaciones que se pueden realizar sobre conjuntos comprenden:
 Se pueden realizar comparaciones con el mismo para chequear si un conjunto es vacío o no.
 \end{itemize}
 
+A continuación, detallamos algunos ejemplos que emplean las operaciones anteriores.
+
+\begin{lstlisting}
+fun dif_sim (A: set of T, B: set of T) ret C: set of T
+  C := (A $\cup$ B) - (A $\cap$ B)
+end fun
+
+fun inicializar_conjunto (n: nat) ret C: set of nat
+  C := {}
+  for i := 1 to n do
+    C := C $\cup$ {i}
+  od
+end fun
+\end{lstlisting}
+
+La función \textit{dif\gbajo sim} calcula la diferencia simétrica de dos conjuntos.
+La función \textit{inicializar\gbajo conjunto} construye un conjunto con los primeros \textit{n} números naturales.
+
 \subsubsection{Punteros}
+
 Finalmente, uno de los tipos complejos más usados en la materia.
 Para el manejo dinámico de memoria se utilizan los punteros para reservar, alojar y liberar memoria para distintas estructuras de datos a lo largo de la ejecución de un programa.
 
 \begin{lstlisting}
-var p: pointer to nat
+var p: pointer of nat
 \end{lstlisting}
 
 La declaración anterior crea una variable \textit{p} que será un puntero.
@@ -623,7 +701,7 @@ La misma servirá para direccionar un valor numérico natural en un futuro.
 Las operaciones que manipulan punteros son las siguientes:
 
 \begin{itemize}
-\item Alojar \textit{alloc}, que dado un puntero \textit{p}, reservará espacio en memoria para almacenar la estructura de datos que será apuntada por el puntero y asignará la dirección en \textit{p}.
+\item Alojar \textit{alloc}, que dado un puntero \textit{p}, reservará espacio en memoria para almacenar la estructura de datos que será apuntada por \textit{p} y asignará la dirección en el puntero.
 \item Liberar \textit{free}, que dado un puntero \textit{p}, liberará el espacio de memoria apuntado por el puntero.
 \item Puntero Vacío \textit{null}, es una constante utilizada para señalar que un puntero no apunta a ninguna dirección válida de memoria.
 \item Acceder $\star$, que dado un puntero \textit{p}, devuelve el valor en memoria señalado por el mismo.
@@ -634,6 +712,7 @@ Como se puede observar, los punteros permiten manejar explícitamente direccione
 Como \Lang\space no posee \textit{garbage collector} es responsabilidad del programador administrar el uso de memoria del programa.
 
 \subsection{Creación de Nuevos Tipos}
+
 Para finalizar la introducción al \Lang\space es necesario hablar de la creación de nuevos tipos de datos.
 El lenguaje hace uso del tipado fuerte, es decir, toda expresión posee un tipo definido.
 Debido a esto, se simplifica la interpretación del código y se fomenta la generación de código prolijo.
@@ -641,7 +720,7 @@ Pero al momento de querer resolver problemas de mayor complejidad, es necesario 
 Por lo tanto, \Lang\space ofrece ciertas construcciones con estos fines.
 
 Para poder crear un nuevo tipo de datos se utiliza una sintaxis similar al siguiente ejemplo.
-En el mismo, se utiliza la keyword \textbf{type} para señalar la creación de un sinónimo de tipo.
+En el mismo, se utiliza la palabra clave \textbf{type} para señalar la creación de un sinónimo de tipo.
 Le sucede el nuevo nombre de tipo, \textit{matriz} en el ejemplo, y finalmente un tipo concreto del lenguaje.
 
 \begin{lstlisting}
@@ -652,18 +731,58 @@ Luego de la definición de tipo, se podrá utilizar el nombre \textit{matriz} co
 El mismo, tendrá un comportamiento idéntico al arreglo al que se asoció.
 
 Otra forma de declarar nuevos tipos es mediante los tipos enumerados.
-En el mismo, se enumeran todos los valores posibles que puede adoptar este nuevo tipo de dato.
+En el mismo, se enumeran todos los valores posibles (entre paréntesis) que puede adoptar este nuevo tipo de dato.
 
 \begin{lstlisting}
-type semana = (dom, lun, mar, mie, jue, vie, sab)
-type calendario = array [dom..sab] of real
-val A: calendario
-val s: semana
+type dia = (dom, lun, mar, mie, jue, vie, sab)
+type semana = array [dom..sab] of real
+var d: dia
+var S: semana
 \end{lstlisting}
 
 Al utilizar paréntesis, todos los nombres que se coloquen separados por \textbf{,} formarán parte de los nuevos valores del tipo.
 Notar que los tipos enumerados tienen la capacidad de poder ser utilizados como índices de arreglos.
 Por último, se puede observar que una vez definidos se pueden declarar variables de los tipos creados.
+
+En el lenguaje también se permite definir lo que comúnmente se llama \textit{tipos paramétricos}.
+Esto es una forma de definir nuevos tipos de datos, de la forma más general posible.
+Utilizando una variable de tipo, se puede crear un tipo nuevo donde su comportamiento no dependerá de la misma.
+
+\begin{lstlisting}
+type stack of T = list of T
+\end{lstlisting}
+
+En el ejemplo, se creó un nuevo tipo de dato denominado \textit{stack} (pila) que será una lista de tipo \textbf{T}.
+Con esta definición genérica podemos definir las operaciones del nuevo tipo pila, cualquiera sea el valor de la variable \textbf{T}.
+
+\begin{lstlisting}
+proc empty (out p: stack of T)
+  p := [ ]
+end proc
+
+proc push (in t: T, in/out p: stack of T)
+  p := t $\triangleright$ p
+end proc
+
+fun top (p: stack of T) ret t: T
+  t := head(p)
+end fun
+
+proc pop (in/out p: stack of T)
+  p:= tail(p)
+end proc
+
+fun is_empty (p: stack of T) ret b: bool
+  b := p = [ ]
+end fun
+\end{lstlisting}
+
+Lo definido en el ejemplo, son todas las operacionas básicas de una pila.
+El proceso \textit{empty} crea una pila vacía.
+El proceso \textit{push} agrega un nuevo elemento a la pila.
+La función \textit{top} devuelve el primer elemento de la pila.
+El proceso \textit{pop} elimina el primer elemento de la pila.
+Y la función \textit{is\gbajo empty} pregunta si la pila está vacía.
 
 Finalmente, hay que rescatar la posibilidad de definir tipos de datos recursivos.
 Los mismos, son aquellos donde el nombre del nuevo tipo figura también en la definición del mismo.
@@ -672,17 +791,17 @@ A continuación se muestra un ejemplo que utiliza las tuplas y punteros descript
 
 \begin{lstlisting}
 type node = tuple
-            value: nat
-            next: pointer to node
+            value: nat,
+            next: pointer of node
             end tuple
 \end{lstlisting}
 
-Para finalizar, daremos un ejemplo donde se implementa una función que trabaja con el nuevo tipo de dato definido anteriormente.
+Para finalizar, daremos un ejemplo donde se implementa una función que trabaja con el nuevo tipo de dato definido.
 Se puede pensar a la estructura \textit{node} como una celda que almacena un valor natural y señala a otro \textit{node}, conformando así una posible lista abstracta.
 
 \begin{lstlisting}
-fun crear_lista_abs (n: nat) ret l : pointer to node
-  var aux: pointer to node
+fun crear_lista_abs (n: nat) ret l : pointer of node
+  var aux: pointer of node
   l := null
   for i := n downto 1 do
     alloc(aux)

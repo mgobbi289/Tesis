@@ -1,0 +1,80 @@
+\ProvidesPackage{lang}
+
+% Mostrar Código
+\usepackage{listings}
+
+% Defino Colores
+\definecolor{main_color}{rgb}{0.6627, 0.7176, 0.7764}
+\definecolor{back_color}{rgb}{0.1686, 0.1686, 0.1686}
+\definecolor{symbol_color}{rgb}{0.0, 0.5, 0.5}
+\definecolor{key_color}{rgb}{0.8, 0.47, 0.196}
+\definecolor{type_color}{rgb}{0.3333, 0.5254, 0.345}
+
+% Defino Lenguaje
+\lstdefinelanguage{Lang}
+{
+  % Quick Fix
+  keywords = [1]{},
+  % Operadores
+  otherkeywords = {
+    @,
+    :,
+    ..,
+    :=,
+    (,
+    ),
+    \,
+  },
+  % Palabras Claves
+  keywords = [2]{
+    var,
+    proc,
+    in,
+    out,
+    fun,
+    end,
+    ret,
+    if,
+    then,
+    else,
+    otherwise,
+    fi,
+    while,
+    for,
+    to,
+    downto,
+    do,
+    od,
+    type,
+    tuple,
+    skip
+  },
+  % Tipos
+  keywords = [3]{
+    nat,
+    int,
+    real,
+    bool,
+    char,
+    array,
+    list,
+    set,
+    pointer,
+    of
+  },
+  % Colores
+  basicstyle = \ttfamily \color{main_color},
+  backgroundcolor = \color{back_color},
+  keywordstyle = [1]\color{symbol_color},
+  keywordstyle = [2]\color{key_color},
+  keywordstyle = [3]\color{type_color},
+  % Strings
+  morestring = [b]',
+  stringstyle = \textit,
+}
+
+% Defino Estilo
+\lstdefinestyle{my_style}{language = Lang}
+
+% Configuro Entorno
+\lstset{style = my_style, mathescape}
