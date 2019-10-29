@@ -109,10 +109,11 @@ proc insert (in/out A: array [1..n] of T, in i: nat)
 end proc
 \end{lstlisting}
 
-Algunos ejemplos de palabras claves son \textit{proc}, \textit{in}, y \textit{var}, que sus significados serán explicados más adelante.
-Los identificadores pueden ser \textit{A}, \textit{j}, y \textit{swap}, los cuales representan parámetros, variables y procedimientos respectivamente.
+Algunos ejemplos de palabras claves son \textit{proc}, \textit{in}, y \textit{var}.
+Sus significados serán explicados más adelante.
+Ejemplos de identificadores pueden ser \textit{A}, \textit{j}, y \textit{swap}, los cuales representan parámetros, variables y procedimientos respectivamente.
 Los operadores utilizados son $>$, \sand, $<$, y $-$.
-Y la única constante es el número \textit{1}.
+La única constante es el número \textit{1}.
 
 Un detalle importante en el lenguaje es que \Lang\space es \textit{case sensitive}.
 Esto significa que el mismo distingue entre un token en minúsculas, de uno en mayúsculas.
@@ -192,7 +193,7 @@ Los operadores de comparación evalúan a un valor booleano.
 
 Notar que los operadores para números están sobrecargados.
 Esto significa que las operaciones numéricas están definidas para naturales, enteros y reales.
-Por ejemplo, la suma se puede utilizar tanto para sumar naturales entre sí, como con reales o enteros.
+Por ejemplo, la suma se puede utilizar tanto para sumar naturales entre sí, como con enteros o reales.
 Lo que en el lenguaje no está especificado es si se permite utilizar operadores con operandos de distintos tipos.
 Por ejemplo, si se permite sumar naturales con reales.
 Esta es una decisión que se tendrá que tomar una vez que se implemente el lenguaje.
@@ -223,7 +224,7 @@ La misma determina que el segundo argumento de una operación binaria será eval
 
 El tipo \type{char} representa al conjunto de caracteres.
 Los valores que puede adoptar se representan encerrados entre comillas simples, de la forma \textit{'a'}.
-Por sí solo, este tipo de datos no presenta mucha utilidad en el lenguaje y quedará relegado en un segundo plano.
+Por sí solo, este tipo de dato no presenta mucha utilidad en el lenguaje y quedará relegado en un segundo plano.
 Inicialmente, las únicas operaciones que se pueden realizar entre caracteres son las comparativas.
 
 En el siguiente ejemplo se detalla una función que utiliza los tipos básicos recientemente introducidos.
@@ -249,7 +250,7 @@ end fun
 
 \subsubsection{Tipos Enumerados}
 
-Los tipos enumerados representan uno de los tipos que puede ser definido por el programador en el lenguaje.
+Los tipos enumerados representan uno de los tipos que pueden ser definidos por el programador en el lenguaje.
 Para los mismos, se enumeran todos los valores posibles, entre paréntesis, que puede adoptar este tipo de dato.
 Los valores serán especificados utilizando identificadores.
 Las únicas operaciones disponibles para estos tipos de datos son las comparativas.
@@ -617,22 +618,26 @@ end fun
 
 \section{Expresiones}
 
-Las expresiones ocurren en asignaciones o en chequeos.
+Las expresiones ocurren en asignaciones, en chequeos, y en pasaje de parámetros.
 Están compuestas por operadores y operandos.
 Producen un valor de cierto tipo, mediante la aplicación de los distintos operadores a sus respectivos operandos.
 No alteran el estado del programa, ya que no producen efectos secundarios.
+
+El lenguaje se basa en el tipado fuerte.
+Esto significado que toda expresión posee un tipo, y el mismo debe ser adecuado al contexto en el que se utiliza.
+En el hipotético caso en el que se intenta evaluar una expresión cuyo tipo no es el esperado, el programa no podría continuar su ejecución.
 
 \subsection{Precedencia}
 
 Los distintos operadores para cada uno de los tipos básicos y estructurados ya se vieron en sus respectivas secciones.
 Cuando se emplean múltiples operadores en una expresión se utilizan las reglas de precedencia para determinar el orden de evaluación.
 En \Lang\space no hay ninguna especificación sobre la precedencia de operadores.
-A pesar de esto, se puede sugerir una tabla como la siguiente.
+A pesar de esto, se puede sugerir una tabla como la siguiente donde se utilizan las reglas clásicas de precedencia.
 
 \begin{center}
 \begin{tabular}{| c | c | c |}
 \hline
-    Operador & Precedencia & Categoría  \\
+    Operadores & Precedencia & Categoría  \\
     \hline
     \snot, $-$ & Primera & Operadores Unarios \\
     $*$, $/$, \sand & Segunda & Operadores Multiplicativos \\
@@ -642,7 +647,7 @@ A pesar de esto, se puede sugerir una tabla como la siguiente.
 \end{tabular}
 \end{center}
 
-A la hora de evaluar se pueden utilizar las siguientes reglas.
+A la hora de evaluar una expresión, el intérprete se puede basar en las siguientes reglas.
 
 \begin{itemize}
 \item En operaciones con precedencias distintas, se evalúa primero la que tenga mayor precedencia.
@@ -667,38 +672,34 @@ Informamos al programador sobre un posible error de tipos, o se realiza una conv
 En el lenguaje no hay ninguna especificación sobre si las conversiones implícitas o explícitas son posibles.
 Esto comprende otra de las decisiones que se deberá tomar a la hora de la implementación del intérprete.
 
-\section{Declaración y Asignación de Variables}
+\subsection{Llamada a Funciones}
+
+Las llamadas a funciones comprenden otra parte de las expresiones.
+En las mismas se denota el identificador correspondiente a la función que se desea ejecutar, y luego se listan entre paréntesis todos los parámetros actuales de la misma.
+Obviamente, los tipos de los parámetros y el del resultado devuelto por la función
+deben ser los esperados.
+En el siguiente ejemplo, se llama a la función \textit{inicializar\gbajo lista} con el valor natural \textit{5}, y el resultado es asignado a la variable \textit{L}.
+
+\begin{lstlisting}
+var L: list of nat
+L := inicializar_lista(5)
+\end{lstlisting}
+
+\section{Declaración de Variables}
 
 Como todo lenguaje imperativo, \Lang\space permite declaración de variables.
 Una variable representa un lugar en memoria explícitamente nombrado, que almacena un valor de cierto tipo.
 Para crear una variable nueva se utiliza la palabra clave \textbf{var}, seguida del identificador de variable y su tipo.
+En el siguiente ejemplo, se declara una variable de tipo natural llamada \textit{i}, y una variable de tipo bool llamada \textit{j}.
 
 \begin{lstlisting}
 var i: nat
 var j: bool
 \end{lstlisting}
 
-En el ejemplo anterior, se declaró una variable de tipo natural llamada \textit{i}, y una variable de tipo bool llamada \textit{j}.
-
 En el lenguaje, las variable no son inicializadas luego de su declaración.
 Es responsabilidad del programador asignarles un valor inicial correspondientes a las mismas.
 Si en una hipotética ejecución del programa, se utiliza una variable sin inicialización entonces no se puede continuar con la ejecución del mismo.
-Para la asignación se utiliza el símbolo \textbf{:=}, precedido por el nombre de variable y sucedido por una expresión cuyo valor sea del mismo tipo que la variable a asignar.
-
-\begin{lstlisting}
-i := 1
-j := True
-\end{lstlisting}
-
-En la primer línea se asigna el valor \textit{1} a la variable de tipo natural \textit{i}, y en la segunda, el valor \textit{True} a la variable booleana \textit{j}.
-
-La noción de estado es un concepto fundamental para la programación imperativa.
-Las variables son utilizadas para almacenar los resultados de la computación del programa.
-En el siguiente ejemplo, se evalúa la expresión de la derecha de la asignación y el resultado de la misma es almacenado en la variable booleana \textit{j}.
-
-\begin{lstlisting}
-j := j $\land$ (i > 1)
-\end{lstlisting}
 
 Una característica de \Lang\space es la capacidad de declarar múltiples variables del mismo tipo en una línea.
 En el siguiente ejemplo, se declaran dos variables nuevas, \textit{aux} y \textit{tmp} de tipo real.
@@ -707,8 +708,17 @@ En el siguiente ejemplo, se declaran dos variables nuevas, \textit{aux} y \texti
 var aux, tmp: real
 \end{lstlisting}
 
-Hay distintas categorías de variables.
-Las variables se pueden dividir en cuatro clases en base a como se acceden a las mismas:
+Las variables obedecen las reglas de \textit{scope}.
+Esto significa que la existencia de las mismas se extiende hasta el fin del bloque de código en el que fueron declaradas.
+Debido a esto, se puede utilizar el mismo identificador para variables diferentes, siempre y cuando el alcance de las mismas sea distinto.
+Otro detalle sobre esto es que en el lenguaje no se utilizan variables globales, por lo que todas las variables son locales al bloque de código en el que fueron declaradas.
+
+Un aspecto que no se encuentra especificado en el lenguaje es si se permite intercalar declaración de variables con sentencias del programa.
+En una primera instancia, sería preferible que un programa se pueda dividir en una sección de declaraciones y otra sección de sentencias para facilitar la comprensión del código.
+Esto comprenderá otra decisión a tomar en la implementación del intérprete.
+
+Hay distintas categorías de variables en el lenguaje.
+Las variables se pueden dividir en cuatro clases en base a como se accede a la memoria representado por las mismas:
 
 \begin{itemize}
 \item \textbf{Variables Enteras} son representadas en su totalidad por un identificador. Es decir, poseen un único lugar en memoria.
@@ -759,21 +769,44 @@ Básicamente, son sentencias \textit{atómicas} que forman la base para la const
 \subsubsection{Asignación}
 
 Las asignaciones le dan un valor a las variables, remplazando cualquier valor previo que pueden haber tenido.
-Se utiliza el operador \textbf{:=}, donde se evalúa la expresión a su derecha y se le asigna el valor a la variable de su izquierda.
+Se utiliza el símbolo \textbf{:=}, precedido por el identificador de la variable y sucedido por una expresión cuyo valor sea del mismo tipo que la variable a asignar.
+En el ejemplo, se asigna el valor \textit{1} a la variable de tipo natural \textit{i}, y el valor \textit{True} a la variable booleana \textit{j}.
 
 \begin{lstlisting}
 var i: nat
+var j: bool
 i := 1
+j := True
+\end{lstlisting}
+
+La noción de estado es un concepto fundamental para la programación imperativa.
+Las variables son utilizadas para almacenar los resultados de la computación del programa.
+En el siguiente ejemplo, se evalúa la expresión de la derecha de la asignación y el resultado de la misma es almacenado en la variable booleana \textit{j}.
+El valor final del la variable booleana es \textit{False}.
+
+\begin{lstlisting}
+j := j $\land$ (i > 1)
 \end{lstlisting}
 
 \subsubsection{Llamada a Procedimientos}
 
-Las llamadas a subrutinas comprenden otra las sentencias simples.
+Las llamadas a subrutinas comprenden otra de las sentencias simples.
 En la misma se denota el identificador correspondiente al procedimiento, y luego se listan entre paréntesis todos los parámetros actuales del mismo.
 Suponiendo que definimos un procedimiento para ordenar los valores de un arreglo \textit{selection\gbajo sort}, y tenemos un arreglo \textit{A} de enteros, podemos realizar lo siguiente para invocar al procedimiento.
 
 \begin{lstlisting}
 selection_sort(A)
+\end{lstlisting}
+
+\subsubsection{Skip}
+
+La sentencia \textit{skip} se ha utilizado históricamente en distintos lenguajes de programación para indicar la no realización de ninguna computación.
+En nuestro lenguaje esta instrucción no presenta ninguna utilidad.
+Se emplea por fines de claridad en la descripción de distintos algoritmos.
+No realiza ninguna evaluación y tampoco tiene efectos secundarios.
+
+\begin{lstlisting}
+skip
 \end{lstlisting}
 
 \subsection{Sentencias Estructuradas}
@@ -785,7 +818,6 @@ Se pueden dividir en sentencias secuenciales, condicionales, e iterativas.
 
 Muchos lenguajes de programación permiten la creación de \textit{bloques de código}, compuestos por una serie de sentencias.
 Las mismas se deben de ejecutar de forma secuencial en el orden que aparecen en el código.
-
 En \Lang\space no existe ninguna construcción explícita para denotar estas construcciones, pero si se pueden especificar secuencias de sentencias como en el siguiente ejemplo.
 En el mismo, se separan las distintas sentencias en líneas diferentes.
 
@@ -795,13 +827,13 @@ swap(A, i, minp)
 i := i + 1
 \end{lstlisting}
 
-El ejemplo anterior es un fragmento de un algoritmo de ordenación (\textit{selection\gbajo sort}).
+El ejemplo anterior es un fragmento de un algoritmo de ordenación, \textit{selection\gbajo sort}.
 En el mismo se realiza una asignación, una llamada a un proceso y finalmente otra asignación.
 Los identificadores \textit{minp} e \textit{i} son variables de tipo natural y \textit{A} es un arreglo, mientras que \textit{min\gbajo pos\gbajo from} y \textit{swap} denotan una función y un procedimiento respectivamente.
 
 \subsubsection{Sentencias Condicionales}
 
-Todo lenguaje imperativo implementa algún tipo de expresión condicional.
+Todo lenguaje imperativo implementa algún tipo de sentencia condicional.
 La misma sirve para realizar ejecuciones diferentes dependiendo del valor de una condición.
 
 \begin{lstlisting}
@@ -839,6 +871,19 @@ En el ejemplo se evalúa si la variable \textit{i} es menor, mayor o igual a la 
 Debido a que la ejecución del programa es secuencial se ejecutará el bloque de código cuya guarda sea la primera en ser satisfecha.
 Luego de esto, el programa saltará al final del condicional ignorando todas las otras guardas con sus respectivas instrucciones.
 
+Finalmente, en el lenguaje se ofrece una sintaxis alternativa a la anterior pero que posee el mismo significado semántico.
+A continuación implementaremos la sentencia condicional anterior, pero utilizando esta sintaxis alternativa.
+
+\begin{lstlisting}
+if i < j $\rightarrow$
+  menor := True
+else if i > j $\rightarrow$
+  mayor := True
+otherwise
+  igual := True
+fi
+\end{lstlisting}
+
 \subsubsection{Sentencias Iteradoras}
 
 Las sentencias más importantes de un lenguaje imperativo son las que permiten ejecutar un conjunto de instrucciones una cantidad finita o infinita de veces.
@@ -858,12 +903,10 @@ El ejemplo inicializa los valores del arreglo en \textit{1}.
 Esto lo hace, creando una variable \textit{i} que toma distintos valores en el conjunto de índices del arreglo \textit{A} e irá inicializando los valores del mismo.
 Notar que la sintaxis de esta instrucción consiste de la palabra clave \textbf{while} seguida de una expresión booleana (también denominada \textit{guarda}), y luego un bloque de código encerrado entre las palabras claves \textbf{do} y \textbf{od}.
 
-Otra sintaxis válida en el lenguaje, pero con el mismo significado semántico es la siguiente.
+Al igual que con las sentencias condicionales, en el lenguaje se ofrece una sintaxis alternativa para las sentencias iterativas.
+A continuación, implementamos el iterador anterior haciendo uso de la sintaxis alternativa.
 
 \begin{lstlisting}
-var A: array[1..5] of int
-var i: nat
-i := 1
 do i $\leq$ 5 $\rightarrow$
   A[i] := 1
   i := i + 1
@@ -896,7 +939,8 @@ La alteración del estado de \textit{i} solo se realiza de forma implícita al f
 \end{itemize}
 
 Hay más versiones de la sentencia \textbf{for}.
-A continuación mencionaremos algunas, y a lo largo del desarrollo de los temas siguientes señalaremos otras en la medida vaya siendo conveniente o necesario.
+A continuación haremos mención de cada una de estas, y describiremos intuitivamente su funcionamiento.
+Este iterador comprende una de las construcciones polimórficas del lenguaje.
 
 \begin{lstlisting}
 var A: array[1..5] of int
@@ -924,7 +968,7 @@ Notar que para este ejemplo, se puede inferir el tipo de la variable \textit{k} 
 En cambio para los ejemplos anteriores, con los límites \textit{1} a \textit{5} no queda claro si se refieren a los números naturales o a los enteros.
 
 Finalmente, describiremos el uso de un iterador un poco más abstracto.
-Es muy común cuando trabajamos con arreglos acceder a los diferentes valores del mismo y operar luego con los mismos.
+Es muy común cuando trabajamos con arreglos (o listas) acceder a los diferentes valores del mismo y operar luego con estos.
 Para tener un código con mayor nivel de abstracción, se puede usar algo similar al ejemplo siguiente.
 
 \begin{lstlisting}
@@ -1153,5 +1197,35 @@ El procedimiento \textit{selection\gbajo sort} es el encargado de ordenar el arr
 Un programa se describe en una serie de funciones y/o procedimientos que se especifican uno seguido del otro.
 No hay ninguna restricción sobre el orden en el que deben ser definidos.
 Ya que un programa de \Lang\space no puede ser ejecutado, no es necesario definir una función \textit{main} como en C, o especificar sentencias fuera de cualquier bloque de código como en Python.
+En definitiva, un programa en nuestro lenguaje se ejecuta \textit{en el aire}.
+Nuestro objetivo va a ser convertir los programas de \Lang\space en programas ejecutables.
+
+Una última tarea es definir como se crean nuevos tipos de datos en nuestros programas.
+De vuelta, debido a la falta de especificación, propondremos nuestra propia idea.
+Al comienzo de todo programa se realizarán las declaraciones de nuevos tipos de datos y, luego de las mismas, se especificarán todas las funciones y/o procedimientos que emplean a los mismos.
+
+\begin{lstlisting}
+type counter = nat
+
+proc init (out c: counter)
+  c := 0
+end proc
+
+proc inc (in/out c: counter)
+  c := c + 1
+end proc
+
+proc dec (in/out c: counter)
+  c := c - 1
+end proc
+
+fun is_init (c: counter) ret b: bool
+  b := c = 0
+end fun
+\end{lstlisting}
+
+En este ejemplo, se creó un tipo de datos \textit{counter} el cual se utiliza justamente para contar.
+Posee los procedimientos para inicializarlo \textit{init}, para aumentarlo \textit{inc} y decrementarlo \textit{dec}.
+También se define la función que pregunta si es inicial \textit{is\gbajo init}.
 
 \end{document}
