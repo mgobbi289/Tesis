@@ -1,0 +1,110 @@
+\ProvidesPackage{lang}
+
+\usepackage{colors}
+
+% Mostrar Código
+\usepackage{listings}
+
+% Defino Sintaxis
+\lstdefinelanguage{Syntax}
+{
+  basicstyle = \footnotesize \itshape,
+  frame = single,
+  mathescape = true,
+  literate = {->}{$\rightarrow$}{1}
+             {ep}{$\epsilon$}{1}
+             {<}{$\langle$}{1}
+             {>}{$\rangle$}{1}
+}
+
+% Defino Estilo
+\lstdefinestyle{syntax}{language = Syntax}
+
+% Defino Lenguaje
+\lstdefinelanguage{Lang}
+{
+  % Quick Fix
+  keywords = [1]{},
+  % Operadores
+  otherkeywords = {
+    :,
+    ..,
+    :=,
+    =,
+    (,
+    ),
+    +,
+    -,
+    *,
+    /,
+    \%,
+    !,
+    &&,
+    ||,
+    ==,
+    !=,
+    <,
+    >,
+    <=,
+    >=,
+    .,
+    \#,
+    [,
+    ],
+    \{,
+    \},
+    \,
+  },
+  % Palabras Claves
+  keywords = [2]{
+    var,
+    proc,
+    in,
+    out,
+    fun,
+    end,
+    ret,
+    if,
+    then,
+    elif,
+    else,
+    otherwise,
+    fi,
+    while,
+    for,
+    to,
+    downto,
+    do,
+    od,
+    type,
+    tuple,
+    skip,
+    inf,
+    null
+  },
+  % Tipos
+  keywords = [3]{
+    int,
+    real,
+    bool,
+    char,
+    array,
+    pointer,
+    of
+  },
+  % Colores
+  basicstyle = \ttfamily \color{main_color},
+  backgroundcolor = \color{back_color},
+  keywordstyle = [1]\color{symbol_color},
+  keywordstyle = [2]\color{key_color},
+  keywordstyle = [3]\color{type_color},
+  % Chars
+  morestring = [b]',
+  stringstyle = \textit,
+  % Line Numbers
+  numbers = left,
+  numberstyle = \scriptsize,
+}
+
+% Defino Estilo
+\lstdefinestyle{lang}{language = Lang}

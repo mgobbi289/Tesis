@@ -1,0 +1,1692 @@
+% Tipo Documento
+\documentclass{article}
+% Utilizar Símbolos
+\usepackage[utf8]{inputenc}
+% Elegir Idioma
+\usepackage[spanish]{babel}
+% Configuración Comandos
+\usepackage{commands}
+% Configuración Sintaxis/Código
+\usepackage{lang}
+% Uso de Ecuaciones
+\usepackage{amsmath}
+% Funciones por Parte
+\usepackage{mathtools}
+% Denotación de Pruebas
+\usepackage{bussproofs}
+
+\begin{document}
+
+\title{Semántica}
+\author{Matias Gobbi}
+\maketitle
+
+\section*{Fundamentos}
+
+Una vez implementada la sintaxis del lenguaje y el parser para el intérprete, es hora de comenzar la etapa del análisis semántico.
+En este capítulo, describiremos los distintos chequeos estáticos que el intérprete deberá realizar para poder determinar que un fragmento de código es un programa válido en el lenguaje.
+También haremos mención de algunos chequeos dinámicos que puede ser conveniente implementar.
+
+\section{Introducción}
+
+El objetivo de este capítulo es servir como documentación en el desarrollo del intérprete para \Lang.
+En el mismo, describiremos los distintos aspectos a implementar en el análisis semántico, principalmente los chequeos estáticos y algunos dinámicos.
+La idea es que el intérprete sea más robusto, y pueda compilar (y ejecutar) solo programas válidos del lenguaje.
+
+Mientras que el parser se encarga de filtrar aquellos programas que no estén bien formados sintácticamente, el trabajo de este nuevo análisis es rechazar aquellos fragmentos de código que presenten errores semánticos.
+Los chequeos estáticos comprobarán aspectos en tiempo de compilación, mientras que los dinámicos lo harán a la hora de la ejecución de un programa.
+
+Para dar un formato estructurado al trabajo, el mismo se dividirá en cuatro secciones correspondientes a cada una de las principales construcciones sintácticas del lenguaje.
+Se dará una descripción formal para cada uno de los chequeos a implementar, acompañada de una explicación informal para facilitar su comprensión.
+También se hará mención de distintos aspectos que no fueron definidos todavía, los mismos están pendientes a ser debatidos en el transcurso del desarrollo del intérprete.
+
+Los fundamentos teóricos utilizados en esta sección están basados en el libro \Lib, de \Aut.
+En particular los capítulos sobre el sistema de tipos (\textit{15}), el subtipado (\textit{16}), y el polimorfismo (\textit{18}), son de fundamental importancia para el desarrollo del trabajo.
+
+\section{Sintaxis}
+
+La sintaxis del lenguaje ya fue descripta en capítulos anteriores.
+A pesar de esto, en esta sección se dará un análisis teórico en base a la misma por lo que resulta conveniente abstraerse de detalles propios de su implementación.
+A continuación, entonces, se describirá la sintaxis abstracta del lenguaje de forma matemática.
+
+\subsection{Expresiones}
+
+Una expresión puede ser un valor constante, una llamada a función, una operación sobre otras expresiones o una variable con sus respectivos operadores.
+Se muestra a continuación.
+
+\begin{lstlisting}[style = syntax]
+<expr> -> <const> | <fcall> | <op> | <var>
+\end{lstlisting}
+
+A su vez, una constante puede tomar alguno de los siguientes valores.
+Los no terminales \textit{int}, \textit{real}, \textit{bool}, y \textit{char} denotan los conjuntos de valores esperados, mientras que \textit{cname} hace referencia a los identificadores de constantes definidas por el usuario.
+
+\begin{lstlisting}[style = syntax]
+<const> -> <int> | <real> | <bool> | <char> | <cname> | inf | null
+\end{lstlisting}
+
+Una llamada a función está compuesta por su nombre y la lista de parámetros que recibe.
+La misma puede tener una cantidad arbitraria de entradas.
+Notar que se utilizará la misma clase de identificadores tanto para funciones y procedimientos como variables.
+
+\begin{lstlisting}[style = syntax]
+<fcall> -> <id> ( [<expr>] )
+\end{lstlisting}
+
+Los operadores definidos se detallan a continuación.
+Observar que será necesario la implementación de un chequeo de tipos para asegurar el uso apropiado de los mismos.
+
+\begin{lstlisting}[style = syntax]
+<op> -> <expr> <binop> <expr> | <unop> <expr>
+
+<binop> -> +  | -  | *  | /  | %  | $<$  | $>$ 
+        | && | || | == | != | $<=$ | $>=$ 
+
+<unop> -> - | !
+\end{lstlisting}
+
+Finalmente, describimos las variables con sus respectivos operadores.
+Las mismas pueden representar un único valor, un arreglo de varias dimensiones, una tupla con múltiples campos, o un puntero a otra estructura en memoria. 
+
+\begin{lstlisting}[style = syntax]
+<var> -> <id>
+      | <var> $\mathbf{[}$ [<expr>] $\mathbf{]}$
+      | <var> $\mathbf{.}$ <fname>
+      | $\mathbf{\#}$ <var>
+\end{lstlisting}
+
+\subsection{Sentencias}
+
+Las sentencias se dividen en las siguientes instrucciones.
+La composición de la \textit{asignación} y el \textit{while} es bastante simple, por lo que se detallan también a continuación.
+
+\begin{lstlisting}[style = syntax]
+<sent> -> skip | <assign> | <pcall> | <if> | <while> | <for>
+
+<sblock> -> [<sent>]
+
+<assign> -> <var> := <expr>
+
+<while> -> while <expr> do <sblock>
+\end{lstlisting}
+
+Para la llamada a un procedimiento, se detalla de forma similar a las funciones.
+Además de esto, se encuentran los dos métodos para el manejo de memoria definidos.
+
+\begin{lstlisting}[style = syntax]
+<pcall> -> <id> ( [<expr>] ) | alloc <var> | free <var>
+\end{lstlisting}
+
+La instrucción \textit{if} es bastante compleja en su composición.
+Además de poder especificar un simple condicional, se pueden agregar otras alternativas e incluso una condicional final.
+
+\begin{lstlisting}[style = syntax]
+<if> -> if <expr> then <sblock> <elif> <else>
+
+<elif> -> [elif <expr> then <sblock>]
+
+<else> -> else <sblock> | ep 
+\end{lstlisting}
+
+Finalmente, otra instrucción que presenta varias opciones es el \textit{for}.
+Además de especificar rangos ascendentes y descendentes para la iteración, también se pueden detallar estructuras iterables.
+
+\begin{lstlisting}[style = syntax]
+<for> -> for <id> := <expr> to <expr> do <sblock>
+      | for <id> := <expr> downto <expr> do <sblock>
+      | for <id> in <expr> do <sblock>
+\end{lstlisting}
+
+\subsection{Tipos}
+
+Los tipos que soporta el lenguaje pueden dividirse en dos categorías, los nativos y los definidos por el usuario.
+A su vez, un tipo nativo puede ser básico o estructurado.
+A continuación se detallan los mismos.
+
+\begin{lstlisting}[style = syntax]
+<type> -> int | real | bool | char
+       | <array>
+       | <pointer>
+       | <typevar>
+       | <typedef>
+\end{lstlisting}
+
+Del lado de los tipos nativos estructurados, se tiene a los arreglos y a los punteros.
+Para los primeros, hay que especificar como se definen los límites de los mismos.
+El no terminal \textit{bname} representa a los límites variables.
+
+\begin{lstlisting}[style = syntax]
+<array> -> array [<range>] of <type>
+
+<range> -> <bound> .. <bound>
+
+<bound> -> <int> | <char> | <cname> | <bname>
+
+<pointer> -> pointer <type>
+\end{lstlisting}
+
+En el caso de las variables de tipo, las mismas poseen su propia clase de identificadores.
+En cambio, para los tipos definidos, además de su nombre se deben especificar los tipos en los cuales se instanciará.
+
+\begin{lstlisting}[style = syntax]
+<typevar> -> <typeid>
+
+<typedef> -> <tname> of [<type>]
+\end{lstlisting}
+
+Para los argumentos de un procedimiento, es necesario especificar el rol que cumplirá cada una de sus entradas.
+Es decir, si se emplearán para lectura, escritura o ambas.
+
+\begin{lstlisting}[style = syntax]
+<io> -> in | out | in/out
+\end{lstlisting}
+
+Finalmente, para la declaración de nuevos tipos por parte del usuario hay tres posibilidades.
+Se pueden crear tipos enumerados, sinónimos de tipos y tuplas.
+Para los dos últimos, se pueden especificar parámetros de tipos que permiten crear estructuras más abstractas.
+
+\begin{lstlisting}[style = syntax]
+<typedecl> -> enum  <tname> = [<cname>]
+           | syn   <tname> of <typeargs> = <type>
+           | tuple <tname> of <typeargs> = [<field>]
+
+<typeargs> -> [<typevar>]
+
+<field> -> <fname>: <type>
+\end{lstlisting}
+
+\subsubsection{Programas}
+
+Para finalizar con la sintaxis, describiremos como se especifica un programa en el lenguaje.
+El mismo está compuesto por una serie de definiciones de tipo, seguidas de una serie de declaraciones de métodos.
+A su vez, un bloque está conformado por una lista de declaraciones de variables acompañadas por una lista de sentencias.
+
+\begin{lstlisting}[style = syntax]
+<prog> -> [<typedecl>] [<methdecl>]
+
+<block> -> [<vardecl>] <sblock>
+
+<vardecl> -> var [<id>]: <type>
+\end{lstlisting}
+
+Un método puede ser una función o un procedimiento.
+Ambas poseen un identificador propio, una lista de argumentos, y un bloque de instrucciones que conforman su cuerpo.
+
+\begin{lstlisting}[style = syntax]
+<methdecl> -> <fun> | <proc>
+
+<fun> -> fun <id> ( [<funarg>] ) ret <funret> <block>
+
+<funarg> -> <id>: <type>
+
+<funret> -> <id>: <type>
+
+<proc> -> proc <id> ( [<procarg>] ) <block>
+
+<procarg> -> <io> <id>: <type>
+\end{lstlisting}
+
+\section{Chequeos para Programas}
+
+Ahora pasamos propiamente a la definición de los distintos chequeos.
+Un programa $P$ posee la siguiente forma, donde $n \geq 0$ y $m > 0$.
+\begin{gather*}
+typedecl_1 \\
+\ldots \\
+typedecl_n \\
+methoddecl_1 \\
+\ldots \\
+methoddecl_m
+\end{gather*}
+
+Lo primero que se debería realizar es definir los contextos adecuados para almacenar la información correspondientes a los tipos y métodos definidos.
+A medida que se avance con el análisis de un programa, los mismos se irán llenando con la información pertinente.
+\begin{gather*}
+\pi_{typedecl} = \pi_{enum} \cup \pi_{syn} \cup \pi_{tuple}
+\\
+\pi_{method} = \pi_{fun} \cup \pi_{proc}
+\end{gather*}
+
+Vamos a decir que un contexto está \textit{bien formado} cuando no posea nombres repetidos entre las estructuras que almacena.
+A medida que se van construyendo los contextos, esta \textit{invariante} se tiene que satisfacer para garantizar la unicidad de los distintos identificadores empleados.
+
+\subsection{Contextos para Declaración de Tipos}
+
+El primer análisis que realizaremos será sobre las declaraciones de tipo del programa.
+Una definición de tipo \textit{$typedecl_i$} puede tener alguna de las tres siguientes formas.
+\begin{gather*}
+typedecl_i =
+\begin{cases*}
+enum \; t_i = c_1, c_2, \ldots, c_m
+\\
+syn \; t_i \; of \; a_1, \ldots, a_l = \theta
+\\
+tuple \; t_i \; of\; a_1, \ldots, a_l = f_1: \theta_1, \ldots, f_m: \theta_m
+\end{cases*}
+\forall i \in \{ 1 \ldots n \}
+\end{gather*}
+
+Cuando una declaración de tipo esté \textit{bien formada} su información será almacenada en el contexto adecuado.
+La estructura de los contextos de declaración de tipos se detalla a continuación.
+\begin{gather*}
+\pi_{enum} =
+\{ 
+(t, cs) \mid 
+t \in \SY{tname} 
+\wedge 
+cs \subset \SY{cname}
+\}
+\\
+\pi_{syn} =
+\{
+(t, as, \theta) \mid 
+t \in \SY{tname}
+\wedge
+as \subset \SY{typevar}
+\wedge
+\theta \in \SY{type}
+\}
+\\
+\pi_{tuple} =
+\{
+(t, as, fs) \mid
+t \in \SY{tname} 
+\wedge
+as \subset \SY{typevar}
+\wedge
+fs \subset \SY{fname} \times \SY{type}
+\}
+\end{gather*}
+
+\subsection{Chequeos para Tipos en Declaración de Tipos}
+
+Antes de definir que se entiende por una declaración de tipo \textit{bien formada}, debemos dar las reglas apropiadas para analizar sus tipos y poder garantizar que los mismos sean válidos.
+Primero, necesitamos aumentar el contexto de las declaraciones de tipos de la siguiente manera.
+\begin{gather*}
+\pi_{type} = \pi_{typedecl} \cup \pi_{typevar}
+\\
+\pi_{typevar} \subset \SY{typevar}
+\end{gather*}
+
+Cuando nos encontramos en el entorno de análisis de una declaración de tipo, a la hora de analizar propiamente un tipo, utilizamos la siguiente notación para denotar que el tipo representado por $\theta$ es válido en el contexto $\pi_{type}$.
+\begin{gather*}
+\pi_{type} \vdash_t \theta
+\end{gather*}
+
+Para deducir esto, necesitamos definir una serie de reglas empleadas en la construcción de pruebas.
+La validez de las mismas se garantiza solamente cuando se dan las condiciones anteriormente mencionadas.
+
+\RI{Regla DT para Tipos}{Básicos}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $\theta \in \{ int, real, bool, char \}$}
+\UnaryInfC{$\pi_{type} \vdash_t \theta$}
+\end{prooftree}
+
+\RI{Regla DT para Tipos}{Punteros}
+\begin{prooftree}
+\AxiomC{$\pi_{type} \vdash_t \theta$}
+\UnaryInfC{$\pi_{type} \vdash_t pointer \; \theta$}
+\end{prooftree}
+
+\RI{Regla DT para Tipos}{Arreglos}
+\begin{prooftree}
+\AxiomC{$\pi_{type} \vdash_r r_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi_{type} \vdash_r r_n$}
+\AxiomC{$\pi_{type} \vdash_t \theta$}
+\QuaternaryInfC{$\pi_{type} \vdash_t array \; r_1, \ldots, r_n \; of \; \theta$}
+\end{prooftree}
+
+\RI{Regla DT para Tipos}{Variables de Tipo}
+\begin{prooftree}
+\AxiomC{$\theta \in \pi_{typevar}$}
+\RightLabel{\quad cuando $\theta \in \SY{typevar}$}
+\UnaryInfC{$\pi_{type} \vdash_t \theta$}
+\end{prooftree}
+
+\RI{Regla DT para Tipos}{Tipos Definidos}
+% PREGUNTAR
+% ¿Permiten tipos recursivos?
+% ¿Se debería reformular la regla?
+% Definir sustitución para variables de tipo
+\begin{prooftree}
+\AxiomC{$\pi_{type} \vdash_t \theta_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi_{type} \vdash_t \theta_n$}
+\AxiomC{$|A| = n$}
+\RightLabel{\quad $\exists A, B. (t, A, B) \in \pi_{typedecl}$}
+\QuaternaryInfC{$\pi_{type} \vdash_t t \; of \; \theta_1, \ldots, \theta_n$}
+\end{prooftree}
+
+Para el caso de los rangos de un arreglo hay que definir otra serie de reglas para comprobar la validez de los mismos.
+En particular, hay que verificar que el tipo de los límites coincida y no permitir rangos vacíos.
+Notar también que en este entorno de análisis, se prohíben los límites variables.
+
+\RI{Regla DT para Tipos}{Rangos}
+\begin{prooftree}
+\AxiomC{$\pi_{type} \vdash_b b_{inf} : \theta$}
+\AxiomC{$\pi_{type} \vdash_b b_{sup} : \theta$}
+\AxiomC{$b_{inf} \leq b_{sup}$}
+\TrinaryInfC{$\pi_{type} \vdash_r b_{inf} \; .. \; b_{sup}$}
+\end{prooftree}
+
+\RI{Regla DT para Tipos}{Límites de Enteros}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $n \in \SY{int}$}
+\UnaryInfC{$\pi_{type} \vdash_b n : int$}
+\end{prooftree}
+
+\RI{Regla DT para Tipos}{Límites de Caracteres}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $c \in \SY{char}$}
+\UnaryInfC{$\pi_{type} \vdash_b c : char$}
+\end{prooftree}
+
+\RI{Regla DT para Tipos}{Límites de Constantes}
+\begin{prooftree}
+\AxiomC{$\exists A. (t, A) \in \pi_{enum} \wedge e \in A$}
+\RightLabel{\quad cuando $e \in \SY{cname}$}
+\UnaryInfC{$\pi_{type} \vdash_b e : t$}
+\end{prooftree}
+
+\subsection{Chequeos para Declaración de Tipos}
+
+Una vez definidas las reglas anteriores, ya estamos en condiciones de determinar cuando una definición de tipo está \textit{bien formada}.
+La idea es que se compruebe la validez de cada una de las declaraciones del programa, una a la vez, agregando las mismas al contexto adecuado en el caso de que estén \textit{bien formadas} y continuando con la siguiente.
+En caso contrario, se debería detener el análisis del programa y generar un mensaje de error adecuado.
+
+\RI{Regla DT}{Enumerados}
+\begin{prooftree}
+\AxiomC{$\forall i, j \in \{ 1 \ldots n \}. i \neq j \implies c_i \neq c_j$}
+\AxiomC{$\forall i \in \{ 1 \ldots n \}, (t^*, A) \in \pi_{enum}. c_i \notin A$}
+\BinaryInfC{$\pi_{typedecl} \vdash_{td} enum \; t = c_1, \ldots, c_n$}
+\end{prooftree}
+
+\RI{Regla DT}{Sinónimos}
+\begin{prooftree}
+\AxiomC{$\pi_{typedecl} \cup \{ a_1, \ldots, a_l \} \vdash_t \theta$}
+\UnaryInfC{$\pi_{typedecl} \vdash_{td} syn \; t \; of \; a_1, \dots, a_l = \theta $}
+\end{prooftree}
+\CI{donde todos los argumentos de tipo $a_i$ son distintos entre sí.}
+
+\RI{Regla DT}{Tuplas}
+\begin{prooftree}
+\AxiomC{$\forall i \in \{ 1 \ldots m \}. \pi_{typedecl} \cup \{ a_1, \ldots, a_l \} \vdash_t \theta_i$}
+\UnaryInfC{$\pi_{typedecl} \vdash_{td} tuple \; t \; of \; a_1, \ldots, a_l = f_1: \theta_1, \ldots, f_m: \theta_m$}
+\end{prooftree}
+\CI{donde todos los alias $f_i$ son distintos entre sí, y los argumentos $a_i$ también.}
+
+Resta definir una última regla.
+La misma, es la que permite la definición de tipos recursivos.
+La única posibilidad de definir un tipo que se define en términos de si mismo es mediante el uso de punteros dentro de tuplas.
+Por lo tanto, realizando una leve modificación a la regla anterior para permitir esta situación, obtenemos lo siguiente.
+
+\RI{Regla DT}{Recursión}
+% PREGUNTAR
+% ¿Esta bien, o es muy restrictivo?
+% ¿Permite verdaderamente tipos recursivos?
+% ¿Y si permito recursión con tipo instanciado?
+\begin{prooftree}
+\AxiomC{$\forall i \in \{ 1 \dots m \}. \pi_{typedecl} \cup \{ a_1, \ldots, a_l \} \vdash_t \theta_i \vee \theta_i = pointer \; t \; of \; a_1, \ldots, a_l$}
+\UnaryInfC{$\pi_{typedecl} \vdash_{td} tuple \; t \; of \; a_1, \ldots, a_l = f_1: \theta_1, \ldots, f_m: \theta_m$}
+\end{prooftree}
+\CI{donde todos los alias $f_i$ son distintos entre sí, y los argumentos $a_i$ también.}
+
+\subsection{Contextos para Métodos}
+
+En la segunda parte del análisis, nos concentraremos en la declaración de métodos.
+Un método $methoddecl_i$ puede tener alguna de las dos siguientes formas en base a si define a una función o a un procedimiento.
+\begin{gather*}
+methoddecl_i =
+\begin{cases*}
+fun \; f_i \; (a_1: \theta_1, \ldots, a_l: \theta_l) \; ret \; a_r: \theta_r
+\\
+\qquad block_{f_i}
+\\
+proc \; p_i \; (io_1 \; a_1: \theta_1, \ldots, io_l \; a_l: \theta_l)
+\\
+\qquad block_{p_i}
+\end{cases*}
+\forall i \in \{ 1 \ldots m \}
+\end{gather*}
+
+Similar a la declaración de tipos, cada uno de los métodos definidos es analizado para comprobar su validez.
+En el caso de estar \textit{bien formado}, su información es almacenada en el contexto adecuado y se prosigue con la declaración siguiente.
+Caso contrario, se detiene la etapa de análisis semántico con un mensaje de error.
+La estructura de estos contextos se describe a continuación.
+\begin{gather*}
+\pi_{fun} =
+\{
+(f, as, r) \mid
+f \in \SY{id}
+\wedge
+as \subset \SY{id} \times \SY{type}
+\wedge
+r \in \SY{id} \times \SY{type}
+\}
+\\
+\pi_{proc} =
+\{
+(p, as) \mid
+p \in \SY{id}
+\wedge
+as \subset \SY{io} \times \SY{id} \times \SY{type}
+\}
+\end{gather*}
+
+Antes de comenzar con la validación de los métodos, es necesario definir otro contexto más.
+A la hora de analizar el cuerpo de una función o un procedimiento es fundamental poder llevar un registro de todas las estructuras definidas con sus respectivos identificadores.
+\begin{gather*}
+\pi = \pi_{type} \cup \pi_{method} \cup \pi_{var}
+\\
+\pi_{var} = \pi_{loc} \cup \pi_{bound}
+\end{gather*}
+
+En este último contexto, se utiliza $\pi_{loc}$ para almacenar la información relacionada con las variables declaradas en el cuerpo del método.
+Mientras que se usa $\pi_{bound}$ para guardar los datos sobre los límites variables de arreglos.
+
+\subsection{Chequeos para Métodos}
+
+Cuando se comienza con la verificación de un método, el contexto para variables debe estar vacío.
+El mismo se irá completando a medida que avance el análisis del método.
+El contexto de tipos deberá estar previamente inicializado, salvo por el posible agregado de variables de tipo.
+El último contexto, el de métodos, es extendido solamente cuando se verifica por completo la validez de uno de estos.
+
+% PREGUNTA
+% El retorno no debería agregar nuevas estructuras
+% Las variables de tipos y las variables de límites solo en argumentos
+% ¿Tendría que dar más reglas, o uso las de declaraciones de variables?
+\RI{Regla M}{Funciones}
+\begin{prooftree}
+\AxiomC{$\pi_0 \vdash_t \theta_1 : \pi_1$}
+\AxiomC{$\ldots$}
+\AxiomC{$\pi_{l-1} \vdash_t \theta_l : \pi_l$}
+\AxiomC{$\pi_l \vdash_t \theta_r : \pi_r$}
+\AxiomC{$\pi_r^* \vdash_{mb} block_f$}
+\QuinaryInfC{$\pi_0 \vdash_m fun \; f \; (a_1: \theta_1, \ldots, a_l: \theta_l) \; ret \; a_r: \theta_r \; block_f$}
+\end{prooftree}
+\CI{donde todos los identificadores $a_i$ son distintos entre sí, y de los límites variables especificados en los tipos $\theta_j$.}
+
+\RI{Regla M}{Procedimientos}
+\begin{prooftree}
+\AxiomC{$\pi_0 \vdash_t \theta_1 : \pi_1$}
+\AxiomC{$\ldots$}
+\AxiomC{$\pi_{l-1} \vdash_t \theta_l : \pi_l$}
+\AxiomC{$\pi_l^* \vdash_{mb} block_p$}
+\QuaternaryInfC{$\pi_0 \vdash_m proc \; p \; (oi_1 \; a_1: \theta_1, \ldots, oi_l \; a_l: \theta_l) \; block_p$}
+\end{prooftree}
+\CI{donde todos los identificadores $a_i$ son distintos entre sí, y de los límites variables especificados en los tipos $\theta_j$.}
+
+Los contextos aumentados $\pi^*$ en las reglas, representan el agregado del mismo método analizado al contexto actual $\pi$.
+Esto permite la definición de métodos recursivos, los cuales realizan llamadas a sí mismos en su cuerpo.
+\begin{gather*}
+\pi^*_r = \pi_r \cup
+\{ \; (f, \{ (a_1, \theta_1), \ldots, (a_l, \theta_l) \}, (a_r, \theta_r)) \; \}
+\\
+\pi^*_l = \pi_l \cup
+\{ \; (p, \{ (oi_1, a_1, \theta_1), \ldots, (oi_l, a_l, \theta_l) \}) \; \}
+\end{gather*}
+
+\subsection{Chequeos para Tipos en Prototipos de Métodos}
+
+Cuando nos encontramos en el entorno de análisis de una declaración de método, la verificación de un tipo difiere a la realizada anteriormente, por lo que se necesita de otro conjunto de reglas para su validación.
+Utilizamos la siguiente notación para denotar que el tipo representado por $\theta$ es válido en el contexto $\pi_{i-1}$, produciendo como resultado un contexto aumentado $\pi_i$.
+\begin{gather*}
+\pi_{i-1} \vdash_t \theta : \pi_i
+\end{gather*}
+
+A continuación se detalla el nuevo conjunto de reglas de inferencia para los tipos especificados en los prototipos de métodos.
+
+\RI{Regla M para Tipos}{Básicos}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $\theta \in \{ int, real, bool, char \}$}
+\UnaryInfC{$\pi \vdash_t \theta: \pi$}
+\end{prooftree}
+
+\RI{Regla M para Tipos}{Punteros}
+\begin{prooftree}
+\AxiomC{$\pi_{i-1} \vdash_t \theta : \pi_i$}
+\UnaryInfC{$\pi_{i-1} \vdash_t pointer \; \theta : \pi_i$}
+\end{prooftree}
+
+\RI{Regla M para Tipos}{Arreglos}
+\begin{prooftree}
+\AxiomC{$\pi_0 \vdash_r r_1 : \pi_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi_{n-1} \vdash_r r_n : \pi_n$}
+\AxiomC{$\pi_n \vdash_t \theta : \pi_t$}
+\QuaternaryInfC{$\pi_0 \vdash_t array \; r_1, \ldots, r_n \; of \; \theta : \pi_t$}
+\end{prooftree}
+
+\RI{Regla M para Tipos}{Variables de Tipo}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $\theta \in \SY{typevar}$}
+\UnaryInfC{$\pi \vdash_t \theta : \pi \cup \{ \theta \}$}
+\end{prooftree}
+
+\RI{Regla M para Tipos}{Tipos Definidos}
+\begin{prooftree}
+\AxiomC{$\pi_0 \vdash_t \theta_1 : \pi_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi_{n-1} \vdash_t \theta_n : \pi_n$}
+\AxiomC{$|A| = n$}
+\QuaternaryInfC{$\pi_0 \vdash_t t \; of \; \theta_1, \ldots, \theta_n : \pi_n$}
+\end{prooftree}
+\CI{donde se satisface que $\exists A, B. (t, A, B) \in \pi_{typedecl}$.}
+
+Para el caso de los rangos de un arreglo también debemos modificar las reglas para soportar la posibilidad de alteración del contexto utilizado.
+En particular, en el prototipo de un método se permiten especificar límites variables para los arreglos.
+En primera instancia, el tipo inferido para los mismos sería \textit{nonsense}.
+
+\RI{Regla M para Tipos}{Límites de Enteros}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $n \in \SY{int}$}
+\UnaryInfC{$\pi \vdash_b n : int$}
+\end{prooftree}
+
+\RI{Regla M para Tipos}{Límites de Caracteres}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $c \in \SY{char}$}
+\UnaryInfC{$\pi \vdash_b c : char$}
+\end{prooftree}
+
+\RI{Regla M para Tipos}{Límites de Constantes}
+\begin{prooftree}
+\AxiomC{$\exists A. (t, A) \in \pi_{enum} \wedge e \in A$}
+\RightLabel{\quad cuando $e \in \SY{cname}$}
+\UnaryInfC{$\pi \vdash_b e : t$}
+\end{prooftree}
+
+\RI{Regla M para Tipos}{Límites de Variables}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $v \in \SY{bname}$}
+\UnaryInfC{$\pi \vdash_b v : \NS$}
+\end{prooftree}
+
+\RI{Regla M para Tipos}{Rangos Fijos}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_b b_{inf} : \theta$}
+\AxiomC{$\pi \vdash_b b_{sup} : \theta$}
+\AxiomC{$b_{inf} \leq b_{sup}$}
+\TrinaryInfC{$\pi \vdash_r b_{inf} \; .. \; b_{sup} : \pi$}
+\end{prooftree}
+\CI{donde se cumple que $\theta \in \{ int, char \} \cup \SY{tname}$.}
+
+Las reglas para la inferencia de los rangos con límites variables son mas complejas.
+Una dificultad que se suma en este nuevo análisis, es que el tipo inferido para un límite variable tiene que adecuarse al almacenado en el contexto de límites.
+Es decir, si tuviéramos declarado un arreglo con dimensión $[1 .. n]$ entonces no sería válido tener otro arreglo con dimensión $[Lunes .. n]$.
+Vamos a asumir, como invariante, que el contexto $\pi_{bound}$ no puede tener más de una entrada con el mismo identificador.
+Si no se satisface esta condición, entonces estamos frente a un error de tipo.
+% PREGUNTA
+% ¿Y cómo infiero si se definen rangos vacíos?
+% Debería agregar condiciones y probar si no se contradicen
+% Con múltiples límites variables se hace más difícil
+
+\RI{Regla M para Tipos}{Rangos Variables}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_b b_{inf} : \NS$}
+\AxiomC{$\pi \vdash_b b_{sup} : \NS$}
+\BinaryInfC{$\pi \vdash_r b_{inf} \; .. \; b_{sup} : \pi \cup \{ (b_{inf}, \NS), (b_{sup}, \NS) \}$}
+\end{prooftree}
+
+% PREGUNTA
+% Y si defino [n..m], [1..n], [Lunes..m]
+% ¿Como detecto el error? ¿Enumerar tipos polimórficos?
+% Podría eliminar la diferencia de contextos
+\RI{Regla M para Tipos}{Rangos con Límite Inferior Variable}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_b b_{inf} : \NS$}
+\AxiomC{$\pi \vdash_b b_{sup} : \theta$}
+\RightLabel{\quad donde $\pi^* = \pi - \{ (b_{inf}, \NS) \}$}
+\BinaryInfC{$\pi \vdash_r b_{inf} \; .. \; b_{sup} : \pi^* \cup \{ (b_{inf}, \theta) \}$}
+\end{prooftree}
+\CI{donde se cumple que $\theta \in \{ int, char \} \cup \SY{tname}$.}
+
+\RI{Regla M para Tipos}{Rangos con Límite Superior Variable}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_b b_{inf} : \theta$}
+\AxiomC{$\pi \vdash_b b_{sup} : \NS$}
+\RightLabel{\quad donde $\pi^* = \pi - \{ (b_{sup}, \NS) \}$}
+\BinaryInfC{$\pi \vdash_r b_{inf} \; .. \; b_{sup} : \pi^* \cup \{ (b_{sup}, \theta) \}$}
+\end{prooftree}
+\CI{donde se cumple que $\theta \in \{ int, char \} \cup \SY{tname}$.}
+
+\subsection{Chequeos para Bloques}
+
+Una vez examinados los argumentos del método, se debe verificar el cuerpo del mismo.
+Un bloque $block_\gamma$ posee la siguiente forma, donde $n \geq 0$ y $m > 0$.
+El índice $\gamma$ hace referencia al identificador del método en cuestión.
+\begin{gather*}
+var \; x^1_1, \ldots, x^1_{l_1}: \theta^1
+\\
+\ldots
+\\
+var \; x^n_1, \ldots, x^n_{l_n}: \theta^n
+\\
+sent_1
+\\
+\ldots
+\\
+sent_m
+\end{gather*}
+
+Alcanzada esta etapa del análisis, se puede ver que ya se recopiló una gran cantidad de información contextual para el chequeo del bloque.
+Para simplificar la notación, definiremos una serie de elementos auxiliares con el propósito de agilizar el acceso a esta información.
+
+Supongamos que nos encontramos analizando el cuerpo de una función.
+Puede resultar conveniente poder calcular fácilmente cuales son los identificadores introducidos en el prototipo de la misma.
+A continuación se definen un par de funciones que reciben el nombre de la función en cuestión, y obtienen el conjunto de identificadores especificados en el encabezado de la misma.
+\begin{gather*}
+Argumentos_{\pi_{fun}}: \SY{id} \RA \{ \SY{id} \}
+\\
+Argumentos_{\pi_{fun}}(f) = \{ a_1, \ldots, a_l \}
+\\
+Retorno_{\pi_{fun}}: \SY{id} \RA \{ \SY{id} \}
+\\
+Retorno_{\pi_{fun}}(f) = \{ a_r \}
+\end{gather*}
+\CI{donde $(f, \{ (a_1, \theta_1), \ldots, (a_l, \theta_l) \}, (a_r, \theta_r) ) \in \pi_{fun}$.}
+
+En el caso del análisis de un procedimiento nos encontramos en una situación similar.
+A diferencia de las funciones, además de querer averiguar cuales son los identificadores introducidos necesitamos clasificar los mismos en base a la etiqueta de \textit{IO} con la que fueron especificados.
+Para esto, se definen una serie de funciones.
+\begin{gather*}
+Inputs_{\pi_{proc}}: \SY{id} \RA \{ \SY{id} \}
+\\
+Inputs_{\pi_{proc}}(p) = \{ a \mid \exists \theta. (in, a, \theta) \in A \}
+\\
+Outputs_{\pi_{proc}}: \SY{id} \RA \{ \SY{id} \}
+\\
+Outputs_{\pi_{proc}}(p) = \{ a \mid \exists \theta. (out, a, \theta) \in A \}
+\\
+IO_{\pi_{proc}}: \SY{id} \RA \{ \SY{id} \}
+\\
+IO_{\pi_{proc}}(p) = \{ a \mid \exists \theta. (in/out, a, \theta) \in A \}
+\end{gather*}
+\CI{donde $(p, A) \in \pi_{proc}$, con $A = \{ (oi_1, a_1, \theta_1), \ldots, (oi_l, a_l, \theta_l) \}$.}
+
+\subsection{Chequeos para Declaración de Variables}
+
+Cuando se declara una variable, se debe comprobar que su identificador sea único en el alcance de análisis.
+En particular, su nombre debe ser distinto a todos los utilizados en los argumentos (y retornos) del método, en los límites variables de arreglos, y de otras variables declaradas en el mismo cuerpo.
+En base a que clase de método se esté analizando, el conjunto siguiente estará conformado de maneras diferentes.
+\begin{gather*}
+NameSpace =
+"identificadores \; en \; uso \; en \; el \; alcance \; actual" 
+\subset \SY{id}
+\\
+NameSpace_f =
+Argumentos(f) \cup Retorno(f) \cup \pi_{var}
+\\
+NameSpace_p =
+Inputs(p) \cup Ouputs(p) \cup IO(p) \cup \pi_{var}
+\end{gather*}
+
+Una vez definido el conjunto anterior, ya estamos en condiciones para dar la regla que garantiza la \textit{buena forma} de una declaración de variables.
+Al igual que en todos los analices anteriores, se deberán probar todas las construcciones sintácticas una por una.
+
+\RI{Regla B}{Declaración de Variables}
+\begin{prooftree}
+\AxiomC{$\forall i \in \{ 1 \ldots l \}. \; x_i \notin NameSpace$}
+\AxiomC{$\pi \vdash_t \theta$}
+\BinaryInfC{$\pi \vdash_{vd} var \; x_1, \ldots, x_l: \theta$}
+\end{prooftree}
+\CI{donde todos los identificadores $x_i$ son distintos entre sí.}
+
+\subsection {Chequeos para Tipos en Declaración de Variables}
+
+Nuevamente, es necesario modificar nuestro conjunto de reglas para la especificación de tipos con el fin de adecuarnos al nuevo contexto de análisis.
+En esta ocasión, debemos limitar el uso de variables de tipo y de límites de arreglos solo a los introducidos en el prototipo del método analizado.
+La mayoría de las reglas permanecen sin cambios, salvo que ahora al analizar un tipo no se modificarán los contextos relacionados.
+
+\RI{Regla B para Tipos}{Básicos}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $\theta \in \{ int, real, bool, char \}$}
+\UnaryInfC{$\pi \vdash_t \theta$}
+\end{prooftree}
+
+\RI{Regla B para Tipos}{Punteros}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_t \theta$}
+\UnaryInfC{$\pi \vdash_t pointer \; \theta$}
+\end{prooftree}
+
+\RI{Regla B para Tipos}{Arreglos}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_r r_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi \vdash_r r_n$}
+\AxiomC{$\pi \vdash_t \theta$}
+\QuaternaryInfC{$\pi \vdash_t array \; r_1, \ldots, r_n \; of \; \theta$}
+\end{prooftree}
+
+\RI{Regla B para Tipos}{Variables de Tipo}
+\begin{prooftree}
+\AxiomC{$\theta \in \pi_{typevar}$}
+\RightLabel{\quad cuando $\theta \in \SY{typevar}$}
+\UnaryInfC{$\pi \vdash_t \theta$}
+\end{prooftree}
+
+\RI{Regla B para Tipos}{Tipos Definidos}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_t \theta_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi \vdash_t \theta_n$}
+\AxiomC{$|A| = n$}
+\QuaternaryInfC{$\pi \vdash_t t \; of \; \theta_1, \ldots, \theta_n$}
+\end{prooftree}
+\CI{donde se satisface que $\exists A, B. (t, A, B) \in \pi_{typedecl}$.}
+
+\RI{Regla B para Tipos}{Límites de Enteros}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $n \in \SY{int}$}
+\UnaryInfC{$\pi \vdash_b n : int$}
+\end{prooftree}
+
+\RI{Regla B para Tipos}{Límites de Caracteres}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $c \in \SY{char}$}
+\UnaryInfC{$\pi \vdash_b c : char$}
+\end{prooftree}
+
+\RI{Regla B para Tipos}{Límites de Constantes}
+\begin{prooftree}
+\AxiomC{$\exists A. (t, A) \in \pi_{enum} \wedge e \in A$}
+\RightLabel{\quad cuando $e \in \SY{cname}$}
+\UnaryInfC{$\pi \vdash_b e : t$}
+\end{prooftree}
+
+\RI{Regla B para Tipos}{Límites de Variables}
+\begin{prooftree}
+\AxiomC{$(v, \theta) \in \pi_{bound}$}
+\RightLabel{\quad cuando $v \in \SY{bname}$}
+\UnaryInfC{$\pi \vdash_b v : \theta$}
+\end{prooftree}
+
+\RI{Regla B para Tipos}{Rangos Fijos}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_b b_{inf} : \theta$}
+\AxiomC{$\pi \vdash_b b_{sup} : \theta$}
+\AxiomC{$b_{inf} \leq b_{sup}$}
+\TrinaryInfC{$\pi \vdash_r b_{inf} \; .. \; b_{sup}$}
+\end{prooftree}
+\CI{donde se cumple que $\theta \in \{ int, char \} \cup \SY{tname}$.}
+
+% PREGUNTA
+% ¿Es muy restrictivo?
+% Si no puedo inferir nada en el prototipo, no debería deducir en cuerpo.
+% Hay distintos tipos de nonsense, ¿Debería diferenciarlos?
+\RI{Regla B para Tipos}{Rangos Variables}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_b b_{inf} : \NS$}
+\AxiomC{$\pi \vdash_b b_{sup} : \NS$}
+\BinaryInfC{$\pi \vdash_r b_{inf} \; .. \; b_{sup} $}
+\end{prooftree}
+
+\subsection{Variables Libres}
+
+Una vez analizado el listado de declaraciones de variables, se debe verificar el conjunto de sentencias del bloque.
+Antes de pasar a esta parte, vamos a definir una serie de funciones que nos serán de vital importancia para el chequeo de métodos.
+En particular, necesitamos una forma de poder distinguir cual es el uso que se hace de las distintas variables utilizadas en una lista de sentencias.
+
+La primera de estas funciones, se encarga de calcular el conjunto de \textit{variables libres} presentes en un bloque de instrucciones.
+Se denomina \textit{libre} a aquella variable cuyo valor inicial puede determinar el resultado de una computación, o ser modificado durante la misma.
+\begin{gather*}
+FV_{\SY{expr}}: \SY{expr} \RA \{ \; \SY{id} \; \}
+\qquad
+FV_{\SY{sent}}: \SY{sent} \RA \{ \; \SY{id} \; \}
+\end{gather*}
+
+Para las expresiones, esta función posee un comportamiento trivial.
+Esto se debe a que toda variable en una expresión es una \textit{variable libre}.
+A continuación, su definición dirigida por sintaxis.
+\begin{align*}
+&\FV{c}
+&=&\;
+\emptyset
+&c \in \SY{const}
+\\
+&\FV{f(e_1, \ldots, e_n)}
+&=&\;
+\FV{e_1} \cup \ldots \cup \FV{e_n}
+\\
+&\FV{e_1 \oplus e_2}
+&=&\;
+\FV{e_1} \cup \FV{e_2}
+&\oplus \in \SY{binop}
+\\
+&\FV{\ominus e}
+&=&\;
+\FV{e}
+&\ominus \in \SY{unop}
+\\
+&\FV{x}
+&=&\;
+\{ x \}
+\\
+&\FV{v [e_1, \ldots, e_n]}
+&=&\;
+\FV{v} \cup \FV{e_1} \cup \ldots \cup \FV{e_n}
+\\
+&\FV{v.f}
+&=&\;
+\FV{v}
+\\
+&\FV{\# v}
+&=&\;
+\FV{v}
+\end{align*}
+
+En el caso de las sentencias, esta función presenta un comportamiento más interesante con respecto a las expresiones.
+Para la instrucción \textit{for}, la variable iteradora \textit{i} solo puede adoptar los valores comprendidos en el rango especificado en la misma instrucción, y sólo durante la ejecución de la sentencia.
+\begin{align*}
+&\FV{skip}
+&=&\;
+\emptyset
+\\
+&\FV{v := e}
+&=&\;
+\FV{v} \cup \FV{e}
+\\
+&\FV{p(e_1, \ldots, e_n)}
+&=&\;
+\FV{e_1} \cup \ldots \cup \FV{e_n}
+\\
+&\FV{alloc(v)}
+&=&\;
+\FV{v}
+\\
+&\FV{free(v)}
+&=&\;
+\FV{v}
+\\
+&\FV{if \; e \; then \; s_1 \; else \; s_2}
+&=&\;
+\FV{e} \cup \FV{s_1} \cup \FV{s_2}
+\\
+&\FV{while \; e \; do \; s}
+&=&\;
+\FV{e} \cup \FV{s}
+\\
+&\FV{for \; i := \, e_1 \; to \; e_2 \; do \; s}
+&=&\;
+\FV{e_1} \cup \FV{e_2} \cup (\FV{s} - \{ i \})
+\\
+&\FV{for \; i := \, e_1 \; downto \; e_2 \; do \; s}
+&=&\;
+\FV{e_1} \cup \FV{e_2} \cup (\FV{s} - \{ i \})
+\\
+&\FV{for \; i \; in \; e \; do \; s}
+&=&\;
+\FV{e} \cup (\FV{s} - \{ i \})
+\end{align*}
+
+La segunda de estas funciones, se encarga de calcular el conjunto de \textit{variables asignables} presentes en una secuencia de sentencias.
+Se dice que una variable es \textit{asignable} cuando su valor es modificado durante la ejecución de una instrucción.
+El conjunto de variables asignables en un bloque siempre estará incluido en el conjunto de variables libres del mismo.
+\begin{gather*}
+AV_{\SY{expr}}: \SY{expr} \RA \{ \; \SY{id} \; \}
+\qquad
+AV_{\SY{sent}}: \SY{sent} \RA \{ \; \SY{id} \; \}
+\end{gather*}
+
+Técnicamente ninguna variable en una expresión es asignable.
+Lo que sucede es que a la hora de analizar una asignación se debe obtener la variable a ser modificada por la sentencia.
+Por lo tanto, la función tiene el siguiente comportamiento para expresiones.
+\begin{align*}
+&\AV{e}
+&=&\;
+\emptyset
+&e \notin \SY{var}
+\\
+&\AV{x}
+&=&\;
+\{ x \}
+\\
+&\AV{v [e_1, \ldots, e_n]}
+&=&\;
+\AV{v}
+\\
+&\AV{v.f}
+&=&\;
+\AV{v}
+\\
+&\AV{\# v}
+&=&\;
+\AV{v}
+\end{align*}
+
+De vuelta, el caso para sentencias es el más complejo.
+Hay varias instrucciones que pueden modificar el valor de una variable.
+Entre las mismas se encuentran la asignación y las distintas clases de procedimientos.
+Hay que hacer una salvedad extra para estos últimos.
+Al tomar una serie de expresiones como argumentos, no necesariamente todas las entradas van a ser modificadas, sino solo las que corresponden a una etiqueta $out$ o $in/out$.
+\begin{align*}
+&\AV{skip}
+&=&\;
+\emptyset
+\\
+&\AV{v := e}
+&=&\;
+\AV{v}
+\\
+&\AV{p(e_1, \ldots, e_n)}
+&=&\;
+\{ \AV{e_i} \mid a_i \in Outputs(p) \cup IO(p) \}
+\\
+&\AV{alloc(v)}
+&=&\;
+\AV{v}
+\\
+&\AV{free(v)}
+&=&\;
+\AV{v}
+\\
+&\AV{if \; e \; then \; s_1 \; else \; s_2}
+&=&\;
+\AV{s_1} \cup \AV{s_2}
+\\
+&\AV{while \; e \; do \; s}
+&=&\;
+\AV{s}
+\\
+&\AV{for \; i := \, e_1 \; to \; e_2 \; do \; s}
+&=&\;
+\AV{s} - \{ i \}
+\\
+&\AV{for \; i := \, e_1 \; downto \; e_2 \; do \; s}
+&=&\;
+\AV{s} - \{ i \}
+\\
+&\AV{for \; i \; in \; e \; do \; s}
+&=&\;
+\AV{s} - \{ i \}
+\end{align*}
+\CI{donde $(p, \{ (io_1, a_1, \theta_1), \ldots, (io_n, a_n, \theta_n) \}) \in \pi_{proc}$.}
+
+Finalmente, la última de las funciones sobre variables se encarga de obtener el conjunto de \textit{variables de lectura} en el cuerpo de un método.
+Una variable es considerada de \textit{lectura} si su valor es utilizado para el cálculo de alguna computación.
+El conjunto de variables de lectura en una secuencia de instrucciones siempre estará incluido en el conjunto de variables libres de la misma, pero no necesariamente será disjunto al de variables asignables.
+\begin{gather*}
+RV_{\SY{expr}}: \SY{expr} \RA \{ \; \SY{id} \; \}
+\qquad
+RV_{\SY{sent}}: \SY{sent} \RA \{ \; \SY{id} \; \}
+\end{gather*}
+
+La definición de la función para expresiones puede ser poco intuitiva.
+La idea es que el conjunto de variables de lectura debería formar el \textit{complemento} del conjunto de variables asignables.
+Esto no es del todo cierto ya que se pueden formar expresiones donde las distintas ocurrencias de una misma variable cumplan distintos roles.
+\begin{align*}
+&\RV{c}
+&=&\;
+\emptyset
+&c \in \SY{const}
+\\
+&\RV{f(e_1, \ldots, e_n)}
+&=&\;
+\FV{e_1} \cup \ldots \cup \FV{e_n}
+\\
+&\RV{e_1 \oplus e_2}
+&=&\;
+\FV{e_1} \cup \FV{e_2}
+&\oplus \in \SY{binop}
+\\
+&\RV{\ominus e}
+&=&\;
+\FV{e}
+&\ominus \in \SY{unop}
+\\
+&\RV{x}
+&=&\;
+\emptyset
+\\
+&\RV{v [e_1, \ldots, e_n]}
+&=&\;
+\RV{v} \cup \FV{e_1} \cup \ldots \cup \FV{e_n}
+\\
+&\RV{v.f}
+&=&\;
+\RV{v}
+\\
+&\RV{\# v}
+&=&\;
+\RV{v}
+\end{align*}
+
+Por último, la definición para sentencias de nuestra función.
+Se puede observar, nuevamente, que hay una analogía entre los comportamientos de las dos últimas funciones.
+Notar que para los procedimientos, todos los argumentos que correspondan a una etiqueta $in$ o $in/out$ son de acceso por lo que todas sus variables también lo serán.
+En cambio, para las etiquetas $out$, hay que ser más selectivos sobre cuales variables son efectivamente utilizadas para lectura.
+\begin{align*}
+&\RV{skip}
+&=&\;
+\emptyset
+\\
+&\RV{v := e}
+&=&\;
+\RV{v} \cup \FV{e}
+\\
+&\RV{p(e_1, \ldots, e_n)}
+&=&\;
+\{ \FV{e_i} \mid a_i \in Inputs(p) \cup IO(p) \}
+\;\cup\ldots
+\\
+&&&
+\;\ldots\cup
+\{ \RV{e_i} \mid a_i \in Outputs(p) \}
+\\
+&\RV{alloc(v)}
+&=&\;
+\RV{v}
+\\
+&\RV{free(v)}
+&=&\;
+\RV{v}
+\\
+&\RV{if \; e \; then \; s_1 \; else \; s_2}
+&=&\;
+\FV{e} \cup \RV{s_1} \cup \RV{s_2}
+\\
+&\RV{while \; e \; do \; s}
+&=&\;
+\FV{e} \cup \RV{s}
+\\
+&\RV{for \; i := \, e_1 \; to \; e_2 \; do \; s}
+&=&\;
+\FV{e_1} \cup \FV{e_2} \cup (\RV{s} - \{ i \})
+\\
+&\RV{for \; i := \, e_1 \; downto \; e_2 \; do \; s}
+&=&\;
+\FV{e_1} \cup \FV{e_2} \cup (\RV{s} - \{ i \})
+\\
+&\RV{for \; i \; in \; e \; do \; s}
+&=&\;
+\FV{e} \cup (\RV{s} - \{ i \})
+\end{align*}
+\CI{donde $(p, \{ (io_1, a_1, \theta_1), \ldots, (io_n, a_n, \theta_n) \}) \in \pi_{proc}$.}
+
+\subsection{Chequeos para Sentencias}
+
+Ya estamos en condiciones para analizar la secuencia de sentencias que conforman un bloque.
+Tenemos la información relacionada con los tipos definidos por el usuario, el prototipo del método a analizar y el listado de declaraciones de variables previas a las instrucciones del programa.
+
+\RI{Regla B}{Bloques}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_{vd} vardecl_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi \vdash_{vd} vardecl_n$}
+\AxiomC{$\phi(sblock)$}
+\AxiomC{$\pi \vdash_{sb} sblock$}
+\QuinaryInfC{$\pi \vdash_{mb} vardecl_1 \ldots vardecl_n \quad sblock$}
+\end{prooftree}
+
+La función $\phi$ es la encargada de verificar el uso apropiado de las distintas categorías de variables empleadas en el bloque de sentencias.
+En particular queremos ser capaces de evitar el uso de variables no declaradas, la modificación de argumentos, la no asignación de retornos, entre otras situaciones.
+
+Vamos a extender las funciones previamente definidas para que acepten un listado de instrucciones.
+De esta forma, podremos realizar la verificación al bloque entero de sentencias.
+\begin{gather*}
+\FV{s_1 \ldots s_m} = \FV{s_1} \cup \ldots \cup \FV{s_m}
+\\
+\AV{s_1 \ldots s_m} = \AV{s_1} \cup \ldots \cup \AV{s_m}
+\\
+\RV{s_1 \ldots s_m} = \RV{s_1} \cup \ldots \cup \RV{s_m}
+\end{gather*}
+
+Sea $block_\gamma$ el bloque a analizar, donde $\gamma$ puede ser el identificador de un procedimiento o de una función.
+Entonces la función $\phi$ estará compuesta por distintas partes, donde para satisfacer la misma, se deben cumplir todas las ecuaciones siguientes.
+\RI{Función Gamma}{Uso efectivo de variables.}
+\begin{equation*}
+NameSpace_{\gamma} = FV(sblock)
+\end{equation*}
+
+\RI{Función Gamma}{Uso de variables.}
+\begin{equation*}
+\pi_{loc} \subset RV(sblock) \cap AV(sblock)
+\end{equation*}
+
+ \RI{Función Gamma}{Evitar modificación de límites.}
+\begin{equation*}
+\pi_{bound} \cap AV(sblock) = \emptyset
+\end{equation*}
+
+Cuando $\gamma$ hace referencia al identificador de una función, también es necesario verificar el siguiente conjunto de ecuaciones.
+\RI{Función Gamma}{Evitar modificación de argumentos.}
+\begin{equation*}
+Argumentos(\gamma) \cap AV(sblock) = \emptyset
+\end{equation*}
+
+\RI{Función Gamma}{Asignar valor al retorno.}
+\begin{equation*}
+Retorno(\gamma) \subset AV(sblock)
+\end{equation*}
+
+En cambio, cuando $\gamma$ representa al identificador de un procedimiento, es necesario revisar otro conjunto de ecuaciones.
+\RI{Función Gamma}{Etiquetas $in$ respetadas.}
+\begin{equation*}
+Inputs(\gamma) \subset RV(sblock)
+\quad \wedge \quad
+Inputs(\gamma) \cap AV(sblock) = \emptyset
+\end{equation*}
+
+\RI{Función Gamma}{Etiquetas $out$ respetadas.}
+\begin{equation*}
+Outputs(\gamma) \subset AV(sblock)
+\quad \wedge \quad
+Outputs(\gamma) \cap RV(sblock) = \emptyset
+\end{equation*}
+
+\RI{Función Gamma}{Etiquetas $in/out$ respetadas.}
+\begin{equation*}
+IO(\gamma) \subset RV(sblock) \cap AV(sblock)
+\end{equation*}
+
+Ahora definiremos propiamente las reglas de inferencia para las sentencias.
+Las mismas no presentan ninguna complejidad adicional en comparación a lo que se estuvo analizando hasta el momento.
+En esta sección se presenta una de las decisiones pendientes a tomar para el futuro desarrollo del intérprete.
+\RI{Regla B}{Bloque de Sentencias}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_s sent_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi \vdash_s sent_m$}
+\TrinaryInfC{$\pi \vdash_{sb} sent_1 \ldots sent_m$}
+\end{prooftree}
+
+\RI{Regla B}{Skip}
+\begin{prooftree}
+\AxiomC{\empty}
+\UnaryInfC{$\pi \vdash_s skip$}
+\end{prooftree}
+
+\RI{Regla B}{Asignación}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e v : \theta$}
+\AxiomC{$\pi \vdash_e e : \theta$}
+\BinaryInfC{$\pi \vdash_s v := e$}
+\end{prooftree}
+
+Cuando se invoca un procedimiento, además de comprobar la existencia del mismo, se necesita realizar una verificación adicional.
+Debido a que un procedimiento puede modificar sus entradas, es necesario chequear que las expresiones correspondientes a las mismas sean variables para que efectivamente suceda el cambio de estado.
+
+\RI{Regla B}{Procedimientos}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e e_1 : \theta_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi \vdash_e e_n : \theta_n$}
+\TrinaryInfC{$\pi \vdash_s p(e_1, \ldots, e_n)$}
+\end{prooftree}
+\CI{donde se satisfacen las siguientes propiedades.}
+\begin{equation*}
+(p, \{ (io_1, a_1, \theta_1), \ldots, (io_n, a_n, \theta_n) \} )
+\in \pi_{proc}
+\end{equation*}
+\begin{equation*}
+\forall i \in \{ 1 \ldots n \}. a_i \in Outputs(p) \cup IO(p)
+\implies e_i \in \SY{var}
+\end{equation*}
+
+\RI{Regla B}{Alloc}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e v : pointer \; \theta$}
+\RightLabel{\quad con $\theta \in \SY{TypeSystem}$}
+\UnaryInfC{$\pi \vdash_s alloc(v)$}
+\end{prooftree}
+
+\RI{Regla B}{Free}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e v : pointer \; \theta$}
+\RightLabel{\quad con $\theta \in \SY{TypeSystem}$}
+\UnaryInfC{$\pi \vdash_s free(v)$}
+\end{prooftree}
+
+\RI{Regla B}{While}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e e : bool$}
+\AxiomC{$\pi \vdash_{sb} s$}
+\BinaryInfC{$\pi \vdash_s while \; e \; do \; s$}
+\end{prooftree}
+
+\RI{Regla B}{If}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e e : bool$}
+\AxiomC{$\pi \vdash_{sb} s_1$}
+\AxiomC{$\pi \vdash_{sb} s_2$}
+\TrinaryInfC{$\pi \vdash_s if \; e \; then \; s_1 \; else \; s_2$}
+\end{prooftree}
+
+Finalmente, especificamos las reglas para las sentencias \textit{for}.
+Todavía queda pendiente definir como se implementarán las \textit{typeclasses} en el lenguaje.
+En las sucesivas iteraciones de desarrollo del intérprete se tomará una decisión respecto al asunto.
+Debido a esto, las siguientes pruebas pueden resultar ambiguas.
+
+\RI{Regla B}{For To}
+\begin{prooftree}
+\AxiomC{$i \notin NameSpace$}
+\AxiomC{$i \notin \AV{s}$}
+\AxiomC{$\pi \vdash_e e_1 : \theta$}
+\AxiomC{$\pi \vdash_e e_2 : \theta$}
+\AxiomC{$\pi \vdash_{sb} s$}
+\QuinaryInfC{$\pi \vdash_s for \; i := e_1 \; to \; e_2 \; do \; s$}
+\end{prooftree}
+\CI{donde se satisface que el tipo $\theta$ es enumerable.}
+
+\RI{Regla B}{For Downto}
+\begin{prooftree}
+\AxiomC{$i \notin NameSpace$}
+\AxiomC{$i \notin \AV{s}$}
+\AxiomC{$\pi \vdash_e e_1 : \theta$}
+\AxiomC{$\pi \vdash_e e_2 : \theta$}
+\AxiomC{$\pi \vdash_{sb} s$}
+\QuinaryInfC{$\pi \vdash_s for \; i := e_1 \; downto \; e_2 \; do \; s$}
+\end{prooftree}
+\CI{donde se satisface que el tipo $\theta$ es enumerable.}
+
+\RI{Regla B}{For In}
+\begin{prooftree}
+\AxiomC{$i \notin NameSpace$}
+\AxiomC{$i \notin \AV{s}$}
+\AxiomC{$\pi \vdash_e e : \theta$}
+\AxiomC{$\pi \vdash_{sb} s$}
+\QuaternaryInfC{$\pi \vdash_s for \; i \; in \; e \; do \; s$}
+\end{prooftree}
+\CI{donde se satisface que el tipo $\theta$ es iterable.}
+
+\subsection{Chequeos para Expresiones}
+
+Para finalizar, es hora de dar las verificaciones para las expresiones del lenguaje.
+Las mismas consisten, en esencia, de los distintos chequeos de tipos.
+Lo primero que debemos hacer es extender nuestra sintaxis para poder especificar una nueva construcción, el \textit{TypeSystem}.
+La misma no formará parte del lenguaje, sino más bien, será una herramienta que utilizaremos para poder denotar el tipo de cada expresión.
+De esta forma, podremos efectuar las distintas validaciones sobre los mismos.
+% PREGUNTA
+% ¿Esto es suficiente?
+% ¿Que hago para los tipos definidos?¿Y si tienen argumentos?
+% Puedo definir función de sustitución para los tipos definidos
+% Almaceno su sinónimo, pero no su nombre
+\begin{lstlisting}[style = syntax]
+<TypeSystem> -> int | real | bool | char | <tname>
+             | pointer <TypeSystem>
+             | array [<ArrayIndex>] of <TypeSystem>
+             | tuple [<TupleField>]
+             | <typevar>
+            
+<ArrayIndex> -> int | char | <tname> | $\NS$
+
+<TupleField> -> <fname> . <TypeSystem>
+\end{lstlisting}
+
+Ahora ya estamos en condiciones para listar las distintas reglas de inferencia para expresiones.
+Utilizaremos la siguiente notación para especificar que la expresión $e$ posee el tipo inferido $\theta$ bajo el contexto $\pi$.
+\begin{gather*}
+\pi \vdash_e e : \theta
+\end{gather*}
+
+Para las distintas clases de constantes del lenguaje no se presenta ningún caso complejo.
+Notar que la constante \textit{null} posee tipo polimórfico.
+Se listan a continuación.
+\RI{Regla TC}{Enteros}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $n \in \SY{int}$}
+\UnaryInfC{$\pi \vdash_e n : int$}
+\end{prooftree}
+
+\RI{Regla TC}{Reales}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $r \in \SY{real}$}
+\UnaryInfC{$\pi \vdash_e r : real$}
+\end{prooftree}
+
+\RI{Regla TC}{Booleanos}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $b \in \SY{bool}$}
+\UnaryInfC{$\pi \vdash_e b : bool$}
+\end{prooftree}
+
+\RI{Regla TC}{Caracteres}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad cuando $c \in \SY{char}$}
+\UnaryInfC{$\pi \vdash_e c : char$}
+\end{prooftree}
+
+\RI{Regla TC}{Constantes}
+\begin{prooftree}
+\AxiomC{$\exists A. (t, A) \in \pi_{enum} \wedge e \in A$}
+\RightLabel{\quad cuando $e \in \SY{cname}$}
+\UnaryInfC{$\pi \vdash_e e : t$}
+\end{prooftree}
+
+\RI{Regla TC}{Infinito}
+\begin{prooftree}
+\AxiomC{\empty}
+\UnaryInfC{$\pi \vdash_e inf : int$}
+\end{prooftree}
+
+\RI{Regla TC}{Puntero Nulo}
+\begin{prooftree}
+\AxiomC{\empty}
+\RightLabel{\quad con $\theta \in \SY{TypeSystem}$}
+\UnaryInfC{$\pi \vdash_e null : pointer \; \theta$}
+\end{prooftree}
+
+En el caso de las variables hay tres reglas diferentes para la deducción de tipo.
+En base al contexto en el que fueron introducidas, se tendrá que emplear una u otra de las siguientes.
+\RI{Regla TC}{Variables Declaradas}
+\begin{prooftree}
+\AxiomC{$(x, \theta) \in \pi_{var}$}
+\UnaryInfC{$\pi \vdash_e x : \theta$}
+\end{prooftree}
+
+\RI{Regla TC}{Variables de Función}
+\begin{prooftree}
+\AxiomC{$(f, \{ (a_1, \theta_1), \ldots, (a_l, \theta_l) \}, (a_r, \theta_r) ) \in \pi_{fun}$}
+\UnaryInfC{$\pi \vdash_e a_i : \theta_i$}
+\end{prooftree}
+\CI{durante el análisis del bloque $block_f$.}
+
+\RI{Regla TC}{Variables de Procedimiento}
+\begin{prooftree}
+\AxiomC{$(p, \{ (oi_1, a_1, \theta_1), \ldots, (oi_l, a_l, \theta_l) \} ) \in \pi_{proc}$}
+\UnaryInfC{$\pi \vdash_e a_i : \theta_i$}
+\end{prooftree}
+\CI{durante el análisis del bloque $block_p$.}
+
+Para los tipos estructurados se emplean las siguientes reglas.
+En el caso de los arreglos, el tipo de las expresiones debe coincidir con el de los índices especificados en la declaración del mismo.
+No se hace ninguna clase de chequeo para comprobar que el acceso sea dentro de los límites válidos.
+\RI{Regla TC}{Acceso a Puntero}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e v : pointer \; \theta$}
+\UnaryInfC{$\pi \vdash_e \# v : \theta$}
+\end{prooftree}
+
+\RI{Regla TC}{Acceso a Tuplas}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e v : tuple \; f_1 . \theta_1, \ldots, f_m . \theta_m$}
+\UnaryInfC{$\pi \vdash_e v . f_i : \theta_i$}
+\end{prooftree}
+
+% PREGUNTA
+% Debo almacenar la información del tipo cuando se declara
+% Por ejemplo, cuando analizo índices de arreglos
+% Declaración de Tipos
+% Prototipo de Método
+% Declaración de Variables
+\RI{Regla TC}{Acceso a Arreglos}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e v : array \; \theta_1, \ldots, \theta_n \; of \; \theta$}
+\AxiomC{$\pi \vdash_e e_1 : \theta_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi \vdash_e e_n : \theta_n$}
+\QuaternaryInfC{$\pi \vdash_e v[e_1, \ldots, e_n] : \theta$}
+\end{prooftree}
+
+Algunos de los operadores del lenguaje se encuentran sobrecargados.
+Esto quiere decir que pueden ser utilizados para operar con valores de tipos diferentes.
+En particular, los numéricos aceptan valores enteros como reales.
+Otra de las cuestiones pendientes a debatir, es para que clase de tipos estarán definidas las operaciones de orden e igualdad.
+Nuevamente, esta es otra discusión sobre \textit{typeclasses} y su implementación.
+\RI{Regla TC}{Operadores Binarios Numéricos}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e e_1 : int$}
+\AxiomC{$\pi \vdash_e e_2 : int$}
+\BinaryInfC{$\pi \vdash_e e_1 \oplus e_2 : int$}
+\AxiomC{$\pi \vdash_e e_1 : real$}
+\AxiomC{$\pi \vdash_e e_2 : real$}
+\BinaryInfC{$\pi \vdash_e e_1 \oplus e_2 : real$}
+\noLine
+\BinaryInfC{\empty}
+\end{prooftree}
+\CI{donde $\oplus \in \{ +, -, *, /, \% \}$.}
+
+\RI{Regla TC}{Operadores Binarios Booleanos}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e e_1 : bool$}
+\AxiomC{$\pi \vdash_e e_2 : bool$}
+\BinaryInfC{$\pi \vdash_e e_1 \otimes e_2 : bool$}
+\end{prooftree}
+\CI{donde $\otimes \in \{ \&\&, || \}$.}
+
+\RI{Regla TC}{Operadores Unarios Numéricos}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e e : int$}
+\UnaryInfC{$\pi \vdash_e -e : int$}
+\AxiomC{$\pi \vdash_e e : real$}
+\UnaryInfC{$\pi \vdash_e -e : real$}
+\noLine
+\BinaryInfC{\empty}
+\end{prooftree}
+
+\RI{Regla TC}{Operadores Unarios Booleanos}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e e : bool$}
+\UnaryInfC{$\pi \vdash_e !e : bool$}
+\end{prooftree}
+
+\RI{Regla TC}{Operadores de Igualdad y Orden}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e e_1 : \theta$}
+\AxiomC{$\pi \vdash_e e_2 : \theta$}
+\BinaryInfC{$\pi \vdash_e e_1 \odot e_2 : bool$}
+\end{prooftree}
+\CI{donde $\odot \in \{ <, >, <=, >=, ==, != \}$.}
+
+Para terminar con las reglas de inferencia de expresiones, solo resta definir la adecuada para las llamadas a función.
+A continuación se detalla la misma.
+
+\RI{Regla TC}{Funciones}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e e_1 : \theta_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi \vdash_e e_n : \theta_n$}
+\TrinaryInfC{$\pi \vdash_e f(e_1, \ldots, e_n) : \theta_r$}
+\end{prooftree}
+\CI{donde se satisface que $(f, \{ (a_1, \theta_1), \ldots, (a_n, \theta_n) \}, (a_r, \theta_r) ) \in \pi_{fun}$.}
+
+Lo último que resta por definir para finalizar los chequeos estáticos es el subtipado.
+El mismo simplemente permite convertir un valor de tipo \textit{int} a uno de tipo \textit{real}.
+Se detalla a continuación.
+
+\RI{Regla TC}{Subtipado}
+\begin{prooftree}
+\AxiomC{$\pi \vdash_e e : int$}
+\UnaryInfC{$\pi \vdash_e e : real$}
+\end{prooftree}
+
+% Basura
+\iffalse
+Comenzando con el análisis de declaración de tipos, se debe evitar la definición de nuevos tipos utilizando identificadores anteriormente empleados.
+Tampoco se debe admitir la creación de nuevos valores constantes con nombres ya en uso.
+Y por último, la cantidad de campos de una tupla debe ser mayor a uno.
+\begin{gather*}
+typedecl_i = enum \; t_i = c_1, c_2, ..., c_n \implies
+t_i \notin \pi_{type} \wedge
+c_i \notin \pi_{enum} \forall i \in {1...n}
+\\
+typedecl_i = syn \; t_i \; of \; args = \theta \implies
+t_i \notin \pi_{type}
+\\
+typedecl_i = tuple \; t_i \; of \; args = f_1, f_2, ..., f_m
+\implies t_i \notin \pi_{type} \wedge
+m \geq 2
+\end{gather*}
+
+A continuación, podríamos definir lo que se entiende como variables libres en una frase de la sintaxis de tipos.
+También podemos extender la definición para listas de tipos.
+La misma nos servirá para futuras validaciones.
+\begin{gather*}
+FV(int) = \emptyset \\
+... \\
+FV(array \; r \; of \; t) = FV(t) \\
+FV(pointer \; t) = FV(t) \\
+FV(T) = T \\
+FV(d \; of \; t_1, ..., t_n) = FV(t_1) \cup ... \cup FV(t_n) \\
+FV(t_1, ..., t_n) = FV(t_1) \cup ... \cup FV(t_n)
+\end{gather*}
+
+Otro de los chequeos para la declaración de tipos, es la comprobación del uso adecuado de las variables de tipos.
+En particular, no se debería permitir definiciones donde existan variables libres o donde se instancien variables que luego no se utilizarán.
+Además, tampoco se debe permitir la creación de sinónimos que solo sean un renombrado de una variable de tipo.
+\begin{gather*}
+typedecl_i = syn \; t_i \; of \; arg = \theta \implies
+FV(arg) = FV(\theta) \wedge \theta \notin < \! typevar \! >
+\\
+typedecl_i = tuple \; t_i \; of \; arg = n_1: f_1, ..., n_m: f_m
+\implies FV(arg) = \bigcup_{j = 1}^{m} FV(f_j)
+\end{gather*}
+
+\section{Chequeos para Tipos}
+
+Un arreglo tiene la siguiente forma.
+Donde $r_i$ representa el rango válido para una de sus dimensiones, y $t$ el tipo de los valores que almacena.
+\begin{gather*}
+array \; r_1, r_2, ..., r_n \; of \; t \\
+r_i = lower_i .. upper_i
+\end{gather*}
+
+Lo primero, es comprobar que para todos los rangos del arreglo, sus límites posean el mismo tipo.
+Luego, también se debe validar que no posea rangos vacíos.
+\begin{gather*}
+type(lower_i) = type(upper_i)
+\wedge
+\SE{lower_i} \leq \SE{upper_i} \\
+\forall i \in {1...n}
+\end{gather*}
+
+En ciertos contextos, más precisamente en el prototipo y cuerpo de métodos, se permiten declarar límites variables para los arreglos.
+En estos casos la validación anterior se debilita permitiendo también la siguiente situación.
+\begin{gather*}
+lower_i = b \vee upper_i = b, \; b \in < \! bname \! >
+\end{gather*}
+
+\section{Chequeos de Declaraciones}
+
+A la hora de declarar una variable hay que tener ciertas consideraciones.
+Como por ejemplo, que el identificador sea único en el alcance actual.
+\begin{gather*}
+var \; x_1, ..., x_n : \theta
+\implies
+x_i \notin \pi_{var}
+\wedge
+x_i \neq x_j \forall i, j \in \{ 1...n \}
+\; con \; i \neq j
+\end{gather*}
+
+% Incompleto
+\section{Chequeos de Tipos}
+
+Una de las validaciones más importantes del lenguaje, es el chequeo de tipos.
+Siguiendo una idea similar a \Lib, definiremos el sistema de tipos de la siguiente manera.
+
+\begin{lstlisting}[style = my_syntax]
+<TypeSystem> -> ... 
+\end{lstlisting}
+
+\begin{lstlisting}[style = my_syntax]
+pi
+\end{lstlisting}
+
+\section{Expresiones}
+
+A continuación mencionamos los distintos chequeos que se deberán realizar para las expresiones del lenguaje.
+
+En la llamada a una función, la misma debe ser invocada con la cantidad correcta de parámetros.
+
+\[ f(x_1, ..., x_n) \rightarrow |\pi_{fun}(f)| = n \]
+
+\begin{lstlisting}[style = my_lang]
+var x: int
+x := factorial(10, 5)
+\end{lstlisting}
+
+
+Con el acceso a arreglos tenemos una tarea similar a la de funciones.
+Solo deberíamos permitir el acceso cuando se especifican la misma cantidad de índices que dimensiones posee el mismo.
+
+\[ a[x_1, ..., x_n] \rightarrow |\pi_{var}(a)| = n \]
+
+\begin{lstlisting}[style = my_lang]
+var a: array [1..5] of int
+var x: int
+x := a[1, 5]
+\end{lstlisting}
+
+Los tipos de los operandos deben coincidir con los esperados por el operador.
+
+\[
+a: int \Arrow int \Arrow int 
+\ \& \
+real \Arrow real \Arrow real
+\]
+\[
+a \in \{+, -, *, /, \% \}
+\]
+
+\[
+b: bool \Arrow bool \Arrow bool 
+\]
+\[
+b \in \{\&\&, ||\}
+\]
+
+\[
+-:  int \Arrow int 
+\ \& \   
+real \Arrow real
+\]
+
+\[
+!:  bool \Arrow bool
+\]
+
+\[
+c: \theta \Arrow \theta \Arrow bool 
+\]
+\[
+\theta \in \{int, real, bool, char, const\}
+\wedge
+c \in \{<, >, =<, =>, ==, !=\}
+\]
+
+\begin{lstlisting}[style = my_lang]
+var x: int
+x := 4 + 'a'
+\end{lstlisting}
+
+Otro problema con operadores reside en los de igualdad y orden.
+No queda claro aún para que clase de valores deberían estar definidos.
+En primera instancia, los tipos básicos y los constantes deberían ser igualables y ordenables.
+De todas formas, esta decisión queda pendiente para el desarrollo futuro del intérprete.
+
+\begin{lstlisting}[style = my_lang]
+var b: bool
+b := Lunes == Martes
+\end{lstlisting}
+
+Tampoco queda claro, si el lenguaje debería implementar subtipado de entero a reales.
+Ya que hay operadores numéricos que trabajan con ambos tipos, sería deseable permitir emplear ambos en ciertas ocasiones.
+Una alternativa, podría ser aplicar conversiones de tipo de forma implícita cuando sea necesario.
+Una última opción, es tratar a los enteros y a los reales como dos conjuntos completamente distintos, y no permitir ninguna operación entre ambos.
+
+\[ int \leq real \]
+
+\begin{lstlisting}[style = my_lang]
+var x: real
+x := 4 + 6.0
+\end{lstlisting}
+\fi
+\end{document}
