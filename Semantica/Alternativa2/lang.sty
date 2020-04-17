@@ -1,6 +1,6 @@
 \ProvidesPackage{lang}
 
-% Mostrar Código
+% Mostrar Sintaxis / Código
 \usepackage{listings}
 
 % Defino Sintaxis
@@ -11,8 +11,17 @@
   basicstyle = \footnotesize \itshape,
   literate = { (- }{$\langle$}{1}
              { -) }{$\rangle$}{1}
-             { -> }{$\rightarrow$}{1}
 }
 
 % Defino Estilo
 \lstdefinestyle{syntax}{language = Syntax}
+
+% Defino Código
+\lstdefinelanguage{Code}
+{
+  mathescape = true,
+  basicstyle = \footnotesize \itshape,
+}
+
+% Defino Estilo
+\lstdefinestyle{code}{language = Code}

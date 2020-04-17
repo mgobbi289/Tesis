@@ -17,9 +17,6 @@
 \newcommand{\RA}
 { \rightarrow }
 
-% Ecuación Semántica
-\newcommand{\ES}[1]
-{ [\![ #1 ]\!] }
 % Terminales
 \newcommand{\T}[1]
 { \mathbf{#1} }
@@ -37,8 +34,8 @@
 \newcommand{\RV}[1]
 { RV(#1) }
 % Variables Tipo
-\newcommand{\FT}[1]
-{ FT(#1) }
+\newcommand{\FTV}[1]
+{ FTV(#1) }
 
 % Encabezado Reglas
 \newcommand{\ER}[2]
@@ -52,5 +49,12 @@
 {
   \begin{flushleft}
   #1
+  \end{flushleft}
+}
+% Título Reglas
+\newcommand{\TR}[1]
+{
+  \begin{flushleft}
+  \textbf{#1}
   \end{flushleft}
 }

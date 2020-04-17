@@ -14,33 +14,36 @@
 \usepackage{mathtools}
 % Denotación de Pruebas
 \usepackage{bussproofs}
+% Ajustar Bordes
+\usepackage{adjustbox}
 % Agregar Recordatorios
 \usepackage{todonotes}
 
 \begin{document}
 
-\title{Semántica (Borrador)}
+\title{Semántica Estática}
 \author{Matias Gobbi}
 \maketitle
 
 \section*{Fundamentos}
 
 Una vez implementada la sintaxis del lenguaje y el parser para el intérprete, es hora de comenzar la etapa del análisis semántico.
-En este capítulo, describiremos los distintos chequeos estáticos que el intérprete deberá realizar para poder determinar que un fragmento de código es un programa válido en el lenguaje.
-También haremos mención de algunos chequeos dinámicos que puede ser conveniente implementar.
+En este capítulo, describiremos los distintos chequeos estáticos que el intérprete deberá realizar para tener una mayor certeza de que el programa que se quiere ejecutar es correcto.
+También haremos mención de algunos chequeos dinámicos que puede ser conveniente implementar, debido a que la totalidad de los errores de un programa no puede ser capturada solo con un análisis estático.
 
 \section{Introducción}
 
 El objetivo de este capítulo es servir como documentación en el desarrollo del intérprete para \Lenguaje.
 En el mismo, describiremos los distintos aspectos a implementar en el análisis semántico, principalmente los chequeos estáticos y algunos dinámicos.
-La idea es que el intérprete sea más robusto, y pueda compilar (y ejecutar) solo programas válidos del lenguaje.
+La idea es que el intérprete sea más robusto, y pueda detectar errores en etapas tempranas del desarrollo de un programa.
+De esta manera, al ejecutar un programa previamente verificado de forma estática, habrá más posibilidades de que su ejecución finalice de forma exitosa.
 
-Mientras que el parser se encarga de filtrar aquellos programas que no estén bien formados sintácticamente, el trabajo de este nuevo análisis es rechazar aquellos fragmentos de código que presenten errores semánticos.
-Los chequeos estáticos comprobarán aspectos en tiempo de compilación, mientras que los dinámicos lo harán a la hora de la ejecución de un programa.
+Mientras que el parser se encarga de filtrar aquellos programas que no estén bien formados sintácticamente, el trabajo de este nuevo análisis es rechazar aquellos fragmentos de código que presenten fallas semánticas, tales como errores de tipos, declaraciones de funciones o procedimientos mal formadas, entre otras.
+Los chequeos estáticos comprobarán aspectos en una etapa previa a la ejecución, similar a como lo haría un compilador, mientras que los dinámicos lo harán durante la ejecución del mismo programa.
 
 Para dar un formato estructurado al trabajo, el mismo se organizará en base al orden temporal en el que las distintas validaciones se deberán realizar.
 Se dará una descripción formal para cada uno de los chequeos a implementar, acompañada de una explicación informal para facilitar su comprensión.
-También se hará mención de distintos aspectos que no fueron definidos todavía, los mismos están pendientes a ser debatidos en el transcurso del desarrollo del intérprete.
+También se hará mención de distintos aspectos que no fueron definidos todavía, o que aún están sujetos a posibles modificaciones futuras; los mismos están pendientes a ser debatidos en el transcurso del desarrollo del intérprete.
 
 Los fundamentos teóricos utilizados en esta sección están basados en el libro \Libro, de \Autor.
 En particular los capítulos sobre el sistema de tipos (\textit{15}), el subtipado (\textit{16}), y el polimorfismo (\textit{18}), son de fundamental importancia para el desarrollo del trabajo.
@@ -53,18 +56,19 @@ A continuación, entonces, se describirá la sintaxis abstracta del lenguaje de 
 
 \subsection{Expresiones}
 
-Una expresión puede ser un valor constante, una llamada a función, una operación sobre otras expresiones o una variable con sus respectivos operadores.
+Una expresión puede adoptar distintas formas; puede ser un valor constante, una llamada a función, una operación sobre otras expresiones o una variable con sus respectivos operadores.
 Su composición se describe a continuación.
 
 \begin{lstlisting}[style = syntax]
-(-expr-) -> (-const-) | (-fcall-) | (-op-) | (-var-)
+(-expr-) $::=$ (-const-) | (-fcall-) | (-op-) | (-var-)
 \end{lstlisting}
 
 A su vez, una constante puede tomar alguno de los siguientes valores.
 Los no terminales \textit{int}, \textit{real}, \textit{bool}, y \textit{char} denotan los conjuntos de valores esperados, mientras que \textit{cname} hace referencia a los identificadores de constantes definidas por el usuario.
+Los terminales $\T{inf}$ y $\T{null}$, representan al infinito y al puntero nulo respectivamente.
 
 \begin{lstlisting}[style = syntax]
-(-const-) -> (-int-) | (-real-) | (-bool-) | (-char-) | (-cname-) | $\T{inf}$ | $\T{null}$
+(-const-) $::=$ (-int-) | (-real-) | (-bool-) | (-char-) | (-cname-) | $\T{inf}$ | $\T{null}$
 \end{lstlisting}
 
 Una llamada a función está compuesta por su nombre y la lista de parámetros que recibe.
@@ -72,70 +76,72 @@ La misma puede tener una cantidad arbitraria de entradas.
 Notar que se utilizará la misma clase de identificadores tanto para funciones y procedimientos como para variables.
 
 \begin{lstlisting}[style = syntax]
-(-fcall-) -> (-id-) $($ (-expr-) $\ldots$ (-expr-) $)$
+(-fcall-) $::=$ (-id-) $($ (-expr-) $\ldots$ (-expr-) $)$
 \end{lstlisting}
 
-Los operadores definidos se detallan a continuación.
-Observar que será necesario la implementación de un chequeo de tipos para asegurar el uso apropiado de los mismos.
+Los operadores del lenguaje están conformados por operados numéricos, booleanos, y de orden e igualdad.
+Observar que será necesaria la implementación de un chequeo de tipos para asegurar el uso apropiado de los mismos.
 
 \begin{lstlisting}[style = syntax]
-(-op-) -> (-expr-) (-bin-) (-expr-) | (-un-) (-expr-)
+(-op-) $::=$ (-expr-) (-bin-) (-expr-) | (-un-) (-expr-)
 
-(-bin-) -> $+$ | $-$ | $*$ | $/$ | $\%$ | $||$ | $\&\&$ | $<=$ | $>=$ | $<$ | $>$ | $==$ | $!=$
+(-bin-) $::=$ $+$ | $-$ | $*$ | $/$ | $\%$ | $||$ | $\&\&$ | $<=$ | $>=$ | $<$ | $>$ | $==$
+       | $!=$
 
-(-un-) -> $-$ | $!$
+(-un-) $::=$ $-$ | $!$
 \end{lstlisting}
 
 Finalmente, describimos las variables con sus respectivos operadores.
 Las mismas pueden representar un único valor, un arreglo de varias dimensiones, una tupla con múltiples campos, o un puntero a otra estructura en memoria. 
 
 \begin{lstlisting}[style = syntax]
-(-var-) -> (-id-)
-      | (-var-) $[$ (-expr-) $\ldots$ (-expr-) $]$
-      | (-var-) $.$ (-fname-)
-      | $\#$ (-var-)
+(-var-) $::=$ (-id-)
+       | (-var-) $[$ (-expr-) $\ldots$ (-expr-) $]$
+       | (-var-) $.$ (-fname-)
+       | $\star$ (-var-)
 \end{lstlisting}
 
 \subsection{Sentencias}
 
 Las sentencias se dividen en las siguientes instrucciones.
 La composición de la \textit{asignación} y el \textit{while} es bastante simple, por lo que se detallan también a continuación.
+Notar que el no terminal \textit{sblock} se utiliza para representar la secuencia de instrucciones.
 
 \begin{lstlisting}[style = syntax]
-(-sent-) -> $\T{skip}$ | (-assign-) | (-pcall-) | (-if-) | (-while-) | (-for-)
+(-sent-) $::=$ $\T{skip}$ | (-assign-) | (-pcall-) | (-if-) | (-while-) | (-for-)
 
-(-sblock-) -> (-sent-) $\ldots$ (-sent-)
+(-assign-) $::=$ (-var-) $:=$ (-expr-)
 
-(-assign-) -> (-var-) $:=$ (-expr-)
+(-while-) $::=$ $\T{while}$ (-expr-) $\T{do}$ (-sblock-)
 
-(-while-) -> $\T{while}$ (-expr-) $\T{do}$ (-sblock-)
+(-sblock-) $::=$ (-sent-) $\ldots$ (-sent-)
 \end{lstlisting}
 
-Para la llamada a un procedimiento, se detalla de forma similar a las funciones.
-Además de esto, se encuentran los dos métodos para el manejo de memoria definidos.
+Para la llamada de procedimientos, se utiliza una sintaxis similar a la empleada para funciones.
+Además de esto, se encuentran definidos dos métodos especiales exclusivamente para el manejo explícito de memoria del programa.
 
 \begin{lstlisting}[style = syntax]
-(-pcall-) -> (-id-) $($ (-expr-) $\ldots$ (-expr-) $)$ | $\T{alloc}$ (-var-) | $\T{free}$ (-var-)
+(-pcall-) $::=$ (-id-) $($ (-expr-) $\ldots$ (-expr-) $)$ | $\T{alloc}$ (-var-) | $\T{free}$ (-var-)
 \end{lstlisting}
 
 La instrucción \textit{if} es bastante compleja en su composición.
-Además de poder especificar un simple condicional, se pueden agregar otras alternativas e incluso una condición final.
+Además de poder especificar un simple condicional $\T{if}$, se pueden agregar otras alternativas $\T{elif}$, e incluso una condición final $\T{else}$.
 
 \begin{lstlisting}[style = syntax]
-(-if-) -> $\T{if}$ (-expr-) $\T{then}$ (-sblock-) (-elif-) $\ldots$ (-elif-) (-else-)
+(-if-) $::=$ $\T{if}$ (-expr-) $\T{then}$ (-sblock-) (-elif-) $\ldots$ (-elif-) (-else-)
 
-(-elif-) -> $\T{elif}$ (-expr-) $\T{then}$ (-sblock-)
+(-elif-) $::=$ $\T{elif}$ (-expr-) $\T{then}$ (-sblock-)
 
-(-else-) -> $\T{else}$ (-sblock-) | $\epsilon$ 
+(-else-) $::=$ $\T{else}$ (-sblock-) | $\epsilon$ 
 \end{lstlisting}
 
 Finalmente, otra instrucción que presenta varias opciones es el \textit{for}.
-Además de especificar rangos ascendentes o descendentes para la iteración, también se pueden detallar estructuras iterables.
+Además de especificar rangos ascendentes con $\T{to}$, o descendentes con $\T{downto}$, también se podrán detallar estructuras iterables con $\T{in}$, las cuales deberán tener su mecanismo de iteración implementado.
 
 \begin{lstlisting}[style = syntax]
-(-for-) -> $\T{for}$ (-id-) $:=$ (-expr-) $\T{to}$ (-expr-) $\T{do}$ (-sblock-)
-      | $\T{for}$ (-id-) $:=$ (-expr-) $\T{downto}$ (-expr-) $\T{do}$ (-sblock-)
-      | $\T{for}$ (-id-) $\T{in}$ (-expr-) $\T{do}$ (-sblock-)
+(-for-) $::=$ $\T{for}$ (-id-) $:=$ (-expr-) $\T{to}$ (-expr-) $\T{do}$ (-sblock-)
+       | $\T{for}$ (-id-) $:=$ (-expr-) $\T{downto}$ (-expr-) $\T{do}$ (-sblock-)
+       | $\T{for}$ (-id-) $\T{in}$ (-expr-) $\T{do}$ (-sblock-)
 \end{lstlisting}
 
 \subsection{Tipos}
@@ -145,283 +151,439 @@ A su vez, un tipo nativo puede ser básico o estructurado.
 A continuación se detallan los mismos.
 
 \begin{lstlisting}[style = syntax]
-(-type-) -> $\T{int}$ | $\T{real}$ | $\T{bool}$ | $\T{char}$
-       | (-array-)
-       | (-pointer-)
-       | (-typevar-)
-       | (-typedef-)
+(-type-) $::=$ $\T{int}$ | $\T{real}$ | $\T{bool}$ | $\T{char}$
+        | (-array-)
+        | (-pointer-)
+        | (-typevar-)
+        | (-typedef-)
 \end{lstlisting}
 
-Del lado de los tipos nativos estructurados, se tiene a los arreglos y a los punteros.
-Para los primeros, hay que especificar como se definen los tamaños de los mismos.
-El no terminal \textit{bsize} representa al tamaño variable.
+Del lado de los tipos nativos estructurados, se tienen a los arreglos y a los punteros.
+Para los primeros, hay que especificar como se definen los tamaños para sus dimensiones.
+El no terminal \textit{sname} representa al tamaño variable, cuyo valor deberá ser resuelto durante la ejecución del programa.
 
 \begin{lstlisting}[style = syntax]
-(-array-) -> $\T{array}$ (-size-) $\ldots$ (-size-) $\T{of}$ (-type-)
+(-array-) $::=$ $\T{array}$ (-size-) $\ldots$ (-size-) $\T{of}$ (-type-)
 
-(-size-) -> (-nat-) | (-bsize-)
+(-size-) $::=$ (-nat-) | (-sname-)
 
-(-pointer-) -> $\T{pointer}$ (-type-)
+(-pointer-) $::=$ $\T{pointer}$ (-type-)
 \end{lstlisting}
 
 En el caso de las variables de tipo, las mismas poseen su propia clase de identificadores.
-En cambio, para los tipos definidos, además de su nombre se deben especificar los tipos en los cuales se instanciará.
+En cambio, para los tipos definidos, además de su nombre se deben detallar los tipos en los cuales se instanciará.
+Si el mismo no posee argumentos, el terminal $\T{of}$ no se deberá especificar.
 
 \begin{lstlisting}[style = syntax]
-(-typevar-) -> (-typeid-)
+(-typevar-) $::=$ (-typeid-)
 
-(-typedef-) -> (-tname-) $\T{of}$ (-type-) $\ldots$ (-type-)
+(-typedef-) $::=$ (-tname-) $\T{of}$ (-type-) $\ldots$ (-type-)
 \end{lstlisting}
 
 Para los argumentos de un procedimiento, es necesario especificar el rol que cumplirá cada una de sus entradas.
-Es decir si se emplearán para lectura, escritura, o ambas.
+Es decir, si se emplearán para lectura, escritura, o ambas.
 
 \begin{lstlisting}[style = syntax]
-(-io-) -> $\T{in}$ | $\T{out}$ | $\T{in/out}$
+(-io-) $::=$ $\T{in}$ | $\T{out}$ | $\T{in/out}$
 \end{lstlisting}
 
 También existen distintas clases para los tipos del programa.
 Las mismas representan una especie de interfaz que caracteriza las propiedades que cumplen cada uno de los tipos que las definen.
 
 \begin{lstlisting}[style = syntax]
-(-class-) -> $\T{Eq}$ | $\T{Ord}$ | $\T{Iter}$
+(-class-) $::=$ $\T{Eq}$ | $\T{Ord}$ | $\T{Iter}$
 \end{lstlisting}
 
 Finalmente, para la declaración de nuevos tipos por parte del usuario hay tres posibilidades.
 Se pueden crear tipos enumerados, sinónimos de tipos y tuplas.
 Para los dos últimos, se pueden especificar parámetros de tipos que permiten crear estructuras más abstractas.
+Similar a lo dicho anteriormente, si los tipos declarados no poseen argumentos, entonces el terminal $\T{of}$ se omite.
 
 \begin{lstlisting}[style = syntax]
-(-typedecl-) -> $\T{enum}$ (-tname-) $=$ (-cname-) $\ldots$ (-cname-)
-           | $\T{syn}$ (-tname-) $\T{of}$ (-typeargs-) $=$ (-type-)
-           | $\T{tuple}$ (-tname-) $\T{of}$ (-typeargs-) $=$ (-field-) $\ldots$ (-field-)
+(-typedecl-) $::=$ $\T{enum}$ (-tname-) $=$ (-cname-) $\ldots$ (-cname-)
+            | $\T{syn}$ (-tname-) $\T{of}$ (-typeargs-) $=$ (-type-)
+            | $\T{tuple}$ (-tname-) $\T{of}$ (-typeargs-) $=$ (-field-) $\ldots$ (-field-)
 
-(-typeargs-) -> (-typevar-) $\ldots$ (-typevar-)
+(-typeargs-) $::=$ (-typevar-) $\ldots$ (-typevar-)
 
-(-field-) -> (-fname-) $:$ (-type-)
+(-field-) $::=$ (-fname-) $:$ (-type-)
 \end{lstlisting}
 
 \subsection{Programas}
 
 Para finalizar con la sintaxis del lenguaje, describiremos como se especifica un programa en el mismo.
-Un programa está compuesto por una serie de definiciones de tipo, seguidas de una serie de declaraciones de métodos.
-A su vez, un bloque está conformado por una lista de declaraciones de variables acompañadas por una lista de sentencias.
-
-\todo{Definir sintaxis para Instancias!}
+Un programa está compuesto por una serie de definiciones de tipo, seguidas de una serie de declaraciones de rutinas.
+Cada una de estas rutinas puede ser, o bien una función, o un procedimiento.
 
 \begin{lstlisting}[style = syntax]
-(-prog-) -> (-typedecl-) $\ldots$ (-typedecl-) (-methdecl-) $\ldots$ (-methdecl-)
+(-prog-) $::=$ (-typedecl-) $\ldots$ (-typedel-) (-routdecl-) $\ldots$ (-routdecl-)
 
-(-block-) -> (-vardecl-) $\ldots$ (-vardecl-) (-sblock-)
-
-(-vardecl-) -> $\T{var}$ (-id-) $\ldots$ (-id-) $:$ (-type-)
+(-routdecl-) $::=$ (-fun-) | (-proc-)
 \end{lstlisting}
 
-Un método puede ser una función o un procedimiento.
-Ambos poseen un identificador propio, una lista de argumentos, y un bloque de instrucciones que conforman su cuerpo.
-También se pueden agregar restricciones para las variables de tipo en su prototipo.
+Denominamos bloque al cuerpo de una de estas rutinas.
+El mismo está conformado primero por una lista de declaraciones de variables, y segundo por una lista de instrucciones.
+Para declarar una variable solo se tiene que especificar el identificador de la misma, junto con el tipo que posee.
 
 \begin{lstlisting}[style = syntax]
-(-methdecl-) -> (-fun-) | (-proc-)
+(-block-) $::=$ (-vardecl-) $\ldots$ (-vardecl-) (-sblock-)
 
-(-fun-) -> $\T{fun}$ (-id-) $($ (-funarg-) $\ldots$ (-funarg-) $)$ $\T{ret}$ (-funret-)
-        $\T{where}$ (-constraint-) $\ldots$ (-constraint-)
-        (-block-)
+(-vardecl-) $::=$ $\T{var}$ (-id-) $\ldots$ (-id-) $:$ (-type-)
+\end{lstlisting}
 
-(-funarg-) -> (-id-) $:$ (-type-)
+Una función posee un identificador propio, una lista de argumentos, un retorno, y un bloque que conforma su cuerpo.
+Tanto para los argumentos, como para el retorno, solo se tienen que detallar sus identificadores junto con el tipo del valor que representarán.
 
-(-funret-) -> (-id-) $:$ (-type-)
-
-(-proc-) -> $\T{proc}$ (-id-) $($ (-procarg-) $\ldots$ (-procarg-) $)$
-         $\T{where}$ (-constraint-) $\ldots$ (-constraint-)
+\begin{lstlisting}[style = syntax]
+(-fun-) $::=$ $\T{fun}$ (-id-) $($ (-funarg-) $\ldots$ (-funarg-) $)$ $\T{ret}$ (-funret-)
+         $\T{where}$ (-restrictions-)
          (-block-)
 
-(-procarg-) -> (-io-) (-id-) $:$ (-type-)
+(-funarg-) $::=$ (-id-) $:$ (-type-)
 
-(-constraint-) -> (-typevar-) $:$ (-class-) $\ldots$ (-class-)
+(-funret-) $::=$ (-id-) $:$ (-type-)
 \end{lstlisting}
+
+Un procedimiento posee una estructura muy similar a la de una función.
+Las dos diferencias fundamentales con esta, es que el primero no posee retorno ya que no producirá ningún valor como resultado, y que sus argumentos deben especificar que clase de uso se hará con los mismos.
+
+\begin{lstlisting}[style = syntax]
+(-proc-) $::=$ $\T{proc}$ (-id-) $($ (-procarg-) $\ldots$ (-procarg-) $)$
+          $\T{where}$ (-restrictions-)
+          (-block-)
+
+(-procarg-) $::=$ (-io-) (-id-) $:$ (-type-)
+\end{lstlisting}
+
+Para agregar a lo anterior, debido que los argumentos de una rutina pueden tener tipo variable, es conveniente poder imponer restricciones a los mismos.
+De esta forma, se pueden crear funciones o procedimientos más abstractos que funcionen para una gran variedad de tipos, y al mismo tiempo, requerir que los mismos sean instancias de ciertas clases.
+
+\begin{lstlisting}[style = syntax]
+(-restrictions-) $::=$ (-constraint-) $\ldots$ (-constraint-)
+
+(-constraint-) $::=$ (-typevar-) $:$ (-class-) $\ldots$ (-class-)
+\end{lstlisting}
+
+\subsection{Metavariables}
+
+A lo largo del informe, se utilizarán diversas metavariables (a veces acompañadas de superíndices, o subíndices) para representar distintas clases de construcciones sintácticas.
+A continuación se listan las mismas, junto con el elemento sintáctico que comúnmente simbolizarán, a menos que se especifique lo contrario en el momento.
+\begin{align*}
+&\theta & &\NT{type}         &  &e       & &\NT{expr}     \\
+&tn     & &\NT{tname}        &  &v       & &\NT{var}      \\
+&cn     & &\NT{cname}        &  &x, a    & &\NT{id}       \\
+&fn     & &\NT{fname}        &  &s       & &\NT{size}     \\ 
+&tv     & &\NT{typevar}      &  &fd      & &\NT{field}    \\
+&td     & &\NT{typedecl}     &  &rd      & &\NT{routdecl} \\
+&vd     & &\NT{vardecl}      &  &sb      & &\NT{sblock}   \\
+&io     & &\NT{io}           &  &cl      & &\NT{class}    \\
+&rs     & &\NT{restrictions} &  &ct      & &\NT{const}    \\
+&n      & &\NT{int}          &  &r       & &\NT{real}     \\
+&b      & &\NT{bool}         &  &c       & &\NT{char}     \\
+&\oplus & &\NT{bin}          &  &\ominus & &\NT{un}       \\
+\end{align*}
 
 \section{Chequeos}
 
 Ahora pasamos propiamente a la definición de los distintos chequeos.
 Avanzaremos progresivamente en el análisis de un programa, a medida que las distintas propiedades sean enunciadas y verificadas.
 
-Según la sintaxis del lenguaje, un programa $P$ posee la siguiente forma, donde $n \geq 0$ y $m > 0$.
+Según la sintaxis del lenguaje, un programa posee la siguiente forma, donde vale que $n \geq 0$ y $m > 0$.
 \begin{gather*}
 typedecl_1 \\
 \ldots \\
 typedecl_n \\
-methoddecl_1 \\
+routdecl_1 \\
 \ldots \\
-methoddecl_m
+routdecl_m
 \end{gather*}
 
-\todo{Ignoro la declaración de instancias!}
+Para asegurar la corrección (parcial) de un programa, se deberán verificar cada una de sus componentes, y en el caso que todas superen su respectiva verificación, se dirá que el programa es correcto (estáticamente).
+Comúnmente, cuando uno de estos elementos satisfaga las propiedades requeridas por el análisis se dirá que está \textit{bien formado}.
 
-Lo primero que se debería realizar es definir los contextos adecuados para almacenar la información correspondientes a los tipos y métodos definidos.
-A medida que se avance con el análisis de un programa, los mismos se irán llenando con la información pertinente.
+Continuando con la teoría, utilizaremos la siguiente notación para denotar que la construcción sintáctica $\chi$ está \textit{bien formada} bajo el contexto $\pi$, en base a las reglas de la categoría $\gamma$.
 \begin{gather*}
-\pi_{type} = \pi_{enum} \cup \pi_{syn} \cup \pi_{tuple}
-\\
-\pi_{method} = \pi_{fun} \cup \pi_{proc}
+\pi \vdash_{\gamma} \chi
 \end{gather*}
 
-Vamos a decir que un contexto está \textit{bien formado} cuando no posea nombres repetidos entre las estructuras que almacena.
-A medida que se van construyendo los contextos, esta \textit{invariante} se tiene que satisfacer para garantizar la unicidad de los distintos identificadores empleados.
+También denominadas reglas para \textit{juicios de tipado}, estas construcciones a veces producirán resultados luego de finalizado su análisis.
+En estos casos, se utilizará la siguiente notación, donde $\omega$ representa el resultado final obtenido.
+\begin{gather*}
+\pi \vdash_{\gamma} \chi : \omega
+\end{gather*}
+
+Otra situación que se suele presentar a la hora del análisis es el uso de múltiples contextos.
+Debido que comúnmente se deberá almacenar información de distintos índoles para efectuar la verificación, se empleará la siguiente notación en estos escenarios.
+\begin{gather*}
+\pi_1, \ldots, \pi_n \vdash_{\gamma} \chi : \omega
+\end{gather*}
+
+A lo largo del informe, se darán distintos conjuntos de reglas $\gamma$ en base al elemento sintáctico que $\chi$ represente.
+Al mismo tiempo, se definirán diversos contextos $\pi$ que almacenarán la información recopilada de análisis anteriores para continuar con la verificación.
 
 \subsection{Validaciones en Declaración de Tipos}
 
-El primer análisis que realizaremos será sobre las declaraciones de tipo del programa.
-Una definición de tipo \textit{$typedecl_i$} puede tener alguna de las tres siguientes formas en base a si se desea definir un tipo enumerado, un sinónimo de tipo, o una tupla.
+Las primeras reglas que especificaremos serán sobre las declaraciones de tipo de un programa.
+Una definición de tipo \textit{$typedecl$} puede tener alguna de las tres siguientes formas en base a si se desea definir un tipo enumerado, un sinónimo de tipo, o una tupla.
 \begin{gather*}
-typedecl_i =
+typedecl =
 \begin{cases*}
-\T{enum} \; t_i = c_1, c_2, \ldots, c_m
+\T{enum} \; tn = cn_1, cn_2, \ldots, cn_m
 \\
-\T{syn} \; t_i \; \T{of} \; a_1, \ldots, a_l = \theta
+\T{syn} \; tn \; \T{of} \; tv_1, \ldots, tv_l = \theta
 \\
-\T{tuple} \; t_i \; \T{of} \; a_1, \ldots, a_l = f_1 : \theta_1, \ldots, f_m : \theta_m
+\T{tuple} \; tn \; \T{of} \; tv_1, \ldots, tv_l = fn_1 : \theta_1, \ldots, fn_m : \theta_m
 \end{cases*}
-\forall i \in \{ 1 \ldots n \}
 \end{gather*}
 
 Cuando una declaración de tipo esté \textit{bien formada} su información será almacenada en el contexto adecuado.
-La estructura de los contextos de declaración de tipos se detalla a continuación.
+Habrá un contexto diferente para cada una de las categorías de tipos que se pueden definir en el lenguaje.
+La estructura de los mismos se detalla a continuación.
+
+Para los tipos enumerados, se debe almacenar el nombre del tipo definido junto con el listado de constantes enumeradas en su cuerpo.
+Una invariante que se debe respetar en este contexto es que los nombres de constantes no pueden ser repetidos, tanto dentro de una definición, como con respecto a las otras.
 \begin{gather*}
-\pi_{enum} =
+\pi_{e} =
 \{ 
-(t, C) \mid 
-t \in \NT{tname} 
+(tn, CN) \mid 
+tn \in \NT{tname} 
 \wedge 
-C \subset \NT{cname}
+CN \subset \NT{cname}
 \}
-\\
-\pi_{syn} =
+\end{gather*}
+
+En el caso de los sinónimos, además de su nombre, se deben guardar sus variables de tipo (es decir, sus argumentos) junto con el tipo al que representa.
+En este contexto, se tiene que asegurar que dentro de una definición no se repitan los identificadores para los argumentos.
+\begin{gather*}
+\pi_{s} =
 \{
-(t, A, \theta) \mid 
-t \in \NT{tname}
+(tn, TV, \theta) \mid 
+tn \in \NT{tname}
 \wedge
-A \subset \NT{typevar}
+TV \subset \NT{typevar}
 \wedge
 \theta \in \NT{type}
 \}
-\\
-\pi_{tuple} =
+\end{gather*}
+
+Finalmente, para las tuplas, tenemos que recordar su nombre, sus argumentos de tipo, y los distintos campos de su definición.
+En este caso, además de evitar la repetición de variables de tipo, se tiene que asegurar que los nombres de campos sean únicos dentro del cuerpo de la definición.
+\begin{gather*}
+\pi_{t} =
 \{
-(t, A, F) \mid
-t \in \NT{tname} 
+(tn, TV, FD) \mid
+tn \in \NT{tname} 
 \wedge
-A \subset \NT{typevar}
+TV \subset \NT{typevar}
 \wedge
-F \subset \NT{fname} \times \NT{type}
+FD \subset \NT{field}
 \}
 \end{gather*}
+
+Estos tres contextos se encargarán de almacenar toda la información relacionada con los tipos definidos por el usuario en un programa.
+A todas las condiciones de consistencia mencionadas anteriormente se le tiene que sumar una última.
+Los nombres de tipos definidos deben ser únicos.
+Es decir que no puede haber más de una definición para el mismo identificador de tipo entre los distintos contextos.
 
 \subsubsection{Tipos en Declaración de Tipos}
 
 Antes de definir que se entiende por una declaración de tipo \textit{bien formada}, debemos dar las reglas apropiadas para analizar sus tipos y poder garantizar que los mismos sean válidos.
-Cuando nos encontramos en el entorno de análisis de una declaración de tipo, a la hora de analizar propiamente un tipo, utilizamos la siguiente notación para denotar que el tipo representado por $\theta$ es válido en el contexto $\pi_{type}$.
-\begin{gather*}
-\pi_{type} \vdash_t \theta
-\end{gather*}
+El siguiente conjunto de reglas será utilizado en diversas secciones del análisis de un programa; en cada una de estas situaciones se evidenciarán ligeras modificaciones realizadas al mismo con el fin de adecuarlo al chequeo vigente.
 
-Para deducir esto, necesitamos definir una serie de reglas empleadas en la construcción de pruebas.
-La validez de las mismas se garantiza solamente cuando se dan las condiciones anteriormente mencionadas.
+Cuando nos encontramos en el entorno de análisis de una declaración de tipo, a la hora de analizar propiamente un tipo, utilizamos la siguiente notación para denotar que el tipo representado por $\theta$ es válido en el contexto de los tipos definidos $\pi_{e}$, $\pi_{s}$, y $\pi_{t}$.
+Permitiendo un poco de abuso de notación, comúnmente haremos referencia al contexto $\pi_{\mathbf{T}}$ para representar a la anterior tripla de contextos.
+Esta salvedad la tendremos para evitar tener reglas muy complejas, y poder concentrarnos propiamente en las derivaciones.
+\begin{align*}
+\pi_{e}, \pi_{s}, \pi_{t} &\vdash_t \theta
+\\
+\pi_{\mathbf{T}} &\vdash_t \theta
+\end{align*}
 
+Para deducir lo anterior, necesitamos definir una serie de reglas empleadas en la construcción de pruebas.
+Con la aplicación sucesiva de las mismas, se pueden construir juicios de tipado para probar la corrección de los tipos de un programa.
+
+Para empezar, todo tipo básico es un tipo correcto.
+La verificación de los mismos es inmediata, ya que su regla no presenta ninguna premisa.
 \ER{Regla DT para Tipos}{Básicos}
 \begin{prooftree}
-\AxiomC{\empty}
-\RightLabel{\quad cuando $\theta \in \{ \T{int}, \T{real}, \T{bool}, \T{char} \}$}
-\UnaryInfC{$\pi_{type} \vdash_t \theta$}
+\AxiomC{}
+\RightLabel
+{
+\quad cuando $\theta \in \{ \T{int}, \T{real}, \T{bool}, \T{char} \}$
+}
+\UnaryInfC{$\pi_{\mathbf{T}} \vdash_t \theta$}
 \end{prooftree}
 
+Un puntero será correcto, siempre que el tipo del valor al que hace referencia sea correcto.
+Notar que la premisa de la regla requiere de la prueba de un tipo estructuralmente menor al inicial. 
 \ER{Regla DT para Tipos}{Punteros}
 \begin{prooftree}
-\AxiomC{$\pi_{type} \vdash_t \theta$}
-\UnaryInfC{$\pi_{type} \vdash_t \T{pointer} \; \theta$}
+\AxiomC{$\pi_{\mathbf{T}} \vdash_t \theta$}
+\UnaryInfC{$\pi_{\mathbf{T}} \vdash_t \T{pointer} \; \theta$}
 \end{prooftree}
 
+Para los arreglos, se necesitarán verificar los tamaños de sus dimensiones, junto con el tipo de los valores que almacenará.
+Notar que para analizar los primeros no se necesita ninguna información contextual.
 \ER{Regla DT para Tipos}{Arreglos}
 \begin{prooftree}
-\AxiomC{$\pi_{type} \vdash_s s_1$}
+\AxiomC{$\vdash_s s_1$}
 \AxiomC{\ldots}
-\AxiomC{$\pi_{type} \vdash_s s_n$}
-\AxiomC{$\pi_{type} \vdash_t \theta$}
-\QuaternaryInfC{$\pi_{type} \vdash_t \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta$}
+\AxiomC{$\vdash_s s_n$}
+\AxiomC{$\pi_{\mathbf{T}} \vdash_t \theta$}
+\QuaternaryInfC
+{$
+\pi_{\mathbf{T}} \vdash_t \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta
+$}
 \end{prooftree}
 
+En primera instancia, una variable de tipo es correcta de forma inmediata.
+En cambio, para que una declaración de tipo sea adecuada, no deben existir variables de tipo libres en el cuerpo de su definición.
 \ER{Regla DT para Tipos}{Variables de Tipo}
 \begin{prooftree}
-\AxiomC{\empty}
-\RightLabel{\quad cuando $\theta \in \NT{typevar}$}
-\UnaryInfC{$\pi_{type} \vdash_t \theta$}
+\AxiomC{}
+\UnaryInfC{$\pi_{\mathbf{T}} \vdash_t tv$}
 \end{prooftree}
 
-\ER{Regla DT para Tipos}{Tipos Definidos}
+Para los tipos definidos, especificaremos varias reglas.
+Las primeras serán más simples, se aplicarán a los tipos definidos que no posean argumentos.
+La idea es comprobar que el tipo utilizado se encuentra definido en alguno de los contextos empleados para la declaración de tipos, sin importar el contenido del cuerpo de su definición.
+\ER{Regla DT para Tipos}{Tipos Enumerados}
 \begin{prooftree}
-\AxiomC{$\pi_{type} \vdash_t \theta_1$}
+\AxiomC{$(tn, \{ cn_1, \ldots, cn_m \}) \in \pi_{e}$}
+\UnaryInfC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn$}
+\end{prooftree}
+
+\ER{Regla DT para Tipos}{Sinónimos sin Argumentos}
+\begin{prooftree}
+\AxiomC{$(tn, \emptyset,\theta) \in \pi_{s}$}
+\UnaryInfC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn$}
+\end{prooftree}
+
+\ER{Regla DT para Tipos}{Tuplas sin Argumentos}
+\begin{prooftree}
+\AxiomC
+{$
+(tn, \emptyset, \{ fd_1, \ldots, fd_m \}) \in \pi_{t}
+$}
+\UnaryInfC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn$}
+\end{prooftree}
+
+En cambio, para los tipos definidos con argumentos, es necesario realizar unas verificaciones adicionales.
+En particular, se deben validar todos los tipos especificados como argumentos del mismo, y que la cantidad de estos coincida con los de su definición.
+\ER{Regla DT para Tipos}{Sinónimos con Argumentos}
+\begin{prooftree}
+\AxiomC{$(tn, \{ tv_1, \ldots, tv_n \}, \theta) \in \pi_{s}$}
+\AxiomC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_1$}
 \AxiomC{\ldots}
-\AxiomC{$\pi_{type} \vdash_t \theta_n$}
-\AxiomC{$|A| = n$}
-\QuaternaryInfC{$\pi_{type} \vdash_t t \; \T{of} \; \theta_1, \ldots, \theta_n$}
+\AxiomC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_n$}
+\QuaternaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn \; \T{of} \; \theta_1, \ldots, \theta_n
+$}
 \end{prooftree}
-\PR{donde se satisface que $\exists A, B. (t, A, B) \in \pi_{type}$.}
 
-Para el caso de los tamaños de un arreglo, solo hay que verificar que los mismos sean naturales.
-Esto se debe a que en esta etapa, no se permiten tamaños variables para los mismos.
-
-\ER{Regla DT para Tipos}{Tamaños}
+\ER{Regla DT para Tipos}{Tuplas con Argumentos}
+\begin{adjustbox}{center, minipage = \paperwidth}
 \begin{prooftree}
-\AxiomC{\empty}
-\RightLabel{\quad cuando $size \in \NT{nat}$}
-\UnaryInfC{$\pi_{type} \vdash_s size$}
+\AxiomC
+{$
+(tn, \{ tv_1, \ldots, tv_n \}, \{ fd_1, \ldots, fd_m \}) \in \pi_{t}
+$}
+\AxiomC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_n$}
+\QuaternaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn \; \T{of} \; \theta_1, \ldots, \theta_n
+$}
+\end{prooftree}
+\end{adjustbox}
+
+Para el caso del tamaño de las dimensiones de un arreglo, solo hay que verificar que el mismo sea un valor natural.
+Esto se debe a que en esta etapa no se permiten tamaños variables para las mismas.
+\ER{Regla DT para Tipos}{Tamaños Constantes}
+\begin{prooftree}
+\AxiomC{}
+\RightLabel{\quad cuando $s \in \NT{nat}$}
+\UnaryInfC{$\vdash_s s$}
 \end{prooftree}
 
-\subsubsection{Tipos Libres}
+Para ilustrar un poco el uso de las reglas previas, a continuación se muestra un breve ejemplo donde se realiza la prueba de corrección de un tipo del lenguaje.
+Asumir los siguientes valores para los contextos de tipos definidos.
+\begin{gather*}
+\pi_e = \emptyset
+\\
+\pi_s = \emptyset
+\\
+\pi_t = \{ (node, \{ Z \}, \{ (elem, Z), (next, \T{pointer} \; node \; \T{of} \; Z) \} ) \}
+\end{gather*}
+
+Entonces, con estos contextos, se puede hacer la prueba de corrección del tipo $\T{pointer} \; node \; \T{of} \; A$ de la siguiente forma.
+Notar el uso de las reglas para punteros, tuplas, y variables de tipo.
+
+\TR{Prueba 1}
+\begin{prooftree}
+\AxiomC
+{$
+(node, \{ Z \}, \{ (elem, Z), (next, \T{pointer} \; node \; \T{of} \; Z) \}) \in \pi_{t}
+$}
+\AxiomC{}
+\UnaryInfC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t A$}
+\BinaryInfC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t node \; \T{of} \; A$}
+\UnaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \T{pointer} \; node \; \T{of} \; A
+$}
+\end{prooftree}
+
+\subsubsection{Variables de Tipo Libres}
 
 El anterior conjunto de reglas nos será de gran utilidad para confirmar cuando una declaración de tipo esta \textit{bien formada}.
 De todas maneras, aún necesitamos especificar otra clase de verificación para garantizar la corrección de estas estructuras.
 Precisamos de una forma para comprobar que todos los argumentos de tipo en una declaración sean efectivamente empleados en la definición del mismo.
 \begin{gather*}
-FT: \NT{type} \RA \{ \; \NT{typevar} \; \}
+FTV: \NT{type} \RA \{ \; \NT{typevar} \; \}
 \end{gather*}
 
 Para cumplir nuestro objetivo, se define la función anterior que calculará el conjunto de \textit{variables de tipo} presentes en un tipo.
 La idea es poder comprobar la igualdad de los conjuntos de argumentos con los de variables en una declaración de tipo.
 A continuación su definición dirigida por sintaxis.
 \begin{align*}
-&\FT{\T{int}}
+&\FTV{\T{int}}
 &=&\;
 \emptyset
 \\
-&\FT{\T{real}}
+&\FTV{\T{real}}
 &=&\;
 \emptyset
 \\
-&\FT{\T{bool}}
+&\FTV{\T{bool}}
 &=&\;
 \emptyset
 \\
-&\FT{\T{char}}
+&\FTV{\T{char}}
 &=&\;
 \emptyset
 \\
-&\FT{\T{pointer} \; \theta}
+&\FTV{\T{pointer} \; \theta}
 &=&\;
-\FT{\theta}
+\FTV{\theta}
 \\
-&\FT{\T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta}
+&\FTV{\T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta}
 &=&\;
-\FT{\theta}
+\FTV{\theta}
 \\
-&\FT{vt}
+&\FTV{tv}
 &=&\;
-\{ vt \}
-&vt \in \NT{typevar}
+\{ tv \}
 \\
-&\FT{t \; \T{of} \; \theta_1, \ldots, \theta_n}
+&\FTV{tn}
 &=&\;
-\FT{\theta_1} \cup \ldots \cup \FT{\theta_n}
+\emptyset
+\\
+&\FTV{tn \; \T{of} \; \theta_1, \ldots, \theta_n}
+&=&\;
+\FTV{\theta_1} \cup \ldots \cup \FTV{\theta_n}
 \end{align*}
 
 \subsubsection{Declaración de Tipos}
@@ -429,292 +591,664 @@ A continuación su definición dirigida por sintaxis.
 Una vez definidas las reglas anteriores, ya estamos en condiciones de determinar cuando una definición de tipo está \textit{bien formada}.
 Comenzando con un contexto vacío, la idea es que se compruebe la validez de todas las declaraciones del programa, una a la vez.
 Cuando se determina que una declaración esta \textit{bien formada}, se agrega su información al contexto apropiado y se continua con la siguiente.
-En caso contrario, se debería detener el análisis del programa y generar un mensaje de error adecuado al conflicto encontrado durante la verificación.
-Notar que un tipo definido solo será accesible para las declaraciones posteriores.
+Notar que un tipo definido solo será accesible para las declaraciones posteriores al mismo.
+
+La notación utilizada para estas reglas será la siguiente.
+Luego del análisis, se producirá un nuevo contexto donde se agrega la información de la definición recientemente verificada.
+Recordar que durante estas alteraciones de los contextos se deberá respetar las invariantes de consistencia para los mismos.
+\begin{gather*}
+\pi_{\mathbf{T}} \vdash_{td} typedecl : \pi'_{\mathbf{T}}
+\end{gather*}
+
+La regla para la definición de tipos enumerados es simple.
+Siempre y cuando se mantengan las invariantes mencionadas anteriormente, la deducción es inmediata.
+Un nombre de constante no puede ser repetido en una misma definición, ni tampoco en el resto de las almacenadas en el contexto.
 
 \ER{Regla DT}{Enumerados}
 \begin{prooftree}
-\AxiomC{$\forall i \in \{ 1 \ldots n \}, (t^*, A) \in \pi_{enum}. \; c_i \notin A$}
-\UnaryInfC{$\pi_{type} \vdash_{td} \T{enum} \; t = c_1, \ldots, c_n$}
+\AxiomC{}
+\UnaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_{td} \T{enum} \; tn = cn_1, \ldots, cn_m : \pi'_{e}, \pi_{s}, \pi_{t}
+$}
 \end{prooftree}
-\PR{donde todas las constantes $c_i$ son distintas entre sí.}
+\PR{donde $\pi'_{e} = (tn, \{ cn_1, \ldots, cn_m \}) \triangleright \pi_{e}$.}
 
-\ER{Regla DT}{Sinónimos}
+Para los sinónimos, hay que realizar un par de verificaciones.
+Primero, se tiene que comprobar que el conjunto de variables de tipo empleadas como argumento coincida con el conjunto de variables de tipo utilizadas en la definición del mismo.
+Segundo, se emplearán las reglas especificadas anteriormente para chequear el tipo en el cuerpo de la definición.
+Finalmente, se debe respetar la invariante de unicidad para los argumentos.
+
+\ER{Regla DT}{Sinónimos sin Argumentos}
 \begin{prooftree}
-\AxiomC{$\pi_{type} \vdash_t \theta$}
-\UnaryInfC{$\pi_{type} \vdash_{td} \T{syn} \; t \; \T{of} \; a_1, \dots, a_l = \theta $}
+\AxiomC{$\FTV{\theta} = \emptyset$}
+\AxiomC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta$}
+\BinaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_{td} \T{syn} \; tn = \theta : \pi_{e}, \pi'_{s}, \pi_{t}
+$}
 \end{prooftree}
-\PR{donde se satisface que $\{ a_1, \ldots, a_l \} = \FT{\theta}$, y todos los argumentos $a_i$ son distintos entre sí.}
+\PR{donde $\pi'_{s} = (tn, \emptyset, \theta) \triangleright \pi_{s}$.}
 
-\ER{Regla DT}{Tuplas}
+\ER{Regla DT}{Sinónimos con Argumentos}
 \begin{prooftree}
-\AxiomC{$\forall i \in \{ 1 \ldots m \}. \pi_{type} \vdash_t \theta_i$}
-\UnaryInfC{$\pi_{type} \vdash_{td} \T{tuple} \; t \; \T{of} \; a_1, \ldots, a_l = f_1: \theta_1, \ldots, f_m: \theta_m$}
+\AxiomC{$\FTV{\theta} = \{ tv_1, \ldots, tv_l \}$}
+\AxiomC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta$}
+\BinaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_{td} \T{syn} \; tn \; \T{of} \; tv_1, \dots, tv_l = \theta : \pi_{e}, \pi'_{s}, \pi_{t}
+$}
 \end{prooftree}
-\PR{donde se satisface que $\{ a_1, \ldots, a_l \} = \FT{\theta_1} \cup \ldots \cup \FT{\theta_m}$, todos los alias $f_i$ son distintos entre sí, y los argumentos $a_i$ también.}
+\PR{donde $\pi'_{s} = (tn, \{ tv_1, \ldots, tv_l \}, \theta) \triangleright \pi_{s}$.}
 
-Resta definir una última regla.
-La misma, es la que permite la definición de tipos recursivos.
+Las verificaciones para tuplas son similares a las de sinónimos, salvo que se deben adecuar para los múltiples campos de la misma.
+Hay que revisar la igualdad entre los argumentos de la definición y las variables libres de todos los tipos.
+Se tiene que analizar cada uno de los mismos para asegurar su corrección.
+Y se deben respetar las invariantes de unicidad para los nombres de campos, y los argumentos de tipo.
+
+\ER{Regla DT}{Tuplas sin Argumentos}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC
+{$
+\FTV{\theta_1} \cup \ldots \cup \FTV{\theta_m} = \emptyset
+$}
+\AxiomC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_m$}
+\QuaternaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_{td} \T{tuple} \; tn = fn_1: \theta_1, \ldots, fn_m: \theta_m : \pi_{e}, \pi_{s}, \pi'_{t}
+$}
+\end{prooftree}
+\end{adjustbox}
+\PR{donde $\pi'_{t} = (tn, \emptyset, \{ (fn_1, \theta_1), \ldots, (fn_m, \theta_m) \}) \triangleright \pi_{t}$.}
+
+\ER{Regla DT}{Tuplas con Argumentos}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC
+{$
+\FTV{\theta_1} \cup \ldots \cup \FTV{\theta_m} = \{ tv_1, \ldots, tv_l \}
+$}
+\AxiomC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_m$}
+\QuaternaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_{td} \T{tuple} \; tn \; \T{of} \; tv_1, \ldots, tv_l = fn_1: \theta_1, \ldots, fn_m: \theta_m : \pi_{e}, \pi_{s}, \pi'_{t}
+$}
+\end{prooftree}
+\end{adjustbox}
+\PR{donde $\pi'_{t} = (tn, \{ tv_1, \ldots, tv_l \}, \{ (fn_1, \theta_1), \ldots, (fn_m, \theta_m) \}) \triangleright \pi_{t}$.}
+
+La última regla es la que permite la definición de tipos recursivos.
 La única posibilidad de declarar un tipo que se define en términos de si mismo es mediante el uso de punteros dentro de tuplas.
-Por lo tanto, realizando una leve modificación a la regla anterior para permitir esta situación obtenemos lo siguiente.
+Por lo tanto, realizando una leve modificación a las reglas anteriores para permitir esta situación, obtenemos lo siguiente.
+Notar que la definición de tipos recursivos es bastante restrictiva.
+Solo se permiten utilizar las mismas variables paramétricas que en la definición, e incluso, se las debe especificar en el mismo orden.
+Las invariantes de consistencia se deben respetar al igual que en las reglas anteriores. 
 
-\ER{Regla DT}{Recursión}
+\ER{Regla DT}{Recursión para Tuplas sin Argumentos}
 \begin{prooftree}
-\AxiomC{$\forall i \in \{ 1 \dots m \}. \pi_{type} \vdash_t \theta_i \vee \theta_i = \T{pointer} \; t \; \T{of} \; a_1, \ldots, a_l$}
-\UnaryInfC{$\pi_{type} \vdash_{td} \T{tuple} \; t \; \T{of} \; a_1, \ldots, a_l = f_1: \theta_1, \ldots, f_m: \theta_m$}
+\AxiomC
+{$
+\FTV{\theta_1} \cup \ldots \cup \FTV{\theta_m} = \emptyset
+$}
+\AxiomC
+{$
+\theta_i \neq \T{pointer} \; tn \implies \pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_i
+$}
+\BinaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_{td} \T{tuple} \; tn = fn_1: \theta_1, \ldots, fn_m: \theta_m : \pi_{e}, \pi_{s}, \pi'_{t}
+$}
 \end{prooftree}
-\PR{donde se satisface que $\{ a_1, \ldots, a_l \} = \FT{\theta_1} \cup \ldots \cup \FT{\theta_m}$, todos los alias $f_i$ son distintos entre sí, y los argumentos $a_i$ también.}
+\PR{donde $\pi'_{t} = (tn, \emptyset, \{ (fn_1, \theta_1), \ldots, (fn_m, \theta_m) \}) \triangleright \pi_{t}$.}
 
-\subsection{Validaciones en Métodos}
+\ER{Regla DT}{Recursión para Tuplas con Argumentos}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC
+{$
+\FTV{\theta_1} \cup \ldots \cup \FTV{\theta_m} = \{ tv_1, \ldots, tv_l \}
+$}
+\AxiomC
+{$
+\theta_i \neq \T{pointer} \; tn \; \T{of} \; tv_1, \ldots, tv_l \implies \pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_i
+$}
+\BinaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_{td} \T{tuple} \; tn \; \T{of} \, tv_1, \ldots, tv_l = fn_1: \theta_1, \ldots, fn_m: \theta_m : \pi_{e}, \pi_{s}, \pi'_{t}
+$}
+\end{prooftree}
+\end{adjustbox}
+\PR{donde $\pi'_{t} = (tn, \{ tv_1, \ldots, tv_l \}, \{ (fn_1, \theta_1), \ldots, (fn_m, \theta_m) \}) \triangleright \pi_{t}$.}
 
-En la segunda parte del análisis, nos concentraremos en la declaración de métodos.
-Un método $methoddecl_i$ puede tener alguna de las dos siguientes formas en base a si define a una función o a un procedimiento.
+Al igual que en la sección anterior, finalizaremos con un ejemplo ilustrativo.
+Asumir el siguiente valor para el contexto de tuplas definidas; este será el valor final obtenido luego del análisis del ejemplo.
 \begin{gather*}
-methoddecl_i =
-\begin{cases*}
-\T{fun} \; f_i \; (a_1: \theta_1, \ldots, a_l: \theta_l) \; \T{ret} \; a_r: \theta_r
-\\
-\T{where} \; c_1 \; \ldots \; c_m
-\\
-\qquad block_{f_i}
-\\
-\T{proc} \; p_i \; (io_1 \; a_1: \theta_1, \ldots, io_l \; a_l: \theta_l)
-\\
-\T{where} \, c_1 \; \ldots \; c_m
-\\
-\qquad block_{p_i}
-\end{cases*}
-\forall i \in \{ 1 \ldots m \}
+\pi_{t} = \{ (node, \{ Z \}, \{ (elem, Z), (next, \T{pointer} \; node \; \T{of} \; Z) \} ) \}
 \end{gather*}
 
-Similar a la declaración de tipos, cada uno de los métodos definidos es analizado para comprobar su validez.
-En el caso de estar \textit{bien formado}, su información es almacenada en el contexto adecuado y se prosigue con la declaración siguiente.
-Caso contrario, se detiene la etapa de análisis semántico con un mensaje de error.
-La estructura de estos contextos se describe a continuación.
+Comenzando con los contextos de tipos vacíos, se puede realizar la prueba para un tipo recursivo de la siguiente forma.
+Notar el uso de las reglas para las variables libres, y la recursión.
+
+\TR{Prueba 2}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC{$\FTV{Z} \cup \FTV{\T{pointer} \; node \; \T{of} \; Z} = \{ Z \}$}
+\AxiomC{}
+\UnaryInfC{$\emptyset_{e}, \emptyset_{s}, \emptyset_{t} \vdash_t Z$}
+\AxiomC{$\T{pointer} \; node \; \T{of} \; Z$}
+\TrinaryInfC
+{$
+\emptyset_{e}, \emptyset_{s}, \emptyset_{t} \vdash_{td} \T{tuple} \; node \; \T{of} \; Z = elem : Z, next : \T{pointer} \; node \; \T{of} \; Z : \emptyset_{e}, \emptyset_{s}, \pi_{t}
+$}
+\end{prooftree}
+\end{adjustbox}
+
+\subsection{Validaciones en Funciones y Procedimientos}
+
+A continuación, empezaremos con el análisis para las declaraciones de funciones y procedimientos de un programa.
+Una rutina $routddecl$ puede tener alguna de las dos siguientes formas en base a si define a una función o a un procedimiento.
 \begin{gather*}
-\pi_{fun} =
-\{
-(f, A, r, T) \mid
+routdecl =
+\begin{cases*}
+\T{fun} \; f \; (a_1: \theta_1, \ldots, a_l: \theta_l) \; \T{ret} \; a_r: \theta_r
 \\
+\T{where} \; rs
+\\
+\qquad block_{f}
+\\
+\T{proc} \; p \; (io_1 \; a_1: \theta_1, \ldots, io_l \; a_l: \theta_l)
+\\
+\T{where} \; rs
+\\
+\qquad block_{p}
+\end{cases*}
+\end{gather*}
+
+Similar a la declaración de tipos, cada uno de los procedimientos y funciones definidos en el programa es analizado para comprobar su validez.
+En el caso de estar \textit{bien formado}, su información es almacenada en el contexto adecuado y se prosigue con la declaración siguiente.
+La estructura de estos contextos se describe a continuación.
+
+Para las funciones, se tiene que almacenar su identificador junto con todos los elementos que la definen.
+Estos comprenden sus argumentos, su retorno, y sus restricciones para las variables de tipo especificadas dentro de su prototipo.
+En este caso, se tiene que asegurar que el nombre utilizado para referirse a una función sea único en el contexto.
+Al mismo tiempo, los identificadores empleados para sus argumentos no deben repetirse dentro de la definición.
+\begin{multline*}
+\pi_{f} =
+\{
+(f, FA, fr, rs) \mid
 f \in \NT{id}
 \wedge
-A \subset \NT{id} \times \NT{type}
+FA \subset \NT{funarg}
 \wedge
-r \in \NT{id} \times \NT{type}
+\ldots
+\\
+\ldots
+fr \in \NT{funret}
 \wedge
-T \subset \NT{typevar} \times \NT{class}^+
+rs \in \NT{restrictions}
 \}
-\\
-\pi_{proc} =
+\end{multline*}
+
+El contexto para procedimientos cumple un rol análogo que el empleado para funciones.
+Debe almacenar los identificadores definidos, juntos con los argumentos y restricciones asociados al mismo.
+Las invariantes son idénticas al contexto anterior.
+Un identificador de procedimiento no puede ser utilizado en más de una definición, y tampoco se pueden repetir los nombres para los argumentos.
+\begin{multline*}
+\pi_{p} =
 \{
-(p, A, T) \mid
-\\
+(p, PA, rs) \mid
 p \in \NT{id}
 \wedge
-A \subset \NT{io} \times \NT{id} \times \NT{type}
+PA \subset \NT{procarg}
 \wedge
-T \subset \NT{typevar} \times \NT{class}^+
+rs \in \NT{restrictions}
 \}
-\end{gather*}
+\end{multline*}
 
-Antes de comenzar con la validación de los métodos, es necesario definir dos contexto más.
-A la hora de analizar el cuerpo de una función o un procedimiento es fundamental poder llevar un registro de todas las estructuras definidas con sus respectivos identificadores.
+Antes de comenzar con la validación de las funciones y procedimientos, es necesario definir algunos contextos auxiliares adicionales.
+A la hora de analizar el cuerpo de estas estructuras, es fundamental poder llevar un registro de todos los elementos definidos con sus respectivos identificadores.
+
+En el bloque de una definición de función o procedimiento, se pueden declarar variables.
+Debido a esto, es indispensable llevar un registro con los nombres y los tipos asociados a los mismos.
+Obviamente, una invariante de este contexto es que no podrá haber más de un par con el mismo identificador de variable.
 \begin{gather*}
-\pi = \pi_{type} \cup \pi_{method} \cup \pi_{var} \cup \pi_{typevar}
-\\
-\pi_{var} = \pi_{loc} \cup \pi_{size}
+\pi_{v} \subset \NT{id} \times \NT{type}
 \end{gather*}
 
-En estos últimos contextos, se utiliza $\pi_{loc}$ para almacenar la información relacionada con las variables declaradas en el cuerpo del método.
-Mientras que se usa $\pi_{size}$ para guardar los identificadores para los tamaños variables de arreglos.
-Por último, con $\pi_{typevar}$ se busca recordar todos los tipos polimórficos introducidos en el prototipo del método.
-A continuación se detallan sus estructuras.
+En el prototipo de estas rutinas, se pueden introducir límites variables para las dimensiones de los arreglos.
+Luego, dentro del cuerpo de la función o procedimiento, se podrán declarar arreglos utilizando estos identificadores.
+Debido a esto, debemos almacenar todos los nombres introducidos.
 \begin{gather*}
-\pi_{loc} \subset \NT{id} \times \NT{type}
-\\
-\pi_{size} \subset \NT{bsize}
-\\
-\pi_{typevar} \subset \NT{typevar}
+\pi_{sn} \subset \NT{sname}    
 \end{gather*}
 
-\subsubsection{Prototipo de Métodos}
-
-Cuando se comienza con la verificación de un método, el contexto para variables debe estar vacío, al igual que el de variables de tipo.
-Los mismos se iran completando a medida que avance el análisis del método.
-El contexto de tipos deberá estar previamente inicializado, con la información recolectada del análisis de declaración de tipos.
-El último contexto, el de métodos, es extendido solamente cuando se verifica por completo la validez de uno de estos.
-
-% PREGUNTA
-% ¿Es entendible? Hay demasiados contextos
-% ¿Puedo omitirlos? La modificación de los mismos sería implícita
-
-\todo[color=green]{¿Debería reflejar la modificación de contextos?}
-
-\ER{Regla M}{Funciones}
-\begin{prooftree}
-\AxiomC{$\pi \vdash_t \theta_1$}
-\AxiomC{$\ldots$}
-\AxiomC{$\pi \vdash_t \theta_l$}
-\TrinaryInfC{argumentos}
-\AxiomC{$\pi \vdash^*_t \theta_r$}
-\AxiomC{$\vdash_c c_1$}
-\AxiomC{$\ldots$}
-\AxiomC{$\vdash_c c_m$}
-\TrinaryInfC{restricciones}
-\AxiomC{$\pi^* \vdash_{mb} block_f$}
-\QuaternaryInfC{$\pi_0 \vdash_m \T{fun} \; f \; (a_1: \theta_1, \ldots, a_l: \theta_l) \; \T{ret} \; a_r: \theta_r \; \T{where} \; c_1, \ldots, c_m \; block_f$}
-\end{prooftree}
-\PR{donde todos los identificadores $a_i$ son distintos entre sí, y de los tamaños variables especificados en los tipos $\theta_j$. Además, vale que $l \geq 0$.}
-
-Hay que hacer una salvedad para el análisis del retorno de la función.
-Ya que en el mismo no se pueden introducir nuevas variables de tipo o tamaños de arreglos variables.
-El conjunto de reglas que se utilizarán para deducir su tipo en el sistema de tipos será el empleado para la verificación de tipos en declaración de variables dentro de bloques.
-
-\ER{Regla M}{Procedimientos}
-\begin{prooftree}
-\AxiomC{$\pi \vdash_t \theta_1$}
-\AxiomC{$\ldots$}
-\AxiomC{$\pi \vdash_t \theta_l$}
-\TrinaryInfC{argumentos}
-\AxiomC{$\vdash_c c_1$}
-\AxiomC{$\ldots$}
-\AxiomC{$\vdash_c c_m$}
-\TrinaryInfC{restricciones}
-\AxiomC{$\pi^* \vdash_{mb} block_p$}
-\TrinaryInfC{$\pi_0 \vdash_m \T{proc} \; p \; (oi_1 \; a_1: \theta_1, \ldots, oi_l \; a_l: \theta_l) \; \T{where} \; c_1, \ldots, c_m \; block_p$}
-\end{prooftree}
-\PR{donde todos los identificadores $a_i$ son distintos entre sí, y de los tamaños variables especificados en los tipos $\theta_j$. Además, vale que $l > 0$.}
-
-Debido a que la utilidad principal de un procedimiento es poder modificar el valor de un conjunto de variables cuando es invocado, carecería de sentido permitir la especificación de uno que no altere ninguna de sus entradas.
-Por lo tanto, se debería satisfacer la siguiente ecuación para todas las declaraciones de procedimientos.
+Por último, se permite la definición de rutinas abstractas en el lenguaje.
+Esto significa que dentro del prototipo de una función o procedimiento se pueden introducir variables de tipo, cuyos tipos concretos serán resueltos durante la ejecución del programa.
+Con este último contexto se busca recordar todos los tipos polimórficos introducidos.
 \begin{gather*}
-\exists i \in \{ 1 \ldots l\}. io_i = \T{out} \vee io_i = \T{in/out}
+\pi_{tv} \subset \NT{typevar}
 \end{gather*}
 
-En el caso que no se satisfaga lo anterior, se debería generar una advertencia para informar al programador sobre un posible error en su código.
-La ejecución de un procedimiento que no cumpla la propiedad previa no produciría ningún efecto secundario en el entorno donde fue invocado.
+\subsubsection{Tipos en Prototipos de Funciones y Procedimientos}
 
-\subsubsection{Contextos Aumentados}
-
-Antes de analizar el cuerpo de una declaración de método, es necesario modificar el contexto actual para facilitar ciertas verificaciones.
-En definitiva, queremos permitir las llamadas recursivas.
-Para lograr esto, es imprescindible aumentar los contextos con la información del prototipo de la función o procedimiento correspondiente al bloque en cuestión.
-Por lo tanto, en las reglas anteriores se modifica $\pi$ para poder analizar el cuerpo del método con el contexto $\pi^*$.
-\begin{gather*}
-\pi^*_r = \pi_r \cup
-\{ \; (f, \{ (a_1, \theta_1), \ldots, (a_l, \theta_l) \}, (a_r, \theta_r),
-\ldots\\\ldots
-\{ (tv_1, \{ c^1_1, \ldots c^1_r \}), \ldots, (tv_t, \{ c^t_1, \ldots, c^t_r \}) \}) \; \}
-\\
-\pi^*_l = \pi_l \cup
-\{ \; (p, \{ (oi_1, a_1, \theta_1), \ldots, (oi_l, a_l, \theta_l) \},
-\ldots\\\ldots
-\{ (tv_1, \{ c^1_1, \ldots c^1_r \}), \ldots, (tv_t, \{ c^t_1, \ldots, c^t_r \}) \}) \; \}
-\end{gather*}
-
-Los valores de los elementos $tv_i$ y $c_j$ serán explicados en la sección de análisis en restricciones de métodos.
-
-\subsubsection{Tipos en Prototipos de Métodos}
-
-Cuando nos encontramos en el entorno de análisis de una declaración de método, la verificación de un tipo difiere a la realizada previamente.
+Cuando nos encontramos en el entorno de análisis de una declaración de función o procedimiento, la verificación de un tipo difiere a la realizada previamente.
 Por lo cual, se necesita de otro conjunto de reglas para la validación de los mismos.
-En el prototipo de una función o procedimiento, se pueden especificar variables de tipo y tamaños variables de arreglos.
-Debido a esto, la aplicación de algunas reglas presentan efectos secundarios ya que se necesita actualizar el contexto adecuado para almacenar la información de las nuevas estructuras definidas.
-A continuación se detalla el conjunto de reglas de inferencia para los tipos especificados en los prototipos de métodos.
+En el prototipo de estas rutinas se pueden introducir variables de tipo, y tamaños de arreglos variables; permitiendo de esta forma definiciones polimórficas.
+Debido a esto, la aplicación de algunas reglas presentan efectos secundarios, ya que se necesita actualizar el contexto adecuado para almacenar la información de las nuevas estructuras definidas.
 
-\ER{Regla M para Tipos}{Básicos}
+La nueva notación que utilizaremos será la siguiente.
+Para analizar un tipo, seguiremos utilizando el contexto de tipos definidos para su verificación.
+La diferencia en esta nueva etapa, radica en que al finalizar el chequeo de un tipo se obtendrán dos conjuntos distintos como resultado.
+El primero, consistirá de todos los tamaños variables empleados en el mismo.
+El segundo, estará conformado por todas las variables de tipo que ocurren en este.
+La idea es ir acumulando los nuevos elementos encontrados a medida que se avance en el análisis.
+\begin{gather*}
+\pi_{\mathbf{T}} \vdash_t \theta : \pi_{sn}, \pi_{tv}
+\end{gather*}
+
+Para el análisis de los tipos básicos, no se agrega ninguna complejidad.
+La verificación es inmediata, y como no poseen ninguna estructura menor que necesite ser analizada, ambos resultados son vacíos.
+
+\ER{Regla F/P para Tipos}{Básicos}
 \begin{prooftree}
-\AxiomC{\empty}
-\RightLabel{\quad cuando $\theta \in \{ \T{int}, \T{real}, \T{bool}, \T{char} \}$}
-\UnaryInfC{$\pi \vdash_t \theta$}
+\AxiomC{}
+\RightLabel
+{
+\quad cuando $\theta \in \{ \T{int}, \T{real}, \T{bool}, \T{char} \}$
+}
+\UnaryInfC
+{$
+\pi_{\mathbf{T}} \vdash_t \theta : \emptyset_{sn}, \emptyset_{tv}
+$}
 \end{prooftree}
 
-\ER{Regla M para Tipos}{Punteros}
+La regla para los punteros es casi idéntica a la especificada en la sección anterior.
+La diferencia esencial en esta nueva iteración es que el análisis debe propagar el resultado producido por el tipo dentro del puntero.
+
+\ER{Regla F/P para Tipos}{Punteros}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_t \theta$}
-\UnaryInfC{$\pi \vdash_t \T{pointer} \; \theta$}
+\AxiomC
+{$
+\pi_{\mathbf{T}} \vdash_t \theta : \pi_{sn}, \pi_{tv}
+$}
+\UnaryInfC
+{$
+\pi_{\mathbf{T}} \vdash_t \T{pointer} \; \theta : \pi_{sn}, \pi_{tv}
+$}
 \end{prooftree}
 
-\ER{Regla M para Tipos}{Arreglos}
+Para analizar un arreglo, se tienen que reunir todos los resultados producidos al chequear los tamaños del mismo, y luego agregar los obtenidos al verificar el tipo dentro de este.
+Notar que analizar el tamaño de un arreglo solo puede devolver el conjunto de tamaños variables utilizadas en el mismo.
+
+\ER{Regla F/P para Tipos}{Arreglos}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_s s_1$}
+\AxiomC{$\vdash_s s_1 : \pi^{1}_{sn}$}
 \AxiomC{\ldots}
-\AxiomC{$\pi \vdash_s s_n$}
-\AxiomC{$\pi \vdash_t \theta$}
-\QuaternaryInfC{$\pi \vdash_t \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta$}
+\AxiomC{$\vdash_s s_n : \pi^{n}_{sn}$}
+\AxiomC
+{$
+\pi_{\mathbf{T}} \vdash_t \theta : \pi_{sn}, \pi_{tv}
+$}
+\QuaternaryInfC
+{$
+\pi_{\mathbf{T}} \vdash_t \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta : \pi'_{sn}, \pi_{tv}
+$}
+\end{prooftree}
+\PR{donde $\pi'_{sn} = \pi^{1}_{sn} \cup \ldots \cup \pi^{n}_{sn} \cup \pi_{sn}$.}
+
+Al encontrar una variable de tipo durante el análisis, se debe agregar la misma al contexto correspondiente.
+Al igual que en el conjunto de reglas anterior, la verificación de estos elementos es inmediata.
+Obviamente, el conjunto de tamaños variables introducidos es vacío.
+
+\ER{Regla F/P para Tipos}{Variables de Tipo}
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC
+{$
+\pi_{\mathbf{T}} \vdash_t tv : \emptyset_{sn}, \{ tv \}_{tv}
+$}
 \end{prooftree}
 
-\ER{Regla M para Tipos}{Variables de Tipo}
-\begin{prooftree}
-\AxiomC{\empty}
-\RightLabel{\quad cuando $\theta \in \NT{typevar}$}
-\UnaryInfC{$\pi \vdash_t \theta$}
-\end{prooftree}
-\PR{además, se agrega la variable $\theta$ al contexto $\pi_{typevar}$.}
+Al igual que lo hecho anteriormente, dividiremos las reglas para los tipos definidos en dos conjuntos.
+El primero se utilizará para tipos que no posean argumentos.
+Notar que las reglas son prácticamente idénticas a las anteriores, salvo que ahora deben devolver como resultado, los conjuntos vacíos.
 
-\ER{Regla M para Tipos}{Tipos Definidos}
+\ER{Regla F/P para Tipos}{Tipos Enumerados}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_t \theta_1$}
+\AxiomC{$(tn, \{ cn_1, \ldots, cn_m \}) \in \pi_{e}$}
+\UnaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn : \emptyset_{sn}, \emptyset_{tv}
+$}
+\end{prooftree}
+
+\ER{Regla F/P para Tipos}{Sinónimos sin Argumentos}
+\begin{prooftree}
+\AxiomC{$(tn, \emptyset,\theta) \in \pi_{s}$}
+\UnaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn : \emptyset_{sn}, \emptyset_{tv}
+$}
+\end{prooftree}
+
+\ER{Regla F/P para Tipos}{Tuplas sin Argumentos}
+\begin{prooftree}
+\AxiomC
+{$
+(tn, \emptyset, \{ fd_1, \ldots, fd_m \}) \in \pi_{t}
+$}
+\UnaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn : \emptyset_{sn}, \emptyset_{tv}
+$}
+\end{prooftree}
+
+Nuevamente, las reglas para tipos definidos con argumentos son similares a las detalladas previamente.
+En esta ocasión, se tienen que acumular todos los contextos producidos al analizar los distintos tipos empleados como argumentos de los mismos
+
+\ER{Regla F/P para Tipos}{Sinónimos con Argumentos}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC{$(tn, \{ tv_1, \ldots, tv_n \}, \theta) \in \pi_{s}$}
+\AxiomC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_1 : \pi^1_{sn}, \pi^1_{tv}
+$}
 \AxiomC{\ldots}
-\AxiomC{$\pi \vdash_t \theta_n$}
-\AxiomC{$|A| = n$}
-\QuaternaryInfC{$\pi \vdash_t t \; \T{of} \; \theta_1, \ldots, \theta_n$}
+\AxiomC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_n : \pi^n_{sn}, \pi^n_{tv}
+$}
+\QuaternaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn \; \T{of} \; \theta_1, \ldots, \theta_n : \pi'_{sn}, \pi'_{tv}
+$}
 \end{prooftree}
-\PR{donde se satisface que $\exists A, B. (t, A, B) \in \pi_{type}$.}
+\end{adjustbox}
+\PR{donde $\pi'_{sn} = \pi^{1}_{sn} \cup \ldots \cup \pi^{n}_{sn}$ y $\pi'_{tv} = \pi^{1}_{tv} \cup \ldots \cup \pi^{n}_{tv}$.}
 
-Las reglas para tamaños de arreglos son similares a las especificadas previamente, con la excepción que ahora se permiten usar tamaños variables.
-Por lo tanto, se agrega una nueva regla para la deducción.
-
-\ER{Regla M para Tipos}{Tamaños Constantes}
+\ER{Regla F/P para Tipos}{Tuplas con Argumentos}
+\begin{adjustbox}{center, minipage = \paperwidth}
 \begin{prooftree}
-\AxiomC{\empty}
-\RightLabel{\quad cuando $size \in \NT{nat}$}
-\UnaryInfC{$\pi \vdash_s size$}
+\AxiomC
+{$
+(tn, \{ tv_1, \ldots, tv_n \}, \{ fd_1, \ldots, fd_m \}) \in \pi_{t}
+$}
+\AxiomC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_1 : \pi^1_{sn}, \pi^1_{tv}
+$}
+\AxiomC{\ldots}
+\AxiomC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_n : \pi^n_{sn}, \pi^n_{tv}
+$}
+\QuaternaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn \; \T{of} \; \theta_1, \ldots, \theta_n : \pi'_{sn}, \pi'_{tv}
+$}
 \end{prooftree}
+\end{adjustbox}
+\PR{donde $\pi'_{sn} = \pi^{1}_{sn} \cup \ldots \cup \pi^{n}_{sn}$ y $\pi'_{tv} = \pi^{1}_{tv} \cup \ldots \cup \pi^{n}_{tv}$.}
 
-\ER{Regla M para Tipos}{Tamaños Variables}
+Para el caso del tamaño de las dimensiones de un arreglo, ahora tenemos dos situaciones.
+Igual que antes, si el mismo es un valor natural, el análisis es inmediato.
+El resultado obtenido con este chequeo es un conjunto vacío.
+
+\ER{Regla F/P para Tipos}{Tamaños Constantes}
 \begin{prooftree}
-\AxiomC{\empty}
-\RightLabel{\quad cuando $size \in \NT{bsize}$}
-\UnaryInfC{$\pi \vdash_s size$}
+\AxiomC{}
+\RightLabel{\quad cuando $s \in \NT{nat}$}
+\UnaryInfC{$\vdash_s s : \emptyset_{sn}$}
 \end{prooftree}
-\PR{además, se agrega la variable $size$ al contexto $\pi_{size}$.}
 
-% SOLUCIÓN
-% No hay ninguna inferencia sobre rangos vacíos cuando se usan límites variables.
-% No es muy útil el chequeo anterior, el problema puede ocurrir de todas formas en la sección de declaraciones de variables.
+La nueva regla que se agrega es la siguiente.
+Si el tamaño es variable, entonces debemos devolver su identificador.
+De esta forma, se podrá utilizar el mismo en el resto del cuerpo de la función o procedimiento.
 
-\todo[color=green]{¿Debería agregar alguna premisa adicional a la regla?}
-
-% PREGUNTA
-% ¿Debería modificar los contextos cuando infiero cada uno de los rangos?
-% En las distintas reglas no lo estoy haciendo.
-
-\subsubsection{Restricciones de Métodos}
-
-Algunos métodos presentan ciertas restricciones para las variables de tipo especificadas en su prototipo.
-Básicamente, se imponen clases que deben ser implementadas por los tipos en los que se evaluarán las variables.
-
-\ER{Regla M}{Restricciones}
+\ER{Regla F/P para Tipos}{Tamaños Variables}
 \begin{prooftree}
-\AxiomC{\empty}
-\UnaryInfC{$tv : c_1, \ldots, c_m$}
+\AxiomC{}
+\RightLabel{\quad cuando $s \in \NT{sname}$}
+\UnaryInfC{$\vdash_s s : \{ s \}_{sn}$}
 \end{prooftree}
-\PR{donde todas las clases $c_i$ son distintas entre sí. Además, se satisface que $tv \in \pi_{typevar}$. Finalmente, se agrega el par $(tv, \{ c_1, \ldots, c_m \})$ al contexto del prototipo del método correspondiente.}
 
-En el caso que se agregara un par $(tv, \{ c_1, \ldots, c_m \})$ donde la variable $tv$ ya estuviese presente en el conjunto $T$, del contexto $(f, A, r, T)$ o $(p, A, T)$, se debería generar un mensaje de error debido a que hay dos restricciones distintas para la misma variable de tipo.
+Nuevamente, mostraremos un breve ejemplo donde se utilizan las reglas anteriores para realizar un juicio de tipado.
+Asumir que nos encontramos analizando el tipo de un argumento, en el prototipo de un procedimiento (o función).
+Notar el uso de las reglas para puntero, arreglos, tamaños variables de dimensiones, y variables de tipo.
+
+\TR{Prueba 3}
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\vdash_s n : \{ n \}_{sn} $}
+\AxiomC{}
+\UnaryInfC{$\vdash_s m : \{ m \}_{sn} $}
+\AxiomC{}
+\UnaryInfC
+{$
+\emptyset_{\mathbf{T}} \vdash_t A : \emptyset_{sn}, \{ A \}_{tv}
+$}
+\TrinaryInfC
+{$
+\emptyset_{\mathbf{T}} \vdash_t \T{array} \; n, m \; \T{of} \; A : \{ n, m \}_{sn}, \{ A \}_{tv}
+$}
+\UnaryInfC
+{$
+\emptyset_{\mathbf{T}} \vdash_t \T{pointer} \; \T{array} \; n, m \; \T{of} \; A : \{ n, m \}_{sn}, \{ A \}_{tv}
+$}
+\end{prooftree}
+
+\subsubsection{Restricciones en Funciones y Procedimientos}
+
+Al polimorfismo sobre funciones y procedimientos que mencionamos previamente, se lo puede refinar de alguna manera.
+La idea, es poder especificar algunas características (o mejor dicho, clases) que debe poseer determinada variable de tipo para ser válida en la respectiva implementación.
+
+Estas estructuras sintácticas, al igual que las anteriores, deben ser analizadas para asegurar su corrección.
+Utilizaremos la siguiente notación para afirmar que la restricción $tv : cl_1, \ldots, cl_l$, es válida bajo el contexto $\pi_{tv}$.
+Este es el mismo contexto que iremos expandiendo a medida que se verifiquen los distintos argumentos de la función o procedimiento correspondiente, incorporando las variables de tipo que ocurran en estos.
+\begin{gather*}
+\pi_{tv} \vdash_c tv : cl_1, \ldots, cl_l
+\end{gather*}
+
+Para analizar un listado de restricciones se deben realizar dos tareas.
+La primera, es asegurar que no haya dos restricciones distintas con el mismo identificador para variables de tipo.
+Para la segunda, hay que analizar cada una de las restricciones, de forma individual, y confirmar su corrección.
+
+\ER{Regla F/P}{Restricciones}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC
+{$
+\forall i, j \in \{ 1 \ldots m \}. i \neq j \implies tv_i \neq tv_j
+$}
+\AxiomC{$\pi_{tv} \vdash_c tv_1 : cl_1, \ldots, cl_{l_1}$}
+\AxiomC{\ldots}
+\AxiomC{$\pi_{tv} \vdash_c tv_m : cl_1, \ldots, cl_{l_m}$}
+\QuaternaryInfC
+{$
+\pi_{tv} \vdash_r tv_1 : cl_1, \ldots, cl_{l_1} \; \ldots \; tv_m : cl_1, \ldots, cl_{l_m}
+$}
+\end{prooftree}
+\end{adjustbox}
+
+Para el análisis de un restricción singular, también debemos verificar dos condiciones.
+Primero, revisar que no se repitan clases dentro de la restricción.
+Segundo, hay que asegurar que la variable de tipo a la que se le están imponiendo clases, exista efectivamente en el contexto adecuado.
+
+\ER{Regla F/P}{Restricción}
+\begin{prooftree}
+\AxiomC
+{$
+\forall i, j \in \{ 1 \ldots l \}. i \neq j \implies cl_i \neq cl_j
+$}
+\AxiomC{$tv \in \pi_{tv}$}
+\BinaryInfC{$\pi_{tv} \vdash_{c} tv : cl_1, \ldots, cl_l$}
+\end{prooftree}
+
+A continuación, daremos un ejemplo para el uso de estas reglas.
+A diferencia de todas las pruebas mencionadas anteriormente, en este caso, se ilustrará una situación donde no se pueden aplicar las reglas previas para la derivación de un chequeo de corrección.
+
+\TR{Prueba 4}
+\begin{prooftree}
+\AxiomC
+{$
+A \neq Z
+$}
+\AxiomC{$\T{Eq} \neq \T{Ord}$}
+\AxiomC{$A \in \pi_{tv}$}
+\BinaryInfC{$\{ A \}_{tv} \vdash_c A : \T{Eq}, \T{Ord}$}
+\AxiomC{\ldots}
+\UnaryInfC{$\{ A \}_{tv} \vdash_c Z : \T{Eq}$}
+\TrinaryInfC
+{$
+\{ A \}_{tv} \vdash_r A : \T{Eq}, \T{Ord} \mid Z : \T{Eq}
+$}
+\end{prooftree}
+
+Se puede notar en el ejemplo, que la variable de tipo $Z$ no pertenece al contexto, por lo que no hay ninguna regla que se pueda aplicar.
+Debido a esto, no se puede continuar con la derivación, ya que la restricción está \textit{mal formada}.
+Esta situación se puede dar porque en el prototipo de una función (o procedimiento), analizada previamente, no fue introducida la variable de tipo $Z$.
+
+\subsubsection{Prototipos de Funciones y Procedimientos}
+
+Ahora ya estamos en condiciones de especificar las reglas de tipado para las funciones y procedimientos de un programa.
+Dejaremos el análisis del cuerpo de estas estructuras para la siguiente sección, una vez que se haya explicado cómo se obtiene la información contextual para el estudio del mismo.
+
+A la hora de analizar una función o procedimiento, utilizaremos la siguiente notación para denotar que la rutina $routdecl$ es válida en base a los contextos de tipos $\pi_{\mathbf{T}}$, al de funciones $\pi_{f}$, y al de procedimientos $\pi_{p}$; extendiendo estos últimos en caso de que la misma satisfaga las propiedades analizadas.
+Permitiendo un poco de abuso de notación, nos referiremos al contexto $\pi_{\mathbf{R}}$ para representar a los correspondientes contextos de rutinas.
+\begin{gather*}
+\pi_{\mathbf{T}}, \pi_{f}, \pi_{p} \vdash_{fp} routdecl : \pi'_{f}, \pi'_{p}
+\\
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}} \vdash_{fp} routdecl : \pi'_{\mathbf{R}}
+\end{gather*}
+
+La verificación de una declaración de función es compleja.
+Los contextos de tipos definidos, y los de rutinas, estarán previamente inicializados.
+Primero tendremos que analizar los argumentos de la misma, donde llevaremos un registro sobre las variables de tipo, y tamaños variables introducidos en los mismos.
+También debemos analizar el tipo del retorno.
+Para esta situación, tendremos que emplear otro conjunto de reglas que será detallado en la sección siguiente.
+Luego, se deberán analizar las restricciones especificadas en el prototipo.
+Finalmente, con toda la información contextual obtenida, y extendiendo el contexto correspondiente a funciones para permitir llamadas recursivas en su bloque, se deberá verificar el cuerpo de la rutina.
+
+\ER{Regla F/P}{Funciones}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC
+{$
+\forall i \in \{ 1 \ldots l \}.
+\pi_{\mathbf{T}} \vdash_t \theta_i : \pi^{i}_{sn}, \pi^{i}_{tv}
+$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{sn}, \pi_{tv} \vdash^*_t \theta_r
+$}
+\AxiomC{$\pi_{tv} \vdash_r rs$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \overline{\pi}_{f}, \pi_{p}, \pi_{sn}, \pi_{tv} \vdash_{b} block_f
+$}
+\QuaternaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{f}, \pi_{p} \vdash_{fp} \T{fun} \; f \; (a_1: \theta_1, \ldots, a_l: \theta_l) \; \T{ret} \; a_r: \theta_r \; \T{where} \; rs \quad block_f : \overline{\pi}_{f}, \pi_{p}
+$}
+\end{prooftree}
+\end{adjustbox}
+\PR{donde $\pi_{sn} = \pi^{1}_{sn} \cup \ldots \cup \pi^{l}_{sn}$ y $\pi_{tv} = \pi^{1}_{tv} \cup \ldots \cup \pi^{l}_{tv}$. Además, se tiene que extender al contexto de funciones con el prototipo en cuestión, para permitir las llamadas recursivas $\overline{\pi}_{f} = (f, \{(a_1, \theta_1), \ldots, (a_l, \theta_l) \}, (a_r, \theta_r), rs) \triangleright \pi_{f}$.}
+
+Hay que recordar que se deben respetar las invariantes para la construcción del contexto de funciones.
+No puede haber más de una definición para el mismo identificador de función, y tampoco pueden existir múltiples argumentos, incluyendo al retorno, con los mismos nombres en una definición particular.
+A todo esto, se debe sumar una condición adicional.
+Los identificadores para tamaños variables de arreglos introducidos en el prototipo de la función, deben ser distintos a los utilizados para los nombres de argumentos, incluyendo al retorno.
+
+Para el análisis del retorno de una función, hicimos una salvedad que es conveniente clarificar.
+Debido que el mismo no puede introducir nuevas variables de tipo, o tamaños para dimensiones de arreglos variables, ya que no se podría inferir su verdadero tipo; no podemos emplear la misma clase de deducción que la utilizada con los argumentos.
+Por lo tanto, el conjunto de reglas que se utilizarán para analizar el retorno será el empleado en la verificación de tipos para declaración de variables dentro de bloques.
+
+La verificación de una declaración de procedimiento, al igual que para funciones, es compleja.
+Los contextos de tipos, y rutinas, estarán previamente inicializados.
+Se tendrán que analizar individualmente todos los argumentos del mismo, almacenando los tamaños variables, y las variables de tipo especificados en estos.
+Después, se deberán analizar las restricciones especificadas en el prototipo.
+Y para terminar, con toda la información contextual obtenida, y extendiendo el contexto correspondiente a procedimientos para permitir llamadas recursivas en su cuerpo, se deberá verificar el bloque de la rutina.
+
+\ER{Regla F/P}{Procedimientos}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC
+{$
+\forall i \in \{ 1 \ldots l \}.
+\pi_{\mathbf{T}} \vdash_t \theta_i : \pi^{i}_{sn}, \pi^{i}_{tv}
+$}
+\AxiomC{$\pi_{tv} \vdash_r rs$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{f}, \overline{\pi}_{p}, \pi_{sn}, \pi_{tv} \vdash_{b} block_p
+$}
+\TrinaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{f}, \pi_{p} \vdash_{fp} \T{proc} \; p \; (io_1 \; a_1: \theta_1, \ldots, io_l \; a_l: \theta_l) \; \T{where} \; rs \quad block_p : \pi_{f}, \overline{\pi}_{p}
+$}
+\end{prooftree}
+\end{adjustbox}
+\PR{donde $\pi_{sn} = \pi^{1}_{sn} \cup \ldots \cup \pi^{l}_{sn}$ y $\pi_{tv} = \pi^{1}_{tv} \cup \ldots \cup \pi^{l}_{tv}$. Además, se tiene que extender al contexto de procedimientos con el prototipo en cuestión, para permitir las llamadas recursivas $\overline{\pi}_{p} = (p, \{(io_1, a_1, \theta_1), \ldots, (io_l, a_l, \theta_l) \}, rs) \triangleright \pi_{p}$.}
+
+De forma análoga que para funciones, en esta ocasión se deben respetar las invariantes para la construcción del contexto de procedimientos.
+Los identificadores de procedimientos pueden ser empleados sólo en una definición, mientras, los nombres de argumentos no pueden ser repetidos en una declaración particular.
+También se debe sumar la misma condición adicional que antes.
+Los nombres utilizados para denotar tamaños variables de arreglos que ocurren en el prototipo del procedimiento, deben ser distintos a los empleados para referirse a los argumentos del mismo.
+
+Para finalizar con este segmento del informe, realizaremos un ejemplo de aplicación con las reglas anteriores.
+Como la demostración de la corrección de un procedimiento (o función) puede ser extensa, asumiremos que el bloque $block_{sort}$ está especificado correctamente, y omitiremos su prueba.
+Notar el uso de las diversas reglas, como las correspondientes a arreglos y las de restricciones, al mismo tiempo que se van extendiendo los contextos a lo largo del análisis.
+
+\TR{Prueba 5}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\vdash_s n : \{ n \}_{sn}$}
+\AxiomC{}
+\UnaryInfC
+{$
+\emptyset_{\mathbf{T}} \vdash_t A : \emptyset_{sn}, \{ A \}_{tv}
+$}
+\BinaryInfC
+{$
+\emptyset_{\mathbf{T}} \vdash_t \T{array} \; n \; \T{of} \; A : \{ n \}_{sn}, \{ A \}_{tv}
+$}
+\AxiomC{$A \in \{ A \}_{tv}$}
+\UnaryInfC{$\{ A \}_{tv} \vdash_{c} A : \T{Ord} $}
+\UnaryInfC
+{$
+\{ A \}_{tv} \vdash_r A : \T{Ord}
+$}
+\AxiomC{\ldots}
+\UnaryInfC
+{$
+\emptyset_{\mathbf{T}}, \emptyset_{f}, \overline{\pi}_{p}, \{ n \}_{sn}, \{ A \}_{tv} \vdash_{b} block_{sort}
+$}
+\TrinaryInfC
+{$
+\emptyset_{\mathbf{T}}, \emptyset_{f}, \emptyset_{p} \vdash_{fp} \T{proc} \; sort \; (\T{in/out} \; a: \T{array} \; n \; \T{of} \; A) \; \T{where} \; A : \T{Ord} \quad block_{sort} : \emptyset_{f}, \overline{\pi}_{p}
+$}
+\end{prooftree}
+\end{adjustbox}
+\PR{donde $\overline{\pi}_{p} = \{ (sort, \{ (\T{in/out}, a, \T{array} \; n \; \T{of} \; A) \}, \{ (A, \{ \T{Ord} \}) \} ) \}$.}
 
 \subsection{Validaciones en Bloques}
 
-Una vez examinados los argumentos del método, se debe verificar el cuerpo del mismo.
-Un bloque $block_\gamma$ posee la siguiente forma, donde $n \geq 0$ y $m > 0$.
-El índice $\gamma$ hace referencia al identificador del método en cuestión.
+Una vez examinado el prototipo del procedimiento, o de la función, se debe continuar con la verificación y analizar el cuerpo del mismo.
+Según la sintaxis, un bloque $block_\gamma$ posee la siguiente forma, donde $n \geq 0$ y $m > 0$.
+El índice $\gamma$ lo utilizaremos de forma informal, para hacer referencia al identificador de la rutina a la que pertenece.
 \begin{gather*}
-var \; x^1_1, \ldots, x^1_{l_1}: \theta^1
+vardecl_1
 \\
 \ldots
 \\
-var \; x^n_1, \ldots, x^n_{l_n}: \theta^n
+vardecl_n
 \\
 sent_1
 \\
@@ -724,147 +1258,255 @@ sent_m
 \end{gather*}
 
 Alcanzada esta etapa del análisis, se puede ver que ya se recopiló una gran cantidad de información contextual para el chequeo del bloque.
+Tenemos a nuestro alcance la información de tipos definidos, las funciones y procedimientos declarados, y las variables, de tipo o de tamaño, introducidas en el prototipo de la actual rutina siendo verificada.
 Para simplificar la notación, definiremos una serie de elementos auxiliares con el propósito de agilizar el acceso a esta información.
 
 Supongamos que nos encontramos analizando el cuerpo de una función.
 Puede resultar conveniente poder calcular fácilmente cuales son los identificadores introducidos en el prototipo de la misma.
-A continuación se definen un par de funciones que reciben el nombre del método en cuestión, y obtienen el conjunto de identificadores especificados en el encabezado del mismo.
+A continuación, se definen un par de funciones que reciben el nombre de la rutina en cuestión, y obtienen el conjunto de identificadores especificados en el encabezado de la misma.
 \begin{gather*}
-Argumentos_{\pi_{fun}}: \NT{id} \RA \{ \NT{id} \}
+Argumentos_{\pi_{f}}: \NT{id} \RA \{ \NT{id} \}
 \\
-Argumentos_{\pi_{fun}}(f) = \{ a_1, \ldots, a_l \}
+Argumentos_{\pi_{f}}(f) = \{ a_1, \ldots, a_l \}
 \\
-Retorno_{\pi_{fun}}: \NT{id} \RA \{ \NT{id} \}
+Retorno_{\pi_{f}}: \NT{id} \RA \{ \NT{id} \}
 \\
-Retorno_{\pi_{fun}}(f) = \{ a_r \}
+Retorno_{\pi_{f}}(f) = \{ a_r \}
 \end{gather*}
-\PR{donde $(f, \{ (a_1, \theta_1), \ldots, (a_l, \theta_l) \}, (a_r, \theta_r), T ) \in \pi_{fun}$.}
+\PR{donde $(f, \{ (a_1, \theta_1), \ldots, (a_l, \theta_l) \}, (a_r, \theta_r), rs ) \in \pi_{f}$.}
 
-En el caso del análisis de un procedimiento nos encontramos en una situación similar.
-A diferencia de las funciones, además de querer averiguar cuales son los identificadores introducidos, necesitamos clasificar los mismos en base a la etiqueta de \textit{IO} con la que fueron especificados.
-Para esto, se definen una serie de funciones.
+En el caso del análisis de un procedimiento, nos encontramos en una situación similar.
+A diferencia de las funciones, además de querer averiguar cuales son los identificadores introducidos, necesitamos clasificar los mismos en base a la etiqueta de \textit{entrada/salida} con la que fueron especificados.
+Para esto, se define la siguiente serie de funciones.
 \begin{gather*}
-Inputs_{\pi_{proc}}: \NT{id} \RA \{ \NT{id} \}
+Inputs_{\pi_{p}}: \NT{id} \RA \{ \NT{id} \}
 \\
-Inputs_{\pi_{proc}}(p) = \{ a \mid \exists \theta. (\T{in}, a, \theta) \in A \}
+Inputs_{\pi_{p}}(p) = \{ a \mid \exists \theta. (\T{in}, a, \theta) \in PA \}
 \\
-Outputs_{\pi_{proc}}: \NT{id} \RA \{ \NT{id} \}
+Outputs_{\pi_{p}}: \NT{id} \RA \{ \NT{id} \}
 \\
-Outputs_{\pi_{proc}}(p) = \{ a \mid \exists \theta. (\T{out}, a, \theta) \in A \}
+Outputs_{\pi_{p}}(p) = \{ a \mid \exists \theta. (\T{out}, a, \theta) \in PA \}
 \\
-InOuts_{\pi_{proc}}: \NT{id} \RA \{ \NT{id} \}
+InOuts_{\pi_{p}}: \NT{id} \RA \{ \NT{id} \}
 \\
-InOuts_{\pi_{proc}}(p) = \{ a \mid \exists \theta. (\T{in/out}, a, \theta) \in A \}
+InOuts_{\pi_{p}}(p) = \{ a \mid \exists \theta. (\T{in/out}, a, \theta) \in PA \}
 \end{gather*}
-\PR{donde $(p, A, T) \in \pi_{proc}$, con $A = \{ (oi_1, a_1, \theta_1), \ldots, (oi_l, a_l, \theta_l) \}$.}
+\PR{donde $(p, PA, rs) \in \pi_{p}$, con $PA = \{ (oi_1, a_1, \theta_1), \ldots, (oi_l, a_l, \theta_l) \}$.}
 
-Finalmente, también sería importante saber cuales son los identificadores empleados para denotar a las distintas variables declaradas en el programa, junto con los tamaños variables introducidos en el prototipo del método analizado.
-Notar que la estructura de este conjunto es independiente a la clase de método que se esté analizando.
+Finalmente, también sería importante saber cuales son los identificadores empleados para denotar a las distintas variables declaradas en el programa, junto con los tamaños variables introducidos en el prototipo de la función o procedimiento actualmente en análisis.
+Notar que la estructura de este conjunto es independiente a la clase de rutina que se esté verificando, solo depende de la información contextual que se posea en el momento. 
 \begin{gather*}
-Vars_{\pi_{var}} = \{ v \mid \exists \theta. (v, \theta) \in \pi_{loc} \} \cup \pi_{size}
+Vars_{\pi_{sn}, \pi_{v}} = \{ v \mid \exists \theta. (v, \theta) \in \pi_{v} \} \cup \pi_{sn}
 \end{gather*}
 
 \subsection{Validaciones en Declaración de Variables}
 
 Cuando se declara una variable, se debe comprobar que su identificador sea único en el alcance de análisis.
-En particular, su nombre debe ser distinto a todos los utilizados en los argumentos (y retornos) del método en cuestión, de los tamaños variables de arreglos, y de otras variables declaradas en el mismo cuerpo.
-En base a que clase de método se esté analizando, el conjunto siguiente estará conformado de maneras diferentes.
+En particular, su nombre debe ser distinto a todos los utilizados en los argumentos (y retornos) de la función o procedimiento en cuestión, de los tamaños variables de arreglos introducidos en el prototipo de los mismos, y de otras variables declaradas en el mismo cuerpo.
+En base a que clase de rutina se esté analizando, el conjunto siguiente estará conformado de maneras diferentes.
+Usaremos \textit{NameSpace}, para referirnos al conjunto de identificadores en uso en el alcance actual.
 \begin{gather*}
-NameSpace =
-"identificadores \; en \; uso \; en \; el \; alcance \; actual" 
-\subset \NT{id}
+NameSpace_{f} =
+Argumentos_{\pi_{f}}(f) \cup Retorno_{\pi_{f}}(f) \cup Vars_{\pi_{sn}, \pi_{v}}
 \\
-NameSpace_f =
-Argumentos(f) \cup Retorno(f) \cup Vars
-\\
-NameSpace_p =
-Inputs(p) \cup Ouputs(p) \cup InOuts(p) \cup Vars
+NameSpace_{p} =
+Inputs_{\pi_{p}}(p) \cup Ouputs_{\pi_{p}}(p) \cup InOuts_{\pi_{p}}(p) \cup Vars_{\pi_{sn}, \pi_{v}}
 \end{gather*}
 
-Una vez definido el conjunto anterior, ya estamos en condiciones para dar la regla que garantiza la \textit{buena forma} de una declaración de variables.
-Al igual que en todos los analices anteriores, se deberán probar todas las construcciones sintácticas una por una.
+La notación utilizada para esta clase de regla será la siguiente.
+Tendremos toda la información contextual necesaria, recopilada hasta este momento.
+Se realizará la verificación adecuada, y una vez terminada, se extenderá el contexto de variables con la información de la declaración actual.
+\begin{gather*}
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{tv}, \pi_{v} \vdash_{vd} vardecl : \pi'_{v}
+\end{gather*}
+
+Ya estamos en condiciones para dar la regla que garantiza la \textit{buena forma} de una declaración de variables.
+Para determinar que una definición es válida, hay que verificar dos propiedades.
+Ningún identificador que se intenta declarar, puede estar en uso actualmente, y el tipo de estos elementos debe ser válido.
+Hay que recordar que la invariante para la construcción del contexto de variables imponía como restricción, la unicidad de los identificadores utilizados para referirse a las mismas.
 
 \ER{Regla B}{Declaración de Variables}
 \begin{prooftree}
-\AxiomC{$\forall i \in \{ 1 \ldots l \}. \; x_i \notin NameSpace$}
-\AxiomC{$\pi \vdash_t \theta$}
-\BinaryInfC{$\pi \vdash_{vd} \T{var} \; x_1, \ldots, x_l: \theta$}
+\AxiomC
+{$
+\forall i \in \{ 1 \ldots l \}. \; x_i \notin NameSpace_\gamma
+$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{sn}, \pi_{tv} \vdash_t \theta
+$}
+\BinaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{tv}, \pi_{v} \vdash_{vd} \T{var} \; x_1, \ldots, x_l: \theta : \pi'_{v}
+$}
 \end{prooftree}
-\PR{donde todos los identificadores $x_i$ son distintos entre sí. Además, se deberán agregar todos los pares $(x_i, \theta)$ al contexto $\pi_{loc}$.}
+\PR{donde $\pi'_{v} = (x_1, \theta) \triangleright \ldots \triangleright (x_l, \theta) \triangleright \pi_{v}$, y $\gamma$ hace referencia a la rutina global.}
 
 \subsubsection {Tipos en Declaración de Variables}
 
-Nuevamente, es necesario modificar nuestro conjunto de reglas para la especificación de tipos con el fin de adecuarnos al nuevo contexto de análisis.
-En esta ocasión, debemos limitar el uso de variables de tipo exclusivamente a las introducidas en el prototipo del método analizado.
-Para los tamaños variables debemos hacer algo similar.
-La mayoría de las reglas permanecen sin cambios.
+Nos encontramos en un nuevo entorno de análisis, dentro de una declaración de variables, intentando analizar un tipo.
+En esta situación, tenemos que permitir solo las variables, de tipo o de tamaño, que fueron introducidas en el prototipo de la función, o procedimiento, global.
+Debido a esto, una vez más tendremos que dar un conjunto de reglas diferente a las especificados anteriormente.
+Los cambios tendrán que ver, principalmente, con el agregado de los contextos para tamaños variables, y variables de tipo, a las reglas previas.
+
+La notación empleada se describe a continuación.
+Tenemos la información de tipos definidos a nuestro alcance, junto con la de variables disponibles.
+En esta situación, no se producirá ningún resultado o efecto secundario luego de terminada la verificación.
+\begin{gather*}
+\pi_{\mathbf{T}}, \pi_{sn}, \pi_{tv} \vdash_t \theta
+\end{gather*}
+
+Como siempre, todo tipo básico es un tipo correcto.
+La verificación de los mismos es inmediata, y no se necesitan consultar los contextos acumulados de variables.
 
 \ER{Regla B para Tipos}{Básicos}
 \begin{prooftree}
-\AxiomC{\empty}
-\RightLabel{\quad cuando $\theta \in \{ \T{int}, \T{real}, \T{bool}, \T{char} \}$}
-\UnaryInfC{$\pi \vdash_t \theta$}
+\AxiomC{}
+\RightLabel
+{
+\quad cuando $\theta \in \{ \T{int}, \T{real}, \T{bool}, \T{char} \}$
+}
+\UnaryInfC{$\pi_{\mathbf{T}}, \pi_{sn}, \pi_{tv} \vdash_t \theta$}
 \end{prooftree}
+
+Nuevamente, un puntero es correcto siempre que el tipo al que hace referencia también lo sea.
+En esta regla, al igual que la anterior, tampoco se necesitan consultar los contextos adicionales.
 
 \ER{Regla B para Tipos}{Punteros}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_t \theta$}
-\UnaryInfC{$\pi \vdash_t \T{pointer} \; \theta$}
+\AxiomC{$\pi_{\mathbf{T}}, \pi_{sn}, \pi_{tv} \vdash_t \theta$}
+\UnaryInfC{$\pi_{\mathbf{T}}, \pi_{sn}, \pi_{tv} \vdash_t \T{pointer} \; \theta$}
 \end{prooftree}
+
+Para los arreglos, se deben comprobar todos los tamaños de sus dimensiones, junto con el tipo que almacenará.
+En esta ocasión, para verificar los primeros se hace uso del contexto de variables de tamaño.
 
 \ER{Regla B para Tipos}{Arreglos}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_s s_1$}
+\AxiomC{$\pi_{sn} \vdash_s s_1$}
 \AxiomC{\ldots}
-\AxiomC{$\pi \vdash_s s_n$}
-\AxiomC{$\pi \vdash_t \theta$}
-\QuaternaryInfC{$\pi \vdash_t \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta$}
+\AxiomC{$\pi_{sn} \vdash_s s_n$}
+\AxiomC{$\pi_{\mathbf{T}}, \pi_{sn}, \pi_{tv} \vdash_t \theta$}
+\QuaternaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{sn}, \pi_{tv} \vdash_t \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta
+$}
 \end{prooftree}
+
+A diferencia de las verificaciones previas, en este análisis, una variable de tipo no será correcta de forma inmediata.
+Para que el uso de estos elementos sea válido, el mismo debe haber sido introducido previamente en el prototipo del procedimiento, o función, que lo encapsula.
 
 \ER{Regla B para Tipos}{Variables de Tipo}
 \begin{prooftree}
-\AxiomC{$\theta \in \pi_{typevar}$}
-\RightLabel{\quad cuando $\theta \in \NT{typevar}$}
-\UnaryInfC{$\pi \vdash_t \theta$}
+\AxiomC{$tv \in \pi_{tv}$}
+\UnaryInfC{$\pi_{\mathbf{T}}, \pi_{sn}, \pi_{tv} \vdash_t tv$}
 \end{prooftree}
 
-\ER{Regla B para Tipos}{Tipos Definidos}
+Detallaremos dos conjuntos de reglas diferentes para los tipos definidos.
+Primero, analizaremos los tipos que no posean argumentos.
+La verificación es idéntica a la especificada previamente, salvo por el agregado de los nuevos contextos de variables, de tipo y de tamaño.
+
+\ER{Regla B para Tipos}{Tipos Enumerados}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_t \theta_1$}
-\AxiomC{\ldots}
-\AxiomC{$\pi \vdash_t \theta_n$}
-\AxiomC{$|A| = n$}
-\QuaternaryInfC{$\pi \vdash_t t \; \T{of} \; \theta_1, \ldots, \theta_n$}
+\AxiomC{$(tn, \{ cn_1, \ldots, cn_m \}) \in \pi_{e}$}
+\UnaryInfC{$\pi_{e}, \pi_{s}, \pi_{t}, \pi_{sn}, \pi_{tv} \vdash_t tn$}
 \end{prooftree}
-\PR{donde se satisface que $\exists A, B. (t, A, B) \in \pi_{type}$.}
 
-Las reglas para la especificación de rangos son similares a las anteriores.
-Solo hay dos casos.
-El primero es trivial, corresponde a la utilización de tamaños constantes, por lo que se procede de la misma manera que se hizo anteriormente.
-El segundo refiere al empleo de tamaños variables, donde solo hay que verificar que el identificador haya sido introducido previamente.
+\ER{Regla B para Tipos}{Sinónimos sin Argumentos}
+\begin{prooftree}
+\AxiomC{$(tn, \emptyset,\theta) \in \pi_{s}$}
+\UnaryInfC{$\pi_{e}, \pi_{s}, \pi_{t}, \pi_{sn}, \pi_{tv} \vdash_t tn$}
+\end{prooftree}
+
+\ER{Regla B para Tipos}{Tuplas sin Argumentos}
+\begin{prooftree}
+\AxiomC
+{$
+(tn, \emptyset, \{ fd_1, \ldots, fd_m \}) \in \pi_{t}
+$}
+\UnaryInfC{$\pi_{e}, \pi_{s}, \pi_{t}, \pi_{sn}, \pi_{tv} \vdash_t tn$}
+\end{prooftree}
+
+En el caso de los tipos definidos que posean argumentos, se realizarán chequeos parecidos a los aplicados en reglas previas.
+Se debe verificar que el tipo se encuentre declarado, que la cantidad de sus argumentos sea la correcta, y analizar cada uno de estos con los contextos acumulados.
+
+\ER{Regla B para Tipos}{Sinónimos con Argumentos}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC{$(tn, \{ tv_1, \ldots, tv_n \}, \theta) \in \pi_{s}$}
+\AxiomC{$\pi_{e}, \pi_{s}, \pi_{t}, \pi_{sn}, \pi_{tv} \vdash_t \theta_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi_{e}, \pi_{s}, \pi_{t}, \pi_{sn}, \pi_{tv} \vdash_t \theta_n$}
+\QuaternaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t}, \pi_{sn}, \pi_{tv} \vdash_t tn \; \T{of} \; \theta_1, \ldots, \theta_n
+$}
+\end{prooftree}
+\end{adjustbox}
+
+\ER{Regla B para Tipos}{Tuplas con Argumentos}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC
+{$
+(tn, \{ tv_1, \ldots, tv_n \}, \{ fd_1, \ldots, fd_m \}) \in \pi_{t}
+$}
+\AxiomC{$\pi_{e}, \pi_{s}, \pi_{t}, \pi_{sn}, \pi_{tv} \vdash_t \theta_1$}
+\AxiomC{\ldots}
+\AxiomC{$\pi_{e}, \pi_{s}, \pi_{t}, \pi_{sn}, \pi_{tv} \vdash_t \theta_n$}
+\QuaternaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t}, \pi_{sn}, \pi_{tv} \vdash_t tn \; \T{of} \; \theta_1, \ldots, \theta_n
+$}
+\end{prooftree}
+\end{adjustbox}
+
+Para el tamaño de las dimensiones de un arreglo, hay dos situaciones.
+Si el mismos es un valor natural, la verificación es inmediata.
+No se necesita consultar el contexto de tamaños variables.
 
 \ER{Regla B para Tipos}{Tamaños Constantes}
 \begin{prooftree}
-\AxiomC{\empty}
-\RightLabel{\quad cuando $size \in \NT{nat}$}
-\UnaryInfC{$\pi \vdash_s size$}
+\AxiomC{}
+\RightLabel{\quad cuando $s \in \NT{nat}$}
+\UnaryInfC{$\pi_{sn} \vdash_s s$}
 \end{prooftree}
+
+En cambio, si el tamaño es variable, hay que verificar que el mismo pertenezca al contexto de variables de tamaño.
+Estos elementos solo pueden ser utilizados en el cuerpo de una rutina, siempre y cuando hayan sido previamente introducidos en el prototipo de la misma.
 
 \ER{Regla B para Tipos}{Tamaños Variables}
 \begin{prooftree}
-\AxiomC{$size \in \pi_{size}$}
-\RightLabel{\quad cuando $size \in \NT{bsize}$}
-\UnaryInfC{$\pi \vdash_s size$}
+\AxiomC{$s \in \pi_{sn}$}
+\RightLabel{\quad cuando $s \in \NT{sname}$}
+\UnaryInfC{$\pi_{sn} \vdash_s s$}
 \end{prooftree}
+
+A continuación, daremos un ejemplo ilustrativo para ayudar a la comprensión de las últimas reglas descriptas.
+Asumiendo que nos encontramos dentro del bloque de un procedimiento $sort$ (el mismo del ejemplo anterior), podemos verificar una declaración de variables de la siguiente forma.
+Notar que el conjunto de identificadores en uso $NameSpace_{sort}$, está compuesto por un argumento, y una variable de tamaño.
+
+\TR{Prueba 6}
+\begin{prooftree}
+\AxiomC{$aux \notin NameSpace_{sort} = \{ a, n \}$}
+\AxiomC{$A \in \{ A \}_{tv}$}
+\UnaryInfC{$\emptyset_{\mathbf{T}}, \{ n \}_{sn}, \{ A \}_{tv} \vdash_t A$}
+\BinaryInfC
+{$
+\emptyset_{\mathbf{T}}, \emptyset_{f}, \pi_{p}, \{ n \}_{sn}, \{ A \}_{tv}, \emptyset_{v} \vdash_{vd} \T{var} \; aux : A : \{ (aux, A) \}_{v}
+$}
+\end{prooftree}
+\PR{donde $\pi_{p} = \{ (sort, \{ (\T{in/out}, a, \T{array} \; n \; \T{of} \; A) \}, \{ (A, \{ \T{Ord} \}) \} ) \}$.}
 
 \subsection{Variables Libres}
 
-Una vez analizado el listado de declaraciones de variables, se debe verificar el conjunto de sentencias del bloque.
-Antes de pasar a esta parte, vamos a definir una serie de funciones que nos serán de vital importancia para el chequeo de métodos.
-En particular, necesitamos una forma de poder distinguir cual es el uso que se hace de las distintas variables utilizadas en una lista de sentencias.
+Una vez examinado el listado de declaraciones de variables, se tiene que verificar el conjunto de sentencias del bloque.
+Antes de comenzar con ese análisis, debemos definir una serie de funciones auxiliares que nos serán de vital importancia para el chequeo de procedimientos y funciones.
+En particular, lo que necesitamos es una forma de poder distinguir cual es el uso que se hace de las distintas variables que ocurren en un listado de instrucciones.
 
-La primera de estas funciones, se encarga de calcular el conjunto de \textit{variables libres} presentes en un bloque de instrucciones.
-Se denomina \textit{libre} a aquella variable cuyo valor inicial puede determinar el resultado de una computación, o ser modificado durante la misma.
+La primer función que definiremos, se encargará de calcular el conjunto de \textit{variables libres} presentes en un bloque de sentencias.
+En el cálculo lambda, se denomina \textit{libre} a toda variable que no se encuentra cuantificada.
+En nuestro caso, debido que solo analizaremos instrucciones (y las expresiones que se encuentren dentro de las mismas), toda ocurrencia de una variable será, en primera instancia, una ocurrencia \textit{libre}.
 \begin{gather*}
 FV_{\NT{expr}}: \NT{expr} \RA \{ \; \NT{id} \; \}
 \qquad
@@ -872,13 +1514,12 @@ FV_{\NT{sent}}: \NT{sent} \RA \{ \; \NT{id} \; \}
 \end{gather*}
 
 Para las expresiones, esta función posee un comportamiento trivial.
-Esto se debe a que toda variable en una expresión es una \textit{variable libre}.
+Debido que en el lenguaje no existe ninguna especie de cuantificación, a nivel de expresiones, toda variable en una expresión es una \textit{variable libre}.
 A continuación, su definición dirigida por sintaxis.
 \begin{align*}
-&\FV{c}
+&\FV{ct}
 &=&\;
 \emptyset
-&c &\in \NT{const}
 \\
 &\FV{f(e_1, \ldots, e_n)}
 &=&\;
@@ -887,12 +1528,10 @@ A continuación, su definición dirigida por sintaxis.
 &\FV{e_1 \oplus e_2}
 &=&\;
 \FV{e_1} \cup \FV{e_2}
-&\oplus &\in \NT{bin}
 \\
 &\FV{\ominus e}
 &=&\;
 \FV{e}
-&\ominus &\in \NT{un}
 \\
 &\FV{x}
 &=&\;
@@ -902,17 +1541,19 @@ A continuación, su definición dirigida por sintaxis.
 &=&\;
 \FV{v} \cup \FV{e_1} \cup \ldots \cup \FV{e_n}
 \\
-&\FV{v.f}
+&\FV{v.fn}
 &=&\;
 \FV{v}
 \\
-&\FV{\# v}
+&\FV{\star v}
 &=&\;
 \FV{v}
 \end{align*}
 
 En el caso de las sentencias, esta función presenta un comportamiento más interesante con respecto a las expresiones.
-Para la instrucción \textit{for}, la variable iteradora \textit{i} solo puede adoptar los valores comprendidos en el rango especificado en la misma instrucción, y sólo durante la ejecución de la sentencia.
+Esto se debe a la existencia de una instrucción que cumple un rol similar a un cuantificador del cálculo lambda, el iterador \textit{for}.
+El mismo, define una variable iteradora \textit{x} que será declarada, inicializada, y modificada por la instrucción en base al rango especificado en la misma sentencia.
+Además, el alcance de esta variable se limita al bloque de instrucciones \textit{sb} que acompaña a la sentencia \textit{for}.
 \begin{align*}
 &\FV{\T{skip}}
 &=&\;
@@ -934,42 +1575,38 @@ Para la instrucción \textit{for}, la variable iteradora \textit{i} solo puede a
 &=&\;
 \FV{v}
 \\
-&\FV{\T{if} \; e \; \T{then} \; s_1 \; \T{else} \; s_2}
+&\FV{\T{if} \; e \; \T{then} \; sb_1 \; \T{else} \; sb_2}
 &=&\;
-\FV{e} \cup \FV{s_1} \cup \FV{s_2}
+\FV{e} \cup \FV{sb_1} \cup \FV{sb_2}
 \\
-&\FV{\T{while} \; e \; \T{do} \; s}
+&\FV{\T{while} \; e \; \T{do} \; sb}
 &=&\;
-\FV{e} \cup \FV{s}
+\FV{e} \cup \FV{sb}
 \\
-&\FV{\T{for} \; i := \, e_1 \; \T{to} \; e_2 \; \T{do} \; s}
+&\FV{\T{for} \; x := \, e_1 \; \T{to} \; e_2 \; \T{do} \; sb}
 &=&\;
-\FV{e_1} \cup \FV{e_2} \cup (\FV{s} - \{ i \})
+\FV{e_1} \cup \FV{e_2} \cup (\FV{sb} - \{ x \})
 \\
-&\FV{\T{for} \; i := \, e_1 \; \T{downto} \; e_2 \; \T{do} \; s}
+&\FV{\T{for} \; x := \, e_1 \; \T{downto} \; e_2 \; \T{do} \; sb}
 &=&\;
-\FV{e_1} \cup \FV{e_2} \cup (\FV{s} - \{ i \})
+\FV{e_1} \cup \FV{e_2} \cup (\FV{sb} - \{ x \})
 \\
-&\FV{\T{for} \; i \; \T{in} \; e \; \T{do} \; s}
+&\FV{\T{for} \; x \; \T{in} \; e \; \T{do} \; sb}
 &=&\;
-\FV{e} \cup (\FV{s} - \{ i \})
+\FV{e} \cup (\FV{sb} - \{ x \})
 \end{align*}
 
-La segunda de estas funciones, se encarga de calcular el conjunto de \textit{variables asignables} presentes en una secuencia de sentencias.
+La segunda de las funciones que definiremos, se encargará de calcular el conjunto de \textit{variables asignables} presentes en una secuencia de sentencias.
 Se dice que una variable es \textit{asignable} cuando su valor es modificado durante la ejecución de una instrucción.
-El conjunto de variables asignables en un bloque siempre estará incluido en el conjunto de variables libres del mismo.
+Observando las definiciones, se puede probar que el conjunto de variables asignables en un bloque siempre estará incluido en el conjunto de variables libres del mismo.
 \begin{gather*}
 AV_{\NT{expr}}: \NT{expr} \RA \{ \; \NT{id} \; \}
 \qquad
 AV_{\NT{sent}}: \NT{sent} \RA \{ \; \NT{id} \; \}
 \end{gather*}
 
-Técnicamente ninguna variable en una expresión es asignable.
-Lo que sucede es que a la hora de analizar una asignación se debe obtener la variable a ser modificada por la sentencia.
-Por lo tanto, la función tiene el siguiente comportamiento para expresiones.
-
-% Espacio de Formato
-
+Técnicamente ninguna variable en una expresión es asignable, ya que la evaluación de una nunca debería producir efectos secundarios.
+Pero debido que una expresión puede ocurrir en una instrucción, la cual tiene el potencial de modificar el estado de las variables que ocurren en la misma, la función tiene la siguiente estructura.
 \begin{align*}
 &\AV{e}
 &=&\;
@@ -984,29 +1621,30 @@ Por lo tanto, la función tiene el siguiente comportamiento para expresiones.
 &=&\;
 \AV{v}
 \\
-&\AV{v.f}
+&\AV{v.fn}
 &=&\;
 \AV{v}
 \\
-&\AV{\# v}
+&\AV{\star v}
 &=&\;
-\AV{v}
+\emptyset
 \end{align*}
 
-% PREGUNTA
-% ¿Y los punteros?
-% ¿Tengo forma de analizar si son modificados de forma estática?
-% Por ahora, no.
-% Podría pensarlo como:
-% Un puntero es asignado si se modifica a donde apunta (no si se modifica la estructura apuntada).
+La función anterior tiene un comportamiento particular que es importante rescatar.
+La idea detrás de la definición para variables individuales, arreglos, y tuplas, quedará más clara una vez se describa la parte complementaria de la función.
+El detalle particular que queremos aclarar, tiene que ver con los punteros, y el problema del \textit{aliasing}.
 
-\todo[color = green]{¿Alguna forma de analizar estáticamente si se modifican punteros?}
+El \textit{aliasing} es una situación que ocurre cuando la misma posición de memoria se puede acceder utilizando distintos identificadores.
+En nuestro caso, se da cuando hay más de un puntero distinto que referencia a la misma estructura en memoria.
+Debido a esta situación, es imposible poder analizar estáticamente cuando el elemento referido por un puntero es modificado.
+Por lo tanto, se deberá relegar la tarea de asegurar la correcta modificación de las posiciones de memoria reservadas por el usuario, al análisis dinámico.
+Entonces, para varias de las verificaciones estáticas que describiremos en las secciones siguientes, se tendrán que diseñar chequeos análogos para realizar durante la ejecución de un programa.
 
-De vuelta, el caso para sentencias es el más complejo.
-Hay varias instrucciones que pueden modificar el valor de una variable.
-Entre las mismas se encuentran la asignación y las distintas clases de procedimientos.
-Hay que hacer una salvedad extra para estos últimos.
-Al tomar una serie de expresiones como argumentos, no necesariamente todas las entradas van a ser modificadas, sino solo las que corresponden a una etiqueta $out$ o $in/out$.
+Volviendo a la definición de la función, el caso para sentencias presenta algunas particularidades.
+Hay varias instrucciones que pueden modificar el estado de una variable.
+Las mismas comprenden la asignación, las rutinas especiales \textit{alloc} y \textit{free}, y la llamada a procedimientos definidos.
+Hay que hacer una salvedad adicional para estos últimos.
+Antes de eso, especificaremos la definición para sentencias de la función.
 \begin{align*}
 &\AV{\T{skip}}
 &=&\;
@@ -1018,7 +1656,11 @@ Al tomar una serie de expresiones como argumentos, no necesariamente todas las e
 \\
 &\AV{p(e_1, \ldots, e_n)}
 &=&\;
-\{ \AV{e_i} \mid a_i \in Outputs(p) \cup InOuts(p) \}
+\{ \AV{e_i} \mid a_i \in 
+\\
+&&&\;
+\ldots
+Outputs(p) \cup InOuts(p) \}
 \\
 &\AV{\T{alloc} \; v}
 &=&\;
@@ -1028,31 +1670,37 @@ Al tomar una serie de expresiones como argumentos, no necesariamente todas las e
 &=&\;
 \AV{v}
 \\
-&\AV{\T{if} \; e \; \T{then} \; s_1 \; \T{else} \; s_2}
+&\AV{\T{if} \; e \; \T{then} \; sb_1 \; \T{else} \; sb_2}
 &=&\;
-\AV{s_1} \cup \AV{s_2}
+\AV{sb_1} \cup \AV{sb_2}
 \\
-&\AV{\T{while} \; e \; \T{do} \; s}
+&\AV{\T{while} \; e \; \T{do} \; sb}
 &=&\;
-\AV{s}
+\AV{sb}
 \\
-&\AV{\T{for} \; i := \, e_1 \; \T{to} \; e_2 \; \T{do} \; s}
+&\AV{\T{for} \; x := \, e_1 \; \T{to} \; e_2 \; \T{do} \; sb}
 &=&\;
-\AV{s} - \{ i \}
+\AV{sb} - \{ x \}
 \\
-&\AV{\T{for} \; i := \, e_1 \; \T{downto} \; e_2 \; \T{do} \; s}
+&\AV{\T{for} \; x := \, e_1 \; \T{downto} \; e_2 \; \T{do} \; sb}
 &=&\;
-\AV{s} - \{ i \}
+\AV{sb} - \{ x \}
 \\
-&\AV{\T{for} \; i \; \T{in} \; e \; \T{do} \; s}
+&\AV{\T{for} \; x \; \T{in} \; e \; \T{do} \; sb}
 &=&\;
-\AV{s} - \{ i \}
+\AV{sb} - \{ x \}
 \end{align*}
-\PR{donde $(p, \{ (io_1, a_1, \theta_1), \ldots, (io_n, a_n, \theta_n) \}, T) \in \pi_{proc}$.}
+\PR{donde $(p, \{ (io_1, a_1, \theta_1), \ldots, (io_n, a_n, \theta_n) \}, rs) \in \pi_{p}$.}
 
-Finalmente, la última de las funciones sobre variables se encarga de obtener el conjunto de \textit{variables de lectura} en el cuerpo de un método.
-Una variable es considerada de \textit{lectura} si su valor es utilizado para el cálculo de alguna computación.
-El conjunto de variables de lectura en una secuencia de instrucciones siempre estará incluido en el conjunto de variables libres de la misma, pero no necesariamente será disjunto al de variables asignables.
+Debido que la llamada a un procedimiento toma una serie de expresiones como argumentos, se tiene que realizar un análisis detallado para calcular cuales serán las variables efectivamente modificadas.
+Esta es la parte donde las etiquetas de \textit{entrada/salida} cumplen un rol fundamental.
+Todas las expresiones que correspondan, en la definición del procedimiento, a un argumento de salida, serán modificadas.
+Idealmente, las mismas deberían ser variables.
+Mientras, el resto de los argumentos que solo sean de entrada, no serán modificados.
+
+Finalmente, la última de las funciones sobre variables que definiremos, se encargará de obtener el conjunto de \textit{variables de lectura} en el cuerpo de una función o procedimiento.
+Una variable es considerada de \textit{lectura} si es utilizada en la evaluación de una expresión, comúnmente, para el cálculo de alguna computación.
+Se puede probar que el conjunto de variables de lectura en una secuencia de instrucciones siempre estará incluido en el conjunto de variables libres de la misma, y además, que no necesariamente será disjunto al de variables asignables del bloque.
 \begin{gather*}
 RV_{\NT{expr}}: \NT{expr} \RA \{ \; \NT{id} \; \}
 \qquad
@@ -1060,30 +1708,15 @@ RV_{\NT{sent}}: \NT{sent} \RA \{ \; \NT{id} \; \}
 \end{gather*}
 
 La definición de la función para expresiones puede ser poco intuitiva.
-La idea es que el conjunto de variables de lectura debería formar el \textit{complemento} del conjunto de variables asignables.
-Esto no es del todo cierto ya que se pueden formar expresiones donde las distintas ocurrencias de una misma variable cumplan distintos roles.
-
-% Espacio de Formato
-
+Nuevamente, su análisis se debe hacer teniendo en cuenta que la variable observada puede ocurrir dentro de una sentencia que potencialmente modificará su valor.
+La idea, es que el conjunto de variables de lectura debería formar el \textit{complemento} del conjunto de variables asignables, con respecto a las variables libres del programa.
+Esto no es del todo cierto, ya que se pueden formar expresiones donde las distintas ocurrencias de una misma variable cumplan distintos roles.
+De todas formas, se puede reconocer fácilmente que existe una analogía entre ambas funciones.
 \begin{align*}
-&\RV{c}
-&=&\;
-\emptyset
-&c &\in \NT{const}
-\\
-&\RV{f(e_1, \ldots, e_n)}
-&=&\;
-\FV{e_1} \cup \ldots \cup \FV{e_n}
-\\
-&\RV{e_1 \oplus e_2}
-&=&\;
-\FV{e_1} \cup \FV{e_2}
-&\oplus &\in \NT{bin}
-\\
-&\RV{\ominus e}
+&\RV{e}
 &=&\;
 \FV{e}
-&\ominus &\in \NT{un}
+&e \notin \NT{var}
 \\
 &\RV{x}
 &=&\;
@@ -1093,19 +1726,23 @@ Esto no es del todo cierto ya que se pueden formar expresiones donde las distint
 &=&\;
 \RV{v} \cup \FV{e_1} \cup \ldots \cup \FV{e_n}
 \\
-&\RV{v.f}
+&\RV{v.fn}
 &=&\;
 \RV{v}
 \\
-&\RV{\# v}
+&\RV{\star v}
 &=&\;
-\RV{v}
+\FV{v}
 \end{align*}
 
-Por último, la definición para sentencias de nuestra función.
+Nuevamente, tenemos que hacer mención del problema del \textit{aliasing}.
+Debido que la verificación del uso apropiado de la memoria es delegado al análisis dinámico, en esta instancia, solo podemos limitarnos a considerar toda variable que ocurre en un acceso de memoria, como una variable de lectura.
+A diferencia de la definición anterior, donde ninguna variable utilizada en esta clase de operación se podía considerar como asignable.
+
+Por último, describiremos la definición para sentencias de nuestra función.
 Se puede observar, nuevamente, que hay una analogía entre los comportamientos de las dos últimas funciones.
-Notar que para los procedimientos, todos los argumentos que correspondan a una etiqueta $in$ o $in/out$ son de acceso por lo que todas sus variables también lo serán.
-En cambio, para las etiquetas $out$, hay que ser más selectivos sobre cuales variables son efectivamente utilizadas para lectura.
+Otra vez, el caso más complejo es el de las llamadas a procedimientos declarados por el usuario.
+Su definición dirigida por sintaxis se describe a continuación.
 \begin{align*}
 &\RV{\T{skip}}
 &=&\;
@@ -1131,27 +1768,31 @@ En cambio, para las etiquetas $out$, hay que ser más selectivos sobre cuales va
 &=&\;
 \RV{v}
 \\
-&\RV{\T{if} \; e \; \T{then} \; s_1 \; \T{else} \; s_2}
+&\RV{\T{if} \; e \; \T{then} \; sb_1 \; \T{else} \; sb_2}
 &=&\;
-\FV{e} \cup \RV{s_1} \cup \RV{s_2}
+\FV{e} \cup \RV{sb_1} \cup \RV{sb_2}
 \\
-&\RV{\T{while} \; e \; \T{do} \; s}
+&\RV{\T{while} \; e \; \T{do} \; sb}
 &=&\;
-\FV{e} \cup \RV{s}
+\FV{e} \cup \RV{sb}
 \\
-&\RV{\T{for} \; i := \, e_1 \; \T{to} \; e_2 \; \T{do} \; s}
+&\RV{\T{for} \; x := \, e_1 \; \T{to} \; e_2 \; \T{do} \; sb}
 &=&\;
-\FV{e_1} \cup \FV{e_2} \cup (\RV{s} - \{ i \})
+\FV{e_1} \cup \FV{e_2} \cup (\RV{sb} - \{ x \})
 \\
-&\RV{\T{for} \; i := \, e_1 \; \T{downto} \; e_2 \; \T{do} \; s}
+&\RV{\T{for} \; x := \, e_1 \; \T{downto} \; e_2 \; \T{do} \; sb}
 &=&\;
-\FV{e_1} \cup \FV{e_2} \cup (\RV{s} - \{ i \})
+\FV{e_1} \cup \FV{e_2} \cup (\RV{sb} - \{ x \})
 \\
-&\RV{\T{for} \; i \; \T{in} \; e \; \T{do} \; s}
+&\RV{\T{for} \; x \; \T{in} \; e \; \T{do} \; sb}
 &=&\;
-\FV{e} \cup (\RV{s} - \{ i \})
+\FV{e} \cup (\RV{sb} - \{ x \})
 \end{align*}
-\PR{donde $(p, \{ (io_1, a_1, \theta_1), \ldots, (io_n, a_n, \theta_n) \}, T) \in \pi_{proc}$.}
+\PR{donde $(p, \{ (io_1, a_1, \theta_1), \ldots, (io_n, a_n, \theta_n) \}, rs) \in \pi_{p}$.}
+
+Para el caso de la llamada a procedimientos, entraremos más en detalle.
+Si una expresión corresponde a un argumento de lectura, entonces todas las variables que ocurran en la misma también serán de lectura.
+En cambio, cuando una expresión coincide con un argumento de escritura, se tendrá que realizar un análisis más detallado para determinar cual es el uso que se hace de las distintas variables dentro de esta.
 
 % PREGUNTA
 % Un procedimiento puede ser p(a[1]) donde el argumento es un OUT
@@ -1163,608 +1804,1085 @@ En cambio, para las etiquetas $out$, hay que ser más selectivos sobre cuales va
 
 \subsection{Validaciones en Sentencias}
 
-Ya estamos en condiciones para analizar la secuencia de sentencias que conforman un bloque.
-Tenemos la información relacionada con los tipos definidos por el usuario, el prototipo del método a analizar y el listado de declaraciones de variables previas a las instrucciones del programa.
+Ya estamos en condiciones para analizar un bloque, y la lista de instrucciones que se encuentran dentro del mismo.
+Tenemos la información relacionada con los tipos definidos por el usuario, las funciones y procedimientos declarados en el programa, y los elementos introducidos en el prototipo de la rutina que lo encapsula.
+Además, ya contamos con las herramientas necesarias para verificar las declaraciones de variables dentro del bloque.
 
-\ER{Regla B}{Bloques}
-\begin{prooftree}
-\AxiomC{$\pi \vdash_{vd} vardecl_1$}
-\AxiomC{\ldots}
-\AxiomC{$\pi \vdash_{vd} vardecl_n$}
-\AxiomC{$\phi(sblock)$}
-\AxiomC{$\pi \vdash_{sb} sblock$}
-\QuinaryInfC{$\pi \vdash_{mb} vardecl_1 \ldots vardecl_n \quad sblock$}
-\end{prooftree}
-
-La función $\phi$ es la encargada de verificar el uso apropiado de las distintas categorías de variables empleadas en el bloque de sentencias.
-En particular queremos ser capaces de evitar el uso de variables no declaradas, la modificación de argumentos, la no asignación de retornos, entre otras situaciones.
-
-Vamos a extender las funciones previamente definidas para que acepten un listado de instrucciones.
-De esta forma, podremos realizar la verificación al bloque entero de sentencias.
+Para el caso del análisis de un bloque, utilizaremos la siguiente notación.
+Los contextos iniciales, serán los que mencionamos previamente.
+En esta verificación, no se extenderá ningún contexto ya que toda la información dentro del bloque es local a la rutina general.
+Lo único que se tiene que hacer en esta etapa, es asegurar la corrección de la estructura.
 \begin{gather*}
-\FV{s_1 \ldots s_m} = \FV{s_1} \cup \ldots \cup \FV{s_m}
-\\
-\AV{s_1 \ldots s_m} = \AV{s_1} \cup \ldots \cup \AV{s_m}
-\\
-\RV{s_1 \ldots s_m} = \RV{s_1} \cup \ldots \cup \RV{s_m}
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{tv} \vdash_{b} block_{\gamma}
 \end{gather*}
 
-Sea $block_\gamma$ el bloque a analizar, donde $\gamma$ puede ser el identificador de un procedimiento o de una función.
-Entonces la función $\phi$ estará compuesta por distintas partes, donde para satisfacer la misma, se deben cumplir todas las ecuaciones siguientes.
+Pasando propiamente a la regla, el chequeo de un bloque se describe a continuación.
+Se tienen que verificar todas las declaraciones de variables, extendiendo el contexto correspondiente luego de analizada cada una de las mismas.
+Con esta nueva información obtenida y los conjuntos anteriores, exceptuando el contexto de variables de tipos que ya no será necesario en la verificación, se analizará la secuencia de instrucciones de la función o procedimiento general.
+Por último, la función $\phi$ se encargará de verificar todas las propiedades sobre las variables empleadas en las sentencias del bloque, haciendo uso de las funciones definidas en la sección previa.
 
-% PREGUNTA
-% ¿Debería comprobar algo para las clases?
-% Si pido que un argumento sea de un tipo igualable
-% Se tendría que comprobar el uso de == sobre ese tipo
+\ER{Regla B}{Bloques}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{tv}, \pi^{0}_{v} \vdash_{vd} vd_1 : \pi^{1}_{v}
+$}
+\AxiomC{\ldots}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{tv}, \pi^{n-1}_{v} \vdash_{vd} vd_n : \pi^{n}_{v}
+$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi^{n}_{v} \vdash_{sb} sb
+$}
+\AxiomC{$\phi(sb)$}
+\QuinaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{tv} \vdash_{b} vd_1 \ldots vd_n \quad sb$}
+\end{prooftree}
+\end{adjustbox}
+\PR{donde el contexto inicial de variables es vacío $\pi^{0}_{v} = \emptyset$.}
 
-\todo[color=green]{¿Debería comprobar si las restricciones de clases son efectivamente necesarias?}
+Como mencionamos recién, la función $\phi$ es la encargada de verificar el uso apropiado de las distintas categorías de variables que ocurren en el bloque de sentencias.
+La misma será detallada en profundidad, luego de especificar las reglas propias para las sentencias.
 
-\ER{Función Phi}{Uso efectivo de variables.}
-\begin{equation*}
-NameSpace_{\gamma} = FV(sblock)
-\end{equation*}
+Finalmente, comenzaremos con el análisis de las sentencias de un procedimiento o función.
+La notación se describe a continuación.
+Tendremos todos los contextos declarados hasta el momento a nuestra disposición, exceptuando el correspondiente a variables de tipo.
+En el análisis, no se producirá ningún efecto secundario, ya que solo debemos verificar la corrección de las sentencias.
+Para abreviar un poco la especificación de contextos, utilizaremos $\pi_{\mathbf{V}}$ para representar a los conjuntos de variables y tamaños de arreglos.
+Al mismo tiempo, comúnmente nos referiremos al contexto $\pi_{\mathbf{P}}$, para referenciar a toda la información acumulada para la realización de este análisis.
+\begin{gather*}
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{v} \vdash_{s} sent
+\\
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{\mathbf{V}} \vdash_{s} sent
+\\
+\pi_{\mathbf{P}} \vdash_{s} sent
+\end{gather*}
 
-\ER{Función Phi}{Empleo de variables.}
-\begin{equation*}
-\pi_{loc} \subset RV(sblock) \cap AV(sblock)
-\end{equation*}
+Comenzaremos con la secuencia de sentencias.
+La verificación de la misma es bastante simple.
+Solo se tienen que analizar todas las instrucciones que la componen, una por una, de forma secuencial.
 
- \ER{Función Phi}{Evitar modificación de tamaños.}
-\begin{equation*}
-\pi_{size} \cap AV(sblock) = \emptyset
-\end{equation*}
-
-Cuando $\gamma$ hace referencia al identificador de una función, también es necesario verificar el siguiente conjunto de ecuaciones.
-\ER{Función Phi}{Evitar modificación de argumentos.}
-\begin{equation*}
-Argumentos(\gamma) \cap AV(sblock) = \emptyset
-\end{equation*}
-
-\ER{Función Phi}{Asignar valor al retorno.}
-\begin{equation*}
-Retorno(\gamma) \subset AV(sblock)
-\end{equation*}
-
-En cambio, cuando $\gamma$ representa al identificador de un procedimiento, es necesario revisar otro conjunto de ecuaciones.
-\ER{Función Phi}{Etiquetas $in$ respetadas.}
-\begin{equation*}
-Inputs(\gamma) \cap AV(sblock) = \emptyset
-\quad \text{lo cual implica} \quad
-Inputs(\gamma) \subset RV(sblock)
-\end{equation*}
-
-\ER{Función Phi}{Etiquetas $out$ respetadas.}
-\begin{equation*}
-Outputs(\gamma) \cap RV(sblock) = \emptyset
-\quad \text{lo cual implica} \quad
-Outputs(\gamma) \subset AV(sblock)
-\end{equation*}
-
-\ER{Función Phi}{Etiquetas $in/out$ respetadas.}
-\begin{equation*}
-InOuts(\gamma) \subset RV(sblock) \cap AV(sblock)
-\end{equation*}
-
-% PREGUNTA
-% Verificar si una variable fue asignada previa a su lectura, debe ser dinámico.
-% Si estas instrucciones se encuentran dentro de un condicional, no puedo asegurar nada.
-% En el caso de punteros, totalmente dinámico.
-
-\todo[color=green]{Verificar si una variable fue asignada previa a su lectura debe ser dinámica. Lo mismo con punteros.}
-
-Ahora definiremos propiamente las reglas de inferencia para las sentencias.
-Las mismas no ofrecen ninguna complejidad adicional en comparación a lo que se estuvo analizando hasta el momento.
-En esta sección se presenta una de las decisiones pendientes a tomar para el futuro desarrollo del intérprete.
 \ER{Regla B}{Bloque de Sentencias}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_s sent_1$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_s sent_1$}
 \AxiomC{\ldots}
-\AxiomC{$\pi \vdash_s sent_m$}
-\TrinaryInfC{$\pi \vdash_{sb} sent_1 \ldots sent_m$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_s sent_m$}
+\TrinaryInfC{$\pi_{\mathbf{P}} \vdash_{sb} sent_1 \ldots sent_m$}
 \end{prooftree}
+
+El análisis del \textit{skip} es trivial.
+Su verificación es inmediata, y no necesita consultar la información de ninguno de los contextos del programa.
+Su uso es meramente instructivo.
 
 \ER{Regla B}{Skip}
 \begin{prooftree}
-\AxiomC{\empty}
-\UnaryInfC{$\pi \vdash_s \T{skip}$}
+\AxiomC{}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_s \T{skip}$}
 \end{prooftree}
+
+Para el análisis de la asignación, se presenta la primer situación interesante para las reglas de sentencias.
+Se deben verificar sus dos componentes, y asegurar que ambos posean el mismo tipo.
 
 \ER{Regla B}{Asignación}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e v : \theta$}
-\AxiomC{$\pi \vdash_e e : \theta$}
-\BinaryInfC{$\pi \vdash_s v := e$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e v : \theta$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e : \theta$}
+\BinaryInfC{$\pi_{\mathbf{P}} \vdash_s v := e$}
 \end{prooftree}
 
-Cuando se invoca un procedimiento, además de comprobar la existencia del mismo, se necesitan realizar un par de verificaciones adicionales.
-La primera tiene que ver con el polimorfismo que admite el método y como chequear su consistencia.
+Para el procedimiento especial \textit{alloc}, también debemos realizar un chequeo de tipos.
+Debido que el mismo se emplea para reservar espacio en memoria para almacenar la estructura referenciada por un puntero, hay que asegurarnos que su argumento sea efectivamente uno.
+
+\ER{Regla B}{Alloc}
+\begin{prooftree}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e v : \T{pointer} \; \theta$}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_s \T{alloc} \; v$}
+\end{prooftree}
+
+Para el procedimiento \textit{free} ocurre una situación similar.
+Se debe verificar que el argumento que recibe, sea efectivamente un tipo de puntero.
+En este caso, la instrucción se encarga de liberar el espacio de memoria referenciada por el puntero.
+
+\ER{Regla B}{Free}
+\begin{prooftree}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e v : \T{pointer} \; \theta$}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_s \T{free} \; v$}
+\end{prooftree}
+
+Una instrucción clásica de los lenguaje imperativos es el \textit{while}.
+Para verificar el mismo, primero se tiene que comprobar que su guarda sea de tipo booleano.
+Además, hay que analizar la secuencia de instrucciones que forman su cuerpo.
+
+\ER{Regla B}{While}
+\begin{prooftree}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e : \T{bool}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_{sb} sb$}
+\BinaryInfC{$\pi_{\mathbf{P}} \vdash_s \T{while} \; e \; \T{do} \; sb$}
+\end{prooftree}
+
+La instrucción \textit{if} presenta diversas posibilidades para su especificación.
+Debido a esto, daremos múltiples reglas para su análisis.
+De todas formas, las derivaciones siguientes siguen una estructura similar.
+Para cualquier condicional, se debe comprobar que su guarda sea de tipo booleano, y que la secuencia de instrucciones de su cuerpo sea válida.
+
+\ER{Regla B}{If}
+\begin{prooftree}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e : \T{bool}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_{sb} sb$}
+\BinaryInfC
+{$
+\pi_{\mathbf{P}} \vdash_s \T{if} \; e \; \T{then} \; sb
+$}
+\end{prooftree}
+
+\ER{Regla B}{Else}
+\begin{prooftree}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e : \T{bool}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_{sb} sb_1$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_{sb} sb_2$}
+\TrinaryInfC
+{$
+\pi_{\mathbf{P}} \vdash_s \T{if} \; e \; \T{then} \; sb_1 \; \T{else} \; sb_2
+$}
+\end{prooftree}
+
+\ER{Regla B}{Elif}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e_1 : \T{bool}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e_2 : \T{bool}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_{sb} sb_1$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_{sb} sb_2$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_{sb} sb_3$}
+\QuinaryInfC
+{$
+\pi_{\mathbf{P}} \vdash_s \T{if} \; e_1 \; \T{then} \; sb_1 \; \T{elif} \; e_2 \; \T{then} \; sb_2 \; \T{else} \; sb_3
+$}
+\end{prooftree}
+\end{adjustbox}
+
+La instrucción \textit{for} también posee varias formas de ser especificada, por lo tanto, a continuación detallaremos una serie de reglas para analizar esta sentencia.
+En primer lugar, describiremos la verificación a realizar para las instrucciones que utilizan límites.
+Debido que estas sentencias declaran de forma implícita una variable, se debe revisar que la misma se encuentra disponible en el alcance actual.
+Además, hay que chequear que los tipos de sus límites coincidan, y que estos sean efectivamente enumerables.
+Finalmente, se debe analizar el bloque de instrucciones del cuerpo de la sentencia.
+
+\ER{Regla B}{For To}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC{$x \notin NameSpace_{\gamma}$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{v} \vdash_e e_1 : \theta
+$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{v} \vdash_e e_2 : \theta
+$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi'_{v} \vdash_{sb} sb
+$}
+\QuaternaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{v} \vdash_s \T{for} \; x := e_1 \; \T{to} \; e_2 \; \T{do} \; sb
+$}
+\end{prooftree}
+\end{adjustbox}
+\PR{donde $\pi'_{v} = (x, \theta) \triangleright \pi_{v}$, y se satisface que el tipo $\theta$ es enumerable.}
+
+\ER{Regla B}{For Downto}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC{$x \notin NameSpace_{\gamma}$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{v} \vdash_e e_1 : \theta
+$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{v} \vdash_e e_2 : \theta
+$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi'_{v} \vdash_{sb} sb
+$}
+\QuaternaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{v} \vdash_s \T{for} \; x := e_1 \; \T{downto} \; e_2 \; \T{do} \; sb
+$}
+\end{prooftree}
+\end{adjustbox}
+\PR{donde $\pi'_{v} = (x, \theta) \triangleright \pi_{v}$, y se satisface que el tipo $\theta$ es enumerable.}
+
+Sobre que tipos del lenguaje tendrán la capacidad de ser enumerados, nos limitaremos a un subconjunto de los disponibles en el mismo.
+Los números enteros, los caracteres, y las enumeraciones definidas por el usuario, serán las únicas construcciones que podrán ser listadas en los límites de la sentencia.
+
+La otra instrucción \textit{for} que debemos analizar es la que permite trabajar con estructuras iterables.
+Las verificaciones no son muy diferentes a las realizadas previamente.
+Hay que revisar que el identificador para la variable declarada se encuentra disponible.
+Asegurar que el tipo de la expresión interna sea efectivamente iterable.
+Y chequear la corrección de la secuencia de instrucciones del cuerpo de la sentencia.
+
+\ER{Regla B}{For In}
+\begin{prooftree}
+\AxiomC{$x \notin NameSpace_{\gamma}$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{v} \vdash_e e : \theta
+$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi'_{v} \vdash_{sb} sb
+$}
+\TrinaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{v} \vdash_s \T{for} \; x \; \T{in} \; e \; \T{do} \; sb
+$}
+\end{prooftree}
+\PR{donde $\pi'_{v} = (x, \theta) \triangleright \pi_{v}$, y se satisface que el tipo $\theta$ es iterable.}
+
+Sobre que tipos del lenguaje podrán ser iterados, aún se tiene que tomar una decisión.
+Actualmente, se considera que ningún tipo nativo del lenguaje posee esta capacidad.
+Solo los tipos definidos, que implementen algún mecanismo de iteración podrán ser utilizados en esta especie de instrucciones.
+Lo que no se ha definido aún, es como se debe instanciar un tipo para que el mismo pertenezca a la categoría de estructuras iterables.
+
+El análisis de la llamada a un procedimiento es el más complicado de todos los especificados anteriormente para sentencias.
+Para el mismo, hay que verificar una serie de propiedades complejas relacionadas con el polimorfismo que admite el procedimiento.
+Primero, antes de dar la regla, tendremos que definir dos funciones de sustitución que nos auxiliarán en el análisis de esta instrucción.
+
+La función de sustitución para tamaños variables de arreglos se utilizará para hacer coincidir, justamente, los tamaños de las dimensiones de los distintos arreglos.
+Lo que se busca con esta definición, es poder unificar los tamaños variables de los argumentos especificados en la declaración del procedimiento, contra los tamaños concretos en los tipos de las expresiones pasadas como argumento en la llamada al mismo.
 \begin{gather*}
-\_ \mid \_ : \NT{type} \times \Delta \RA \NT{type}
+\_ \mid \_ : \NT{type} \times \Delta_{sn} \RA \NT{type}
 \\
-\Delta_{bs} = \NT{bsize} \RA \NT{size}
+\Delta_{sn} = \NT{sname} \RA \NT{size}
+\end{gather*}
+
+El comportamiento de la función para tipos se describe a continuación.
+Notar que para el caso de un arreglo, su aplicación se propaga a los tamaños del mismo.
+Mientras, para los tipos básicos, la sustitución tiene el mismo comportamiento que la función identidad.
+\begin{align*}
+&\T{int} \mid \delta_{sn}
+&=&\;
+\T{int}
+\\
+&\T{real} \mid \delta_{sn}
+&=&\;
+\T{real}
+\\
+&\T{bool} \mid \delta_{sn}
+&=&\;
+\T{bool}
+\\
+&\T{char} \mid \delta_{sn}
+&=&\;
+\T{char}
+\\
+&\T{pointer} \; \theta \mid \delta_{sn}
+&=&\;
+\T{pointer} \; (\theta \mid \delta_{sn})
+\\
+&\T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta \mid \delta_{sn}
+&=&\;
+\T{array} \; (s_1 \mid \delta_{sn}), \ldots, (s_n \mid \delta_{sn}) \; \T{of} \; (\theta \mid \delta_{sn})
+\\
+&tv \mid \delta_{sn}
+&=&\;
+tv
+\\
+&tn \mid \delta_{sn}
+&=&\;
+tn
+\\
+&tn \; \T{of} \; \theta_1, \ldots, \theta_n \mid \delta_{sn}
+&=&\;
+tn \; \T{of} \; (\theta_1 \mid \delta_{sn}), \ldots, (\theta_n \mid \delta_{sn})
+\end{align*}
+
+La sustitución previa, se tendrá que propagar a los tamaños de los arreglos.
+Lo que se intenta conseguir con esta definición, es poder reemplazar todos los tamaños variables de los argumentos en la declaración del procedimiento, para hacerlos coincidir con los tamaños actuales en la llamada al mismo.
+\begin{align*}
+&s \mid \delta_{sn}
+&=&\;
+s
+&s \in &\NT{nat}
+\\
+&s \mid \delta_{sn}
+&=&\;
+\delta_{sn}(s)
+&s \in &\NT{sname}
+\end{align*}
+
+La función de sustitución para tipos variables, se empleará con un fin similar al anterior.
+La idea, es poder hacer coincidir todos los tipos variables en los argumentos de la declaración, con los tipos actuales de las distintas expresiones pasadas como argumento en la invocación del procedimiento.
+\begin{gather*}
+\_ \mid \_ : \NT{type} \times \Delta_{tv} \RA \NT{type}
 \\
 \Delta_{tv} = \NT{typevar} \RA \NT{type}
 \end{gather*}
 
-Es necesario definir una función de sustitución para poder verificar si los tipos de las expresiones en los argumentos coinciden con el de las entradas actuales del procedimiento.
-La función de sustitución tendría la siguiente forma.
+El comportamiento de la función se describe a continuación.
+Se deben reemplazar todas las variables de tipo, según lo que dicta la función de sustitución provista.
+Similar a la definición anterior, la sustitución se debe propagar para todos los tipos internos, y en el caso de los tipos básicos, no debería realizar ninguna modificación.
 \begin{align*}
-&\T{int} \mid \delta 
+&\T{int} \mid \delta_{tv}
 &=&\;
 \T{int}
 \\
-&\T{real} \mid \delta 
+&\T{real} \mid \delta_{tv}
 &=&\;
 \T{real}
 \\
-&\T{bool} \mid \delta 
+&\T{bool} \mid \delta_{tv}
 &=&\;
 \T{bool}
 \\
-&\T{char} \mid \delta 
+&\T{char} \mid \delta_{tv}
 &=&\;
 \T{char}
 \\
-&\T{pointer} \; \theta \mid \delta
+&\T{pointer} \; \theta \mid \delta_{tv}
 &=&\;
-\T{pointer} \; (\theta \mid \delta)
+\T{pointer} \; (\theta \mid \delta_{tv})
 \\
-&\T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta \mid \delta
+&\T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta \mid \delta_{tv}
 &=&\;
-\T{array} \; (s_1 \mid \delta), \ldots, (s_n \mid \delta) \; \T{of} \; (\theta \mid \delta)
+\T{array} \; s_1, \ldots, s_n \; \T{of} \; (\theta \mid \delta_{tv})
 \\
-&vt \mid \delta
+&tv \mid \delta_{tv}
 &=&\;
-\delta_{tv}(vt)
-\qquad\qquad\qquad vt \in \NT{typevar}
+\delta_{tv}(tv)
 \\
-&t \; \T{of} \; \theta_1, \ldots, \theta_n \mid \delta
+&tn \mid \delta_{tv}
 &=&\;
-t \; \T{of} \; (\theta_1 \mid \delta), \ldots, (\theta_n \mid \delta)
+tn
+\\
+&tn \; \T{of} \; \theta_1, \ldots, \theta_n \mid \delta_{tv}
+&=&\;
+tn \; \T{of} \; (\theta_1 \mid \delta_{tv}), \ldots, (\theta_n \mid \delta_{tv})
 \end{align*}
 
-La sustitución se tiene que propagar también para los tamaños de arreglos.
-Esto se debe al uso de tamaños variables para especificar los mismos.
-Para los rangos, la función tendría el siguiente comportamiento.
-\begin{align*}
-&size \mid \delta
-&=&\;
-size
-&size \in \NT{nat}
-\\
-&size \mid \delta
-&=&\;
-\delta_{bs}(size)
-&size \in \NT{bsize}
-\end{align*}
-
-% PREGUNTA
-% ¿Debería sustituir también los tamaños variables?
-% Es muy restrictivo, estoy haciendo chequeos de valor
-% Se debería verificar de forma dinámica si los valores coinciden
-
-\todo[color=green]{¿Esta bien sustituir también los tamaños variables? Suena muy restrictivo. PD: Ya me dieron el OK}
-
-La segunda verificación, está relacionada con la forma de los argumentos en su llamada.
-Debido a que un procedimiento puede modificar sus entradas, es necesario chequear que las expresiones correspondientes a las mismas sean variables para que efectivamente suceda el cambio de estado.
+Finalmente, ya nos encontramos en condiciones para definir la regla de análisis para la llamada de procedimientos.
+Se podría decir que tenemos que verificar tres propiedades esenciales.
+La primera, que el procedimiento se encuentre efectivamente declarado, y que la cantidad de argumentos coincida con los definidos.
+La segunda, que los tipos actuales en las expresiones se puedan unificar con los tipos reales de los argumentos, mediante alguna función de sustitución.
+La tercera, que se satisfagan todas las restricciones de clases impuestas para las variables de tipo dentro de la declaración del procedimiento.
 
 \ER{Regla B}{Procedimientos}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e e_1 : \theta_1$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{f}, \pi_{p}, \pi_{\mathbf{V}} \vdash_e e_1 : \theta_1
+$}
 \AxiomC{\ldots}
-\AxiomC{$\pi \vdash_e e_n : \theta_n$}
-\TrinaryInfC{$\pi \vdash_s p(e_1, \ldots, e_n)$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{f}, \pi_{p}, \pi_{\mathbf{V}} \vdash_e e_n : \theta_n
+$}
+\TrinaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{f}, \pi_{p}, \pi_{\mathbf{V}} \vdash_s p(e_1, \ldots, e_n)
+$}
 \end{prooftree}
-\PR{Donde el procedimiento se encuentra declarado con la siguiente información.}
+
+\PR{Donde el procedimiento se encuentra declarado con la siguiente información, en el contexto correspondiente.}
 \begin{equation*}
-(p, \{ (io_1, a_1, \theta^*_1), \ldots, (io_n, a_n, \theta^*_n) \}, T ) \in \pi_{proc}
-\end{equation*}
-\PR{Los tipos de los argumentos actuales y reales se igualan, luego de sustituir.}
-\begin{equation*}
-\exists \delta \in \Delta. \forall i \in \{ 1 \ldots n \}. \; (\theta^*_i \mid \delta = \theta_i)
-\end{equation*}
-\PR{Las entradas de escritura son efectivamente variables modificables.}
-\begin{equation*}
-\forall i \in \{ 1 \ldots n \}. \; a_i \in Outputs(p) \cup InOuts(p)
-\implies e_i \in \NT{var}
-\end{equation*}
-\PR{Todos los tipos satisfacen sus respectivas restricciones.}
-\begin{equation*}
-\forall (tv, \{ c_1, \ldots, c_m \}) \in T. tv \mid \delta = \theta \implies \theta \; \text{satisface las clases} \; c_1, \ldots, c_m
+(p, \{ (io_1, a_1, \theta^*_1), \ldots, (io_n, a_n, \theta^*_n) \}, rs ) \in \pi_{p}
 \end{equation*}
 
-\ER{Regla B}{Alloc}
+\PR{Los tipos de los argumentos actuales y reales se pueden igualar, luego de aplicar alguna sustitución válida.}
+\begin{equation*}
+\exists \delta_{sn} \in \Delta_{sn}, \delta_{tv} \in \Delta_{tv}.
+(
+\forall i \in \{ 1 \ldots n \}. \; \theta^*_i \mid \delta_{sn} \mid \delta_{tv} = \theta_i
+)
+\end{equation*}
+
+\PR{Con la misma sustitución previa, se satisfacen todas las restricciones de clases impuestas en la declaración del procedimiento.}
+\begin{equation*}
+\forall (tv, \{ cl_1, \ldots, cl_m \}) \in rs. \; \delta_{tv}(tv) = \theta \implies \theta \; \text{satisface las clases} \; cl_1, \ldots, cl_m
+\end{equation*}
+
+Vamos a entrar un poco más en detalle sobre la última propiedad a verificar, ya que su especificación puede resultar ambigua.
+Para tener un poco más de control sobre el polimorfismo que admiten las rutinas de un programa, se pueden añadir restricciones a las variables de tipo que ocurren en su prototipo.
+Debido a esto, al llamar a una función o procedimiento, se tiene que asegurar que estas restricciones se respetan para garantizar la correcta ejecución del programa.
+
+Ya que aún no se ha definido un mecanismo concluyente para generar instancias de determinadas clases para los tipos definidos por el usuario, este aspecto del lenguaje puede resultar un poco oscuro.
+En base a la naturaleza de un tipo, y al contexto en el que se encuentra posicionado, habrá distintas condiciones para que el mismo pueda satisfacer, o no, una determinada clase del lenguaje.
+Se dice que un tipo satisface una clase, si cumple alguna de las siguientes reglas.
+\begin{enumerate}
+\item Si es un tipo básico, satisface naturalmente las clases $\T{Eq}$, y $\T{Ord}$.
+\item Si es un tipo estructurado, satisface solo la clase $\T{Eq}$.
+\item Si es una variable de tipo, satisface una determinada clase, solo si el encabezado de la rutina global se la impone como restricción.
+\item Si es un tipo definido enumerado, satisface naturalmente las clases $\T{Eq}$, y $\T{Ord}$.
+\item Si es un sinónimo de tipo definido, satisface las mismas clases que el tipo al que se asocia.
+\item Si es una tupla definida, la misma satisface una clase siempre y cuando, se encuentre implementada la instancia de la misma.
+\end{enumerate}
+
+Para finalizar con la sección, y para ayudar a entender un poco mejor la última regla, ilustraremos el empleo de la misma con un breve ejemplo.
+Haciendo uso del mismo procedimiento que introdujimos en ejemplos previos, podemos probar la corrección de una llamada al mismo.
+Asumiremos que nos encontramos dentro de un procedimiento cualquiera, por ejemplo, dentro de la rutina $main$ como en el siguiente fragmento de código.
+\begin{lstlisting}[style = code]
+$\T{proc}$ main ()
+  $\T{var}$ a: $\T{array}$ 10 $\T{of}$ $\T{int}$
+  {some initialization of array a}
+  sort(a)
+$\T{end}$ $\T{proc}$
+\end{lstlisting}
+
+Para la prueba de esta sentencia, debemos tener los contextos apropiados inicializados.
+En este caso, el contexto de procedimientos tendría que tener la información de la rutina $main$, y el procedimiento previamente declarado $sort$, mientras el de variables debe tener los datos asociados al arreglo $a$.
+Los demás conjuntos, al no intervenir en la prueba, pueden ser vacíos.
+\begin{gather*}
+\pi_{v} = \{ (a, \T{array} \; 10 \; \T{of} \; int)) \}
+\\
+\pi_{p} =
+\{
+( sort, \{ (\T{in/out}, a, \T{array} \; n \; \T{of} \; A) \}, \{ (A, \{ \T{Ord} \}) \} )
+,
+( main, \emptyset, \emptyset )
+\}
+\end{gather*}
+
+Ahora pasando propiamente a la prueba, tenemos la siguiente aplicación.
+Debido que aún no detallamos las reglas para la verificación de expresiones, asumiremos la corrección de la variable $a$ y omitiremos su prueba.
+Las condiciones extras que se deben demostrar se describen al final.
+
+\TR{Prueba 7}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e v : \T{pointer} \; \theta$}
-\RightLabel{\quad con $\theta \in \NT{type}$}
-\UnaryInfC{$\pi \vdash_s \T{alloc} \; v$}
+\AxiomC{\ldots}
+\UnaryInfC
+{$
+\emptyset_{\mathbf{T}}, \emptyset_{f}, \pi_{p}, \emptyset_{sn}, \pi_{v} \vdash_e a : \T{array}
+$}
+\UnaryInfC
+{$
+\emptyset_{\mathbf{T}}, \emptyset_{f}, \pi_{p}, \emptyset_{sn}, \pi_{v} \vdash_s sort(a)
+$}
 \end{prooftree}
 
-\ER{Regla B}{Free}
-\begin{prooftree}
-\AxiomC{$\pi \vdash_e v : \T{pointer} \; \theta$}
-\RightLabel{\quad con $\theta \in \NT{type}$}
-\UnaryInfC{$\pi \vdash_s \T{free} \; v$}
-\end{prooftree}
+Sobre las propiedades adicionales a probar.
+Se puede ver, inmediatamente, que la cantidad de argumentos en la llamada coinciden con los de la declaración.
+Sobre la unificación de los tipos, con las siguientes sustituciones se puede observar que se cumple la igualdad necesaria.
+\begin{gather*}
+\delta_{sn}(n) = 10 \quad \delta_{tv}(A) = \T{int}
+\\
+\T{array} \; n \; \T{of} \; A \mid \delta_{sn} \mid \delta_{tv} = \T{array} \; 10 \; \T{of} \; \T{int}
+\end{gather*}
 
-\ER{Regla B}{While}
-\begin{prooftree}
-\AxiomC{$\pi \vdash_e e : \T{bool}$}
-\AxiomC{$\pi \vdash_{sb} s$}
-\BinaryInfC{$\pi \vdash_s \T{while} \; e \; \T{do} \; s$}
-\end{prooftree}
+Por último, hay que verificar que se cumplan las restricciones impuestas por el procedimiento invocado.
+Solo hay una, y la misma se satisface de forma directa.
+Debido que el tipo de los enteros es básico, los mismos implementan de forma natural la clase de orden.
+De esta forma, finaliza la verificación de corrección para la llamada del procedimiento.
+\begin{gather*}
+\delta_{tv}(A) = \T{int} \implies \T{int} \; \text{satisface la clase} \; \T{Ord}
+\end{gather*}
 
-\ER{Regla B}{If}
-\begin{prooftree}
-\AxiomC{$\pi \vdash_e e : \T{bool}$}
-\AxiomC{$\pi \vdash_{sb} s_1$}
-\AxiomC{$\pi \vdash_{sb} s_2$}
-\TrinaryInfC{$\pi \vdash_s \T{if} \; e \; \T{then} \; s_1 \; \T{else} \; s_2$}
-\end{prooftree}
+\subsubsection{Función Phi}
 
-Finalmente, especificamos las reglas para las sentencias \textit{for}.
-Todavía queda pendiente definir como se implementarán las \textit{typeclasses} en el lenguaje.
-En primera instancia, los enteros, los caracteres, y los enumerados deberían ser enumerables, mientras que un arreglo en sí sería iterable.
-En las sucesivas fases de desarrollo del intérprete se tomará una decisión respecto al asunto.
-Debido a esto, las siguientes pruebas pueden resultar ambiguas.
+En esta sección, describiremos las distintas propiedades que la función $\phi$ deberá verificar dentro de un bloque de sentencias.
+En base a la función, o procedimiento, que encapsulan a la secuencia de instrucciones a analizar, las propiedades que se deberán chequear sobre la misma serán distintas.
+Básicamente, esta función busca asegurar el uso adecuado de las diferentes clases de variables que manipula un programa.
 
-\ER{Regla B}{For To}
-\begin{prooftree}
-\AxiomC{$i \notin NameSpace$}
-\AxiomC{$i \notin \AV{s}$}
-\AxiomC{$\pi \vdash_e e_1 : \theta$}
-\AxiomC{$\pi \vdash_e e_2 : \theta$}
-\AxiomC{$\pi \vdash_{sb} s$}
-\QuinaryInfC{$\pi \vdash_s \T{for} \; i := e_1 \; \T{to} \; e_2 \; \T{do} \; s$}
-\end{prooftree}
-\PR{donde se satisface que el tipo $\theta$ es enumerable.}
+A continuación, vamos a extender las funciones previamente definidas para que acepten un listado de instrucciones.
+De esta forma, podremos realizar su aplicación al bloque entero de sentencias, y al mismo tiempo, logramos flexibilizar un poco la notación para facilitar la lectura de las reglas.
+\begin{gather*}
+\FV{sent_1 \ldots sent_m} = \FV{sent_1} \cup \ldots \cup \FV{sent_m}
+\\
+\AV{sent_1 \ldots sent_m} = \AV{sent_1} \cup \ldots \cup \AV{sent_m}
+\\
+\RV{sent_1 \ldots sent_m} = \RV{sent_1} \cup \ldots \cup \RV{sent_m}
+\end{gather*}
 
-\ER{Regla B}{For Downto}
-\begin{prooftree}
-\AxiomC{$i \notin NameSpace$}
-\AxiomC{$i \notin \AV{s}$}
-\AxiomC{$\pi \vdash_e e_1 : \theta$}
-\AxiomC{$\pi \vdash_e e_2 : \theta$}
-\AxiomC{$\pi \vdash_{sb} s$}
-\QuinaryInfC{$\pi \vdash_s \T{for} \; i := e_1 \; \T{downto} \; e_2 \; \T{do} \; s$}
-\end{prooftree}
-\PR{donde se satisface que el tipo $\theta$ es enumerable.}
+Sea $\gamma$ el identificador de la rutina que nos encontramos analizando actualmente.
+La misma puede referir a una función, o a un procedimiento.
+En base a las distintas variables que se encuentran declaradas en el alcance actual, la función $\phi$ deberá verificar distintas condiciones.
+En particular, para el análisis se tendrán que considerar los argumentos de la rutina, los tamaños variables introducidos en su prototipo, y las variables recientemente declaradas.
 
-\ER{Regla B}{For In}
-\begin{prooftree}
-\AxiomC{$i \notin NameSpace$}
-\AxiomC{$i \notin \AV{s}$}
-\AxiomC{$\pi \vdash_e e : \theta$}
-\AxiomC{$\pi \vdash_{sb} s$}
-\QuaternaryInfC{$\pi \vdash_s \T{for} \; i \; \T{in} \; e \; \T{do} \; s$}
-\end{prooftree}
-\PR{donde se satisface que el tipo $\theta$ es iterable.}
+La primer propiedad que hay que revisar, es la siguiente.
+Debido que el tamaño de un arreglo es fijo, el mismo no puede ser modificado durante la ejecución de un programa.
+Por lo tanto, hay que evitar que en las instrucciones, de una función o procedimiento, se intente alterar su valor.
+
+\ER{Función Phi}{Evitar modificación de tamaños variables.}
+\begin{equation*}
+\pi_{sn} \cap AV(sb) = \emptyset
+\end{equation*}
+
+Cuando nos encontramos en el cuerpo de una función, debemos realizar unos chequeos adicionales.
+En particular, no podemos permitir que la variable de retorno no sea modificada en las instrucciones.
+Debido que una función devuelve un valor, si el mismo no ha sido asignado, no se podría retornar ningún resultado luego de la ejecución de la misma.
+Hay que tener en cuenta, que estáticamente no se puede verificar si todas las posiciones de memoria alcanzables por una variable fueron debidamente inicializadas en el cuerpo de la función.
+
+\ER{Función Phi}{Asignar valor al retorno de función.}
+\begin{equation*}
+Retorno(\gamma) \subset AV(sb)
+\end{equation*}
+
+Además, sumando otra verificación al análisis de funciones, se tiene que chequear que ninguno de los argumentos pasados a la misma sea alterado.
+Una función no debería producir efectos secundarios en el contexto donde fue invocada, por lo que se debe verificar la siguiente condición.
+
+\ER{Función Phi}{Evitar modificación de argumentos de función.}
+\begin{equation*}
+Argumentos(\gamma) \cap AV(sb) = \emptyset
+\end{equation*}
+
+Pasando al análisis de procedimientos, tenemos que realizar algunas verificaciones particulares para los mismos.
+Por ejemplo, similar a los argumentos de una función, no podemos permitir que las entradas marcadas como \textit{solo lectura} sean modificadas en el cuerpo del mismo.
+
+\ER{Función Phi}{Etiquetas $in$ respetadas en procedimiento.}
+\begin{equation*}
+Inputs(\gamma) \cap AV(sb) = \emptyset
+\end{equation*}
+
+Para las otras clases de entradas de un procedimiento, tenemos verificaciones análogas a la anterior.
+Una entrada que se marca como \textit{solo escritura} no puede ser leída en las instrucciones de la rutina.
+Comúnmente, estas clases de entradas se utilizan para inicializar estructuras externas al procedimiento.
+
+\ER{Función Phi}{Etiquetas $out$ respetadas en procedimiento.}
+\begin{equation*}
+Outputs(\gamma) \cap RV(sb) = \emptyset
+\end{equation*}
+
+Para finalizar, ya que nos encontramos analizando el uso de variables dentro de funciones y procedimientos, es prudente hacer mención de algunos chequeos dinámicos que puede ser conveniente implementar en el intérprete.
+Al no poder detectar todos los errores de un programa de forma estática, necesitamos hacer uso de este análisis para poder identificar posibles fallas durante la ejecución de las diversas rutinas.
+
+El primer chequeo se realiza previo a la lectura de una variable.
+Antes de acceder a la posición de memoria propia de la misma, se debe verificar que un valor haya sido asignado anteriormente en esta.
+Caso contrario, la operación de acceso podría tener un comportamiento inesperado.
+
+Una segunda validación ha realizar durante la ejecución de un programa, tiene que ver con la verificación que el retorno de una función haya sido completamente asignado.
+Con esto nos referimos, que todas las posiciones de memoria accesibles por la variable de retorno tengan un valor fijado al finalizar el cálculo de la función.
+
+% WARNING
+% Todas las variables, tamaños y argumentos deben ser empleados.
+% WARNING
+% Asegurar la lectura y escritura de todas las variables del programa.
+
+% DINÁMICO
+% Asignar valor en variables, antes de acceder a la misma.
+% DINÁMICO
+% Asignación completa al retorno de una función.
+
+% WARNING
+% Argumentos deben ser efectivamente leídos.
+
+% PROPIEDAD
+% Se permiten modificar memoria a través de punteros | Argumentos.
+
+% WARNING
+% Entradas IN deben ser efectivamente leídas.
+% WARNING
+% Entradas OUT deben ser efectivamente escritas.
+% WARNING
+% Entradas IN / OUT deben ser efectivamente leídas y escritas.
+
+% PROPIEDAD
+% Se permiten modificar memoria a través de punteros | IN.
+% PROPIEDAD
+% Solo puedo realizar free, alloc, y asignación a punteros | OUT.
+% PROPIEDAD
+% Se puede modificar libremente punteros | IN/OUT.
 
 \subsection{Validaciones en Expresiones}
 
-Para finalizar, es hora de dar las verificaciones para las expresiones del lenguaje.
+En esta sección presentaremos las verificaciones para las expresiones del lenguaje.
 Las mismas consisten, en esencia, de los distintos chequeos de tipos junto con las reglas de subtipado y unificación apropiadas.
-Utilizaremos la siguiente notación para especificar que la expresión $e$ posee el tipo inferido $\theta$ bajo el contexto $\pi$.
+La notación utilizada ya fue empleada en la sección anterior, de todas formas, describiremos su significado formalmente.
+Usando los mismos contextos de análisis que en la verificación de sentencias, se determina que la expresión $e$ es válida bajo los mismos, con el tipo inferido $\theta$, mediante la siguiente notación.
 \begin{gather*}
-\pi \vdash_e e : \theta
+\pi_{\mathbf{P}} \vdash_e e : \theta
 \end{gather*}
 
+Comenzaremos con la especificación de las reglas de deducción.
 Para el caso de las constantes del lenguaje, no se presenta ninguna situación compleja.
-Las reglas son directas.
-Notar que la constante \textit{null} posee tipo polimórfico, mientras que \textit{inf} posee tipo entero.
-A continuación se listan las reglas de inferencia.
+Las reglas son directas, y su resultado es esperable.
+Recordar que cada una de las siguiente metavariables representa un elemento cualquier de la construcción sintáctica a la que están asociadas.
+
 \ER{Regla TC}{Valores Constantes}
 \begin{prooftree}
-\AxiomC{\empty}
-\RightLabel{\quad cuando $n \in \NT{int}$}
-\UnaryInfC{$\pi \vdash_e n : \T{int}$}
-\AxiomC{\empty}
-\RightLabel{\quad cuando $r \in \NT{real}$}
-\UnaryInfC{$\pi \vdash_e r : \T{real}$}
+\AxiomC{}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_e n : \T{int}$}
+\AxiomC{}
 \noLine
-\BinaryInfC{\empty}
+\UnaryInfC{}
+\AxiomC{}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_e r : \T{real}$}
+\noLine
+\TrinaryInfC{}
 \end{prooftree}
 
 \begin{prooftree}
-\AxiomC{\empty}
-\RightLabel{\quad cuando $b \in \NT{bool}$}
-\UnaryInfC{$\pi \vdash_e b : \T{bool}$}
-\AxiomC{\empty}
-\RightLabel{\quad cuando $c \in \NT{char}$}
-\UnaryInfC{$\pi \vdash_e c : \T{char}$}
+\AxiomC{}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_e b : \T{bool}$}
+\AxiomC{}
 \noLine
-\BinaryInfC{\empty}
+\UnaryInfC{}
+\AxiomC{}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_e c : \T{char}$}
+\noLine
+\TrinaryInfC{}
 \end{prooftree}
+
+Cuando se utiliza una constante enumerada, se tiene que consultar el contexto de tipos definidos correspondiente.
+El tipo resultado de la expresión, corresponderá al nombre empleado en la definición del tipo en el que la constante fue declarada.
 
 \ER{Regla TC}{Constantes Enumeradas}
 \begin{prooftree}
-\AxiomC{\empty}
-\RightLabel{\quad cuando $e \in \NT{cname}$}
-\UnaryInfC{$\pi \vdash_e e : t$}
+\AxiomC{$(tn, \{ cn_1, \ldots, cn, \ldots, cn_m \}) \in \pi_{e}$}
+\UnaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t}, \pi_{\mathbf{R}}, \pi_{\mathbf{V}} \vdash_e cn : tn
+$}
 \end{prooftree}
-\PR{donde se satisface que $\exists A. (t, A) \in \pi_{enum} \wedge e \in A$.}
+
+Para la constante especial $\T{inf}$, su deducción es inmediata.
+En primera instancia, se asume que la misma tiene tipo entero.
+Luego, con la introducción del subtipado, también podrá ser utilizada como un valor de tipo real.
+Esta constante se emplea como límite superior, o inferior si se encuentra negada, para los conjuntos numéricos del lenguaje.
 
 \ER{Regla TC}{Infinito}
 \begin{prooftree}
-\AxiomC{\empty}
-\UnaryInfC{$\pi \vdash_e inf : \T{int}$}
+\AxiomC{}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_e \T{inf} : \T{int}$}
 \end{prooftree}
+
+La constante $\T{null}$ tiene tipo polimórfico.
+La misma simboliza un puntero que no señala a ninguna posición válida de memoria.
+Debido a esto, la constante puede pasar como un puntero que señala a cualquier tipo de estructura.
+Se utiliza principalmente para evitar \textit{dangling pointers}.
 
 \ER{Regla TC}{Puntero Nulo}
 \begin{prooftree}
-\AxiomC{\empty}
-\RightLabel{\quad con $\theta \in \NT{type}$}
-\UnaryInfC{$\pi \vdash_e null : \T{pointer} \; \theta$}
+\AxiomC{}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_e \T{null} : \T{pointer} \; \theta$}
 \end{prooftree}
 
-En el caso de las variables hay cuatro reglas diferentes para la deducción de su tipo.
-En base al contexto en el que fueron introducidas, se tendrá que emplear una u otra de las siguientes deducciones.
+Para las variables empleadas en una función o procedimiento, hay cuatro reglas diferentes para la deducción de su tipo.
+En base al contexto en el que fueron introducidas, se tendrá que emplear una u otra de las siguientes inferencias.
+Comenzando propiamente con las variables declaradas dentro de un bloque, solo hay que consultar el contexto correspondiente.
+
 \ER{Regla TC}{Variables Declaradas}
 \begin{prooftree}
-\AxiomC{$(x, \theta) \in \pi_{loc}$}
-\UnaryInfC{$\pi \vdash_e x : \theta$}
+\AxiomC{$(x, \theta) \in \pi_{v}$}
+\UnaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{v} \vdash_e x : \theta
+$}
 \end{prooftree}
+
+Los tamaños variables introducidos en el prototipo de una función o procedimiento, pueden ser empleados como una variable más en el código.
+En este caso, se debe verificar que el mismo exista en el contexto adecuado.
+El tipo inferido para estos elementos, será siempre entero.
 
 \ER{Regla TC}{Tamaños Variables}
 \begin{prooftree}
-\AxiomC{$x \in \pi_{size}$}
-\UnaryInfC{$\pi \vdash_e x : \T{int}$}
+\AxiomC{$s \in \pi_{sn}$}
+\RightLabel{\quad cuando $s \in \NT{sname}$}
+\UnaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{sn}, \pi_{v} \vdash_e s : \T{int}
+$}
 \end{prooftree}
+
+Si nos encontramos analizando el bloque de una función $f$, puede ocurrir que aparezca alguno de los argumentos, o retorno, introducidos en el prototipo de la misma durante la verificación.
+En este caso, el tipo inferido será el mismo detallado en el encabezado de la rutina.
 
 \ER{Regla TC}{Variables de Función}
 \begin{prooftree}
-\AxiomC{$(f, \{ (a_1, \theta_1), \ldots, (a_l, \theta_l) \}, (a_r, \theta_r), T ) \in \pi_{fun}$}
-\UnaryInfC{$\pi \vdash_e a_i : \theta_i$}
+\AxiomC
+{$
+(f, \{ (a_1, \theta_1), \ldots, (a_l, \theta_l) \}, (a_r, \theta_r), rs ) \in \pi_{f}
+$}
+\UnaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{f}, \pi_{p}, \pi_{\mathbf{V}} \vdash_e a_i : \theta_i
+$}
 \end{prooftree}
 \PR{durante el análisis del bloque $block_f$.}
 
+En el análisis de un procedimiento $p$, puede ocurrir una situación análoga a la anterior.
+Al encontrar una variable especificada como entrada del mismo, se infiere el tipo que se asocia a esta en el encabezado del procedimiento.
+
 \ER{Regla TC}{Variables de Procedimiento}
 \begin{prooftree}
-\AxiomC{$(p, \{ (oi_1, a_1, \theta_1), \ldots, (oi_l, a_l, \theta_l) \}, T ) \in \pi_{proc}$}
-\UnaryInfC{$\pi \vdash_e a_i : \theta_i$}
+\AxiomC
+{$
+(p, \{ (oi_1, a_1, \theta_1), \ldots, (oi_l, a_l, \theta_l) \}, rs ) \in \pi_{p}
+$}
+\UnaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{f}, \pi_{p}, \pi_{\mathbf{V}} \vdash_e a_i : \theta_i
+$}
 \end{prooftree}
 \PR{durante el análisis del bloque $block_p$.}
 
-Para los tipos estructurados se emplean las siguientes reglas.
-En el caso de los arreglos, el tipo de las expresiones debe ser entero.
-No se hace ninguna clase de chequeo para comprobar que el acceso a una de estas estructuras sea dentro de los límites válidos.
-Esta verificación es delegada al análisis dinámico para realizar durante la ejecución del programa.
+A continuación, detallaremos las distintas reglas utilizadas para los diversos operadores de variables.
+Comenzando con los punteros, se debe verificar que la variable que se intenta acceder sea efectivamente uno.
+El tipo inferido en la deducción será el referenciado por el puntero en la premisa.
+
 \ER{Regla TC}{Acceso a Puntero}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e v : \T{pointer} \; \theta$}
-\UnaryInfC{$\pi \vdash_e \# v : \theta$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e v : \T{pointer} \; \theta$}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_e \star v : \theta$}
 \end{prooftree}
 
+Para el acceso a tuplas, la regla es un poco más compleja.
+Primero, se debe verificar que la variable a la que se intenta acceder sea efectivamente una tupla.
+Luego, en base a los argumentos declarados en la definición de la tupla, se debe aplicar una sustitución de variables de tipo finita, con respecto a los parámetros de tipo que fueron especificados cuando se introdujo la variable mencionada.
+
 \ER{Regla TC}{Acceso a Tuplas}
+\begin{adjustbox}{center, minipage = \paperwidth}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e v : t \; \T{of} \; \theta_1, \ldots, \theta_l$}
-\UnaryInfC{$\pi \vdash_e v . f_i : \theta^*_i \mid [a_1 : \theta_1, \ldots, a_l : \theta_l]$}
+\AxiomC
+{$
+\pi_{e}, \pi_{s}, \pi_{t}, \pi_{\mathbf{R}}, \pi_{\mathbf{V}} \vdash_e v : tn \; \T{of} \; \theta_1, \ldots, \theta_l
+$}
+\AxiomC
+{$
+(tn, \{ a_1, \ldots, a_l \}, \{ (fn_1, \theta^*_1), \ldots, (fn_m, \theta^*_m) \} ) \in \pi_{t}
+$}
+\BinaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t}, \pi_{\mathbf{R}}, \pi_{\mathbf{V}} \vdash_e v . fn_{i} : (\theta^*_i \mid [a_1 : \theta_1, \ldots, a_l : \theta_l]_{tv})
+$}
 \end{prooftree}
-\PR{donde se satisface que $(t, \{ a_1, \ldots, a_l \}, \{ (f_1, \theta^*_1), \ldots, (f_m, \theta^*_m) \} ) \in \pi_{tuple}$.}
+\end{adjustbox}
+
+Finalmente, analizaremos el acceso a arreglos.
+Al igual que en las reglas anteriores, tenemos que comprobar que la variable con la que operamos sea efectivamente uno.
+Luego, hay que verificar que todas las expresiones sean de tipo entero, y que la cantidad de las mismas coincida con las dimensiones que posee la estructura.
+Notar que asegurar que el acceso a un arreglo sea dentro de los límites válidos, solo se puede realizar durante el análisis dinámico.
 
 \ER{Regla TC}{Acceso a Arreglos}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e v : \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta$}
-\AxiomC{$\pi \vdash_e e_1 : \T{int}$}
+\AxiomC
+{$
+\pi_{\mathbf{P}} \vdash_e v : \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta
+$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e_1 : \T{int}$}
 \AxiomC{\ldots}
-\AxiomC{$\pi \vdash_e e_n : \T{int}$}
-\QuaternaryInfC{$\pi \vdash_e v[e_1, \ldots, e_n] : \theta$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e_n : \T{int}$}
+\QuaternaryInfC{$\pi_{\mathbf{P}} \vdash_e v[e_1, \ldots, e_n] : \theta$}
 \end{prooftree}
 
-Varios de los operadores del lenguaje se encuentran sobrecargados.
-Esto quiere decir que pueden ser utilizados para operar con valores de tipos diferentes, obteniendo resultados distintos en base a los mismos.
-En particular, los numéricos aceptan valores enteros como reales.
+Pasando al análisis de los operadores del lenguaje, se puede observar que varios de los mismos se encuentran sobrecargados.
+Esto quiere decir, que pueden ser utilizados para operar con valores de tipos diferentes, obteniendo resultados distintos en base a los mismos.
+Comenzando con los operadores numéricos, los mismos pueden ser utilizados para trabajar con enteros y con reales.
+Luego de introducidas las reglas de subtipado, se podrá notar que las deducciones son aún más flexibles, permitiendo argumentos de tipos distintos.
+
 \ER{Regla TC}{Operadores Binarios Numéricos}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e e_1 : \T{int}$}
-\AxiomC{$\pi \vdash_e e_2 : \T{int}$}
-\BinaryInfC{$\pi \vdash_e e_1 \oplus e_2 : \T{int}$}
-\AxiomC{$\pi \vdash_e e_1 : \T{real}$}
-\AxiomC{$\pi \vdash_e e_2 : \T{real}$}
-\BinaryInfC{$\pi \vdash_e e_1 \oplus e_2 : \T{real}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e_1 : \T{int}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e_2 : \T{int}$}
+\BinaryInfC{$\pi_{\mathbf{P}} \vdash_e e_1 \oplus e_2 : \T{int}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e_1 : \T{real}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e_2 : \T{real}$}
+\BinaryInfC{$\pi_{\mathbf{P}} \vdash_e e_1 \oplus e_2 : \T{real}$}
 \noLine
-\BinaryInfC{\empty}
+\BinaryInfC{}
 \end{prooftree}
 \PR{donde $\oplus \in \{ +, -, *, /, \% \}$.}
 
-\ER{Regla TC}{Operadores Binarios Booleanos}
-\begin{prooftree}
-\AxiomC{$\pi \vdash_e e_1 : \T{bool}$}
-\AxiomC{$\pi \vdash_e e_2 : \T{bool}$}
-\BinaryInfC{$\pi \vdash_e e_1 \otimes e_2 : \T{bool}$}
-\end{prooftree}
-\PR{donde $\otimes \in \{ \&\&, || \}$.}
-
 \ER{Regla TC}{Operadores Unarios Numéricos}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e e : \T{int}$}
-\UnaryInfC{$\pi \vdash_e -e : \T{int}$}
-\AxiomC{$\pi \vdash_e e : \T{real}$}
-\UnaryInfC{$\pi \vdash_e -e : \T{real}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e : \T{int}$}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_e -e : \T{int}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e : \T{real}$}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_e -e : \T{real}$}
 \noLine
-\BinaryInfC{\empty}
+\BinaryInfC{}
 \end{prooftree}
+
+Los siguientes operadores que analizaremos serán los booleanos.
+Las reglas para los mismos son bastante básicas.
+En esta ocasión, no hay ninguna especie de sobrecarga, ni tampoco se tendrán que usar reglas de subtipado para hacer coincidir los tipos de los operandos.
+
+\ER{Regla TC}{Operadores Binarios Booleanos}
+\begin{prooftree}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e_1 : \T{bool}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e_2 : \T{bool}$}
+\BinaryInfC{$\pi_{\mathbf{P}} \vdash_e e_1 \oplus e_2 : \T{bool}$}
+\end{prooftree}
+\PR{donde $\oplus \in \{ \&\&, || \}$.}
 
 \ER{Regla TC}{Operadores Unarios Booleanos}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e e : \T{bool}$}
-\UnaryInfC{$\pi \vdash_e !e : \T{bool}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e : \T{bool}$}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_e !e : \T{bool}$}
 \end{prooftree}
 
-Otra de las cuestiones pendientes a debatir en el lenguaje, es para que clase de tipos estarán definidas las operaciones de orden e igualdad.
-Nuevamente, esta es otra discusión sobre \textit{typeclasses} y su implementación.
-Podríamos asumir que todos los tipos cumplen las condiciones para ser igualables.
-Mientras, solo los tipos básicos y los enumerados podrían ser ordenables.
+Los últimos operadores que estudiaremos serán los de igualdad y orden.
+Sus argumentos tendrán que tener el mismo tipo, y el resultado será un valor booleano.
+Estos operadores estarán definidos para una gran variedad de tipos, siempre y cuando, los mismos implementen las clases $\T{Eq}$, y $\T{Ord}$ respectivamente.
+En secciones anteriores se dio una descripción informal sobre que tipos satisfacen que clases.
+Teniendo en cuenta esta información previa, las reglas se detallan a continuación.
 
 \ER{Regla TC}{Operadores de Igualdad}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e e_1 : \theta$}
-\AxiomC{$\pi \vdash_e e_2 : \theta$}
-\BinaryInfC{$\pi \vdash_e e_1 \odot e_2 : \T{bool}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e_1 : \theta$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e_2 : \theta$}
+\BinaryInfC{$\pi_{\mathbf{P}} \vdash_e e_1 \oplus e_2 : \T{bool}$}
 \end{prooftree}
-\PR{donde $\odot \in \{ ==, != \}$, y el tipo $\theta$ es igualable.}
+\PR{donde $\oplus \in \{ ==, != \}$, y se satisface que el tipo $\theta$ es igualable.}
 
 \ER{Regla TC}{Operadores de Orden}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e e_1 : \theta$}
-\AxiomC{$\pi \vdash_e e_2 : \theta$}
-\BinaryInfC{$\pi \vdash_e e_1 \odot e_2 : \T{bool}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e_1 : \theta$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e_2 : \theta$}
+\BinaryInfC{$\pi_{\mathbf{P}} \vdash_e e_1 \oplus e_2 : \T{bool}$}
 \end{prooftree}
-\PR{donde $\odot \in \{ <, >, <=, >= \}$, y el tipo $\theta$ es ordenable.}
+\PR{donde $\oplus \in \{ <, >, <=, >= \}$, y se satisface que el tipo $\theta$ es ordenable.}
 
-Para terminar con las reglas de inferencia de expresiones, solo resta definir la adecuada para las llamadas a función.
-Similar a los procedimientos, se necesita comprobar la adecuación de los tipos polimórficos empleados.
-A continuación se detalla la misma.
+Para terminar con las reglas de inferencia de expresiones, solo resta definir la adecuada para las llamadas a funciones.
+La verificación de estas, es análoga a la de llamadas a procedimientos.
+Se deben analizar tres propiedades esenciales.
+Primero, que la función se encuentre declarada, y que la cantidad de argumentos con los que es invocada coincida con los definidos.
+Segundo, que los tipos actuales en las expresiones se unifiquen con los tipos reales de sus entradas, mediante la aplicación de alguna sustitución.
+En este caso, la sustitución se tendrá que realizar también al retorno de la función, obteniendo de esta manera, el resultado del análisis.
+Tercero, que se satisfagan todas las restricciones de clases impuestas para las variables de tipo dentro de la declaración de la función.
 
 \ER{Regla TC}{Funciones}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e e_1 : \theta_1$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{f}, \pi_{p}, \pi_{\mathbf{V}} \vdash_e e_1 : \theta_1
+$}
 \AxiomC{\ldots}
-\AxiomC{$\pi \vdash_e e_n : \theta_n$}
-\TrinaryInfC{$\pi \vdash_e f(e_1, \ldots, e_n) : \theta_r$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{f}, \pi_{p}, \pi_{\mathbf{V}} \vdash_e e_n : \theta_n
+$}
+\TrinaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{f}, \pi_{p}, \pi_{\mathbf{V}} \vdash_e f(e_1, \ldots, e_n) : \theta_{r}
+$}
 \end{prooftree}
-\PR{Donde la función se encuentra declarada con la siguiente información.}
+
+\PR{Donde la función se encuentra declarado con la siguiente información, en el contexto correspondiente.}
 \begin{equation*}
-(f, \{ (a_1, \theta^*_1), \ldots, (a_n, \theta^*_n) \}, (a_r, \theta^*_r), T) \in \pi_{fun}
+(f, \{ (a_1, \theta^*_1), \ldots, (a_n, \theta^*_n) \}, (a_r, \theta^*_r), rs ) \in \pi_{f}
 \end{equation*}
-\PR{Los tipos de los argumentos actuales y reales se igualan, luego de sustituir.}
+
+\PR{Los tipos de los argumentos actuales y reales se pueden igualar, luego de aplicar alguna sustitución válida.}
 \begin{equation*}
-\exists \delta \in \Delta. \; (\forall i \in \{ 1 \ldots n \}. \; \theta^*_i \mid \delta = \theta_i) \wedge (\theta^*_r \mid \delta = \theta_r)
+\exists \delta_{sn} \in \Delta_{sn}, \delta_{tv} \in \Delta_{tv}.
+(
+\forall i \in \{ 1 \ldots n \}. \; \theta^*_i \mid \delta_{sn} \mid \delta_{tv} = \theta_i
+)
+\wedge
+(\theta^*_r \mid \delta_{sn} \mid \delta_{tv} = \theta_r)
 \end{equation*}
-\PR{Todos los tipos satisfacen sus respectivas restricciones.}
+
+\PR{Con la misma sustitución previa, se satisfacen todas las restricciones de clases impuestas en la declaración de la función.}
 \begin{equation*}
-\forall (tv, \{ c_1, \ldots, c_m \}) \in T. tv \mid \delta = \theta \implies \theta \; \text{satisface las clases} \; c_1, \ldots, c_m
+\forall (tv, \{ cl_1, \ldots, cl_m \}) \in rs. \; \delta_{tv}(tv) = \theta \implies \theta \; \text{satisface las clases} \; cl_1, \ldots, cl_m
 \end{equation*}
 
 Una regla fundamental para el tipado de las expresiones tiene que ver con el subtipado.
-En el lenguaje, es simplemente la conversión de un valor de tipo \textit{int} a uno de tipo \textit{real}.
+La misma fue mencionada previamente, como una forma de flexibilizar las deducciones de tipo.
+En el lenguaje, es simplemente la conversión de un valor de tipo $\T{int}$ a uno de tipo $\T{real}$.
 Esto permite que programas que funcionan para números reales, también lo hagan con enteros.
 Se especifica a continuación.
 
 \ER{Regla TC}{Subtipado}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e e : \T{int}$}
-\UnaryInfC{$\pi \vdash_e e : \T{real}$}
+\AxiomC{$\pi_{\mathbf{P}} \vdash_e e : \T{int}$}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_e e : \T{real}$}
+\end{prooftree}
+
+Al igual que en la mayoría de las secciones anteriores, finalizaremos con un breve ejemplo.
+En el mismo, ilustraremos el uso de la regla de subtipado para poder demostrar la corrección de una aplicación de los operadores de igualdad.
+Como en el ejemplo no tendremos que consultar ninguno de los contextos del programa, asumiremos que $\pi_{\mathbf{P}}$ se encuentra inicializado con un valor razonable.
+
+\TR{Prueba 8}
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_e 4 : \T{int}$}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_e 4 : \T{real}$}
+\AxiomC{}
+\UnaryInfC{$\pi_{\mathbf{P}} \vdash_e 4.0 : \T{real}$}
+\BinaryInfC{$\pi_{\mathbf{P}} \vdash_e 4 == 4.0 : \T{bool}$}
 \end{prooftree}
 
 \subsubsection{Unificación}
 
 Se puede observar que algunos tipos de nuestro sistema son equivalentes entre sí, a pesar de utilizar construcciones sintácticas diferentes.
-Un ejemplo podría ser la declaración de un sinónimo de tipo por parte del usuario.
-Aunque se representa solo con su nombre y sus argumentos, se puede establecer una igualdad semántica con el tipo en el cuerpo de su definición.
+Un ejemplo podría ser la declaración de un sinónimo de tipo por parte del usuario, junto con el tipo especificado en el cuerpo de su definición.
+Sintácticamente estos dos elementos serán distintos ya que, el primero se representará solo con su nombre y sus argumentos, mientras que el segundo podrá ser un tipo válido cualquiera del lenguaje.
+A pesar de esto, es claro que se puede establecer una igualdad semántica entre ambos elementos.
 
-Antes de describir las reglas de unificación de tipos, debemos redefinir la función de sustitución anterior.
-En esta ocasión queremos ser capaces de reemplazar las variables de tipo en el cuerpo de una declaración de tipo, por los argumentos en los que se instanciará el mismo.
+Para el siguiente conjunto de reglas, emplearemos la siguiente notación.
+Diremos que un tipo $\theta$ unifica a otro tipo $\theta'$, bajo el contexto de tipos definidos por el usuario $\pi_{\mathbf{T}}$, mediante la siguiente fórmula.
 \begin{gather*}
-\_ \mid \_ : \NT{type} \times \Delta \RA \NT{type}
-\\
-\Delta = \NT{typevar} \RA \NT{type}
+\pi_{\mathbf{T}} \vdash_{u} \theta \sim \theta'
 \end{gather*}
-
-La estructura de la función es casi idéntica a la que se dio previamente.
-La diferencia principal es que nos limitaremos a sustituir solo variables de tipo.
-Al no permitirse el uso de tamaños variables en declaraciones de tipos, no necesitamos preocuparnos por este aspecto.
-\begin{align*}
-&\T{int} \mid \delta 
-&=&\;
-\T{int}
-\\
-&\T{real} \mid \delta 
-&=&\;
-\T{real}
-\\
-&\T{bool} \mid \delta 
-&=&\;
-\T{bool}
-\\
-&\T{char} \mid \delta 
-&=&\;
-\T{char}
-\\
-&\T{pointer} \; \theta \mid \delta
-&=&\;
-\T{pointer} \; (\theta \mid \delta)
-\\
-&\T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta \mid \delta
-&=&\;
-\T{array} \; s_1, \ldots, s_n \; \T{of} \; (\theta \mid \delta)
-\\
-&vt \mid \delta
-&=&\;
-\delta(vt)
-\qquad\qquad\qquad vt \in \NT{typevar}
-\\
-&t \; \T{of} \; \theta_1, \ldots, \theta_n \mid \delta
-&=&\;
-t \; \T{of} \; (\theta_1 \mid \delta), \ldots, (\theta_n \mid \delta)
-\end{align*}
 
 Con el siguiente conjunto de reglas se puede observar que la unificación es una relación de equivalencia sobre nuestro sistema de tipos.
 La misma satisface las propiedades de reflexividad, simetría, y transitividad.
-A continuación, el listado de deducciones.
+A continuación, el listado de deducciones correspondientes.
 
 \ER{Regla U}{Reflexividad}
 \begin{prooftree}
-\AxiomC{\empty}
-\UnaryInfC{$\theta \sim \theta$}
+\AxiomC{}
+\UnaryInfC{$\pi_{\mathbf{T}} \vdash_{u} \theta \sim \theta$}
 \end{prooftree}
 
 \ER{Regla U}{Simetría}
 \begin{prooftree}
-\AxiomC{$\theta \sim \theta'$}
-\UnaryInfC{$\theta' \sim \theta$}
+\AxiomC{$\pi_{\mathbf{T}} \vdash_{u} \theta \sim \theta'$}
+\UnaryInfC{$\pi_{\mathbf{T}} \vdash_{u} \theta' \sim \theta$}
 \end{prooftree}
 
 \ER{Regla U}{Transitividad}
 \begin{prooftree}
-\AxiomC{$\theta \sim \theta'$}
-\AxiomC{$\theta' \sim \theta''$}
-\BinaryInfC{$\theta \sim \theta''$}
+\AxiomC{$\pi_{\mathbf{T}} \vdash_{u} \theta \sim \theta'$}
+\AxiomC{$\pi_{\mathbf{T}} \vdash_{u} \theta' \sim \theta''$}
+\BinaryInfC{$\pi_{\mathbf{T}} \vdash_{u} \theta \sim \theta''$}
 \end{prooftree}
+
+Quizá la regla más importante que podemos obtener al introducir la unificación en nuestro conjunto de derivaciones, es la siguiente.
+La misma, especifica que si podemos deducir cierto tipo sobre una expresión cualquiera, y al mismo tiempo, este tipo puede unificar a otro; entonces podemos deducir este último tipo para nuestra expresión inicial.
 
 \ER{Regla U}{Unificación}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e e : \theta$}
-\AxiomC{$\theta \sim \theta'$}
-\BinaryInfC{$\pi \vdash_e e : \theta'$}
+\AxiomC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{\mathbf{V}} \vdash_e e : \theta
+$}
+\AxiomC{$\pi_{\mathbf{T}} \vdash_{u} \theta \sim \theta'$}
+\BinaryInfC
+{$
+\pi_{\mathbf{T}}, \pi_{\mathbf{R}}, \pi_{\mathbf{V}} \vdash_e e : \theta'
+$}
 \end{prooftree}
+
+Obviamente, con solo el conjunto anterior de deducciones no alcanza.
+Tenemos que dar reglas más concretos para unificar tipos de nuestro sistema.
+Comenzando con los punteros, la inferencia es bastante simple.
+Si dos tipos cualquiera unifican, entonces un puntero que referencia a uno de estos, puede unificar a un puntero que señala al otro.
 
 \ER{Regla U}{Punteros}
 \begin{prooftree}
-\AxiomC{$\theta \sim \theta'$}
-\UnaryInfC{$\T{pointer} \; \theta \sim \T{pointer} \; \theta'$}
+\AxiomC{$\pi_{\mathbf{T}} \vdash_{u} \theta \sim \theta'$}
+\UnaryInfC
+{$
+\pi_{\mathbf{T}} \vdash_{u} \T{pointer} \; \theta \sim \T{pointer} \; \theta'
+$}
 \end{prooftree}
+
+Para los arreglos, se aplica una idea idéntica a la anterior.
+Si el tipo interno del arreglo unifica a otro tipo cualquiera, entonces el arreglo inicial puede unificar a otra estructura nueva con el tipo recientemente introducido como tipo interno.
 
 \ER{Regla U}{Arreglos}
 \begin{prooftree}
-\AxiomC{$\theta \sim \theta'$}
-\UnaryInfC{$\T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta \sim \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta'$}
+\AxiomC{$\pi_{\mathbf{T}} \vdash_{u} \theta \sim \theta'$}
+\UnaryInfC
+{$
+\pi_{\mathbf{T}} \vdash_{u} \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta \sim \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta'
+$}
 \end{prooftree}
+
+Para el uso de tipos definidos, la idea es análoga a la empleada en las reglas previas.
+Si cada uno de los parámetros puede unificar a otro tipo, entonces el tipo definido podrá unificar a otro con los argumentos modificados.
 
 \ER{Regla U}{Tipos Definidos}
 \begin{prooftree}
-\AxiomC{$\theta_1 \sim \theta_1'$}
+\AxiomC{$\pi_{\mathbf{T}} \vdash_{u} \theta_1 \sim \theta_1'$}
 \AxiomC{\ldots}
-\AxiomC{$\theta_n \sim \theta_n'$}
-\TrinaryInfC{$t \; \T{of} \; \theta_1, \ldots, \theta_n \sim t \; \T{of} \; \theta_1', \ldots, \theta_n'$}
+\AxiomC{$\pi_{\mathbf{T}} \vdash_{u} \theta_n \sim \theta_n'$}
+\TrinaryInfC
+{$
+\pi_{\mathbf{T}} \vdash_{u} tn \; \T{of} \; \theta_1, \ldots, \theta_n \sim tn \; \T{of} \; \theta_1', \ldots, \theta_n'
+$}
 \end{prooftree}
 
-\ER{Regla U}{Sinónimos}
+Finalmente, la regla para los sinónimos del lenguaje.
+Esta deducción permite intercambiar libremente el uso del tipo declarado, con el tipo de su definición a lo largo del programa.
+Esto equivaldría a la creación de un tipo transparente en el lenguaje.
+Para el caso de los sinónimos sin parámetros, la derivación es directa, ya que solo se tiene que consultar la existencia del mismo en el contexto correspondiente a sinónimos del programa.
+
+\ER{Regla U}{Sinónimos sin Argumentos}
 \begin{prooftree}
-\AxiomC{\empty}
-\UnaryInfC{$t \; \T{of} \; \theta_1, \ldots, \theta_n \sim \theta \mid [a_1 : \theta_1, \ldots, a_n : \theta_n]$}
+\AxiomC{$(tn, \emptyset, \theta) \in \pi_{s}$}
+\UnaryInfC{$\pi_{e}, \pi_{s}, \pi_{t} \vdash_{u} tn \sim \theta$}
 \end{prooftree}
-\PR{donde se satisface que $(t, \{ a_1, \ldots, a_n \}, \theta ) \in \pi_{syn}$.}
 
-% PREGUNTA
-% ¿Son suficientes las reglas? Para mí, son completas
-% Lo único que hace es explicitar la igualdad entre definición de sinónimos y su cuerpo.
+En el caso de un sinónimo con argumentos, se necesita realizar una transformación adicional.
+No alcanza con solo verificar que el tipo se encuentre declarado, y que la cantidad de parámetros sea la correcta.
+Además, se tiene que aplicar una sustitución de variables de tipo finita al cuerpo de su definición, en base a los argumentos pasados al mismo, para obtener el nuevo tipo unificado.
 
-\todo[color=green]{¿Son suficientes las reglas de unificación? Para mí, si.}
+\ER{Regla U}{Sinónimos con Argumentos}
+\begin{prooftree}
+\AxiomC{$(tn, \{ a_1, \ldots, a_n \}, \theta ) \in \pi_{s}$}
+\UnaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \vdash_{u} tn \; \T{of} \; \theta_1, \ldots, \theta_n \sim (\theta \mid [a_1 : \theta_1, \ldots, a_n : \theta_n]_{tv})
+$}
+\end{prooftree}
 
-% PARSER
+A continuación, daremos un ejemplo ilustrativo para ayudar a la comprensión de las últimas reglas descriptas.
+Asumiendo que en el lenguaje se han definido dos sinónimos de tipo, $matrix$ y $nat$, podemos emplear las deducciones sobre unificación para probar la equivalencia de distintos tipos.
+En el ejemplo, derivaremos de forma sucesiva un tipo abstracto definido por el usuario, hasta obtener un tipo nativo concreto propio del lenguaje. 
 
-% Modificar los tipos enumerados para tener sintaxis similar a funciones.
-% Se declaran como type t(a1, a2, ...) = ... y se usan como t(t1, t2, ...)
+\TR{Prueba 9}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC{$(matrix, \{ A \}, \T{array} \; 5, 5 \; \T{of} \; A ) \in \pi_{s}$}
+\UnaryInfC
+{$
+\emptyset_{e}, \pi_{s}, \emptyset_{t} \vdash_{u} matrix \; \T{of} \; nat \sim (\T{array} \; 5, 5 \; \T{of} \; A \mid [A : nat]_{tv})
+$}
+\AxiomC{$(nat, \emptyset, \T{int}) \in \pi_{s}$}
+\UnaryInfC
+{$
+\emptyset_{e}, \pi_{s}, \emptyset_{t} \vdash_{u} nat \sim \T{int}
+$}
+\UnaryInfC
+{$
+\emptyset_{e}, \pi_{s}, \emptyset_{t} \vdash_{u} \T{array} \; 5, 5 \; \T{of} \; nat \sim \T{array} \; 5, 5 \; \T{of} \; \T{int}
+$}
+\BinaryInfC
+{$
+\emptyset_{e}, \pi_{s}, \emptyset_{t} \vdash_{u} matrix \; \T{of} \; nat \sim \T{array} \; 5, 5 \; \T{of} \; \T{int}
+$}
+\end{prooftree}
+\end{adjustbox}
+\PR{donde $\pi_{s} = \{ (matrix, \{ A \}, \T{array} \; 5, 5 \; \T{of} \; A ), (nat, \emptyset, \T{int}) \}$.}
+
+\subsection{Validaciones en Programas}
+
+Para finalizar con este capítulo, solo resta dar la regla para analizar un programa.
+En resumen, para asegurar que un programa es válido (estáticamente), se deben realizar dos etapas de análisis.
+En la primera se tienen que verificar progresivamente todas las declaraciones de tipo en el mismo, acumulando la información obtenida en el contexto de tipos definidos.
+Luego como segunda etapa, se deben chequear una por una, todas las funciones y procedimientos del programa, almacenando la información conseguida en estos en los contextos adecuados.
+Inicialmente, se debe comenzar con ambos contextos generales vacíos, y a medida que progrese el análisis, los mismos se irán expandiendo.
+
+\ER{Regla P}{Programas}
+\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{prooftree}
+\AxiomC
+{$
+\pi^{0}_{\mathbf{T}} \vdash_{td} td_{1} : \pi^{1}_{\mathbf{T}}
+\;\ldots\;
+\pi^{n-1}_{\mathbf{T}} \vdash_{td} td_{n} : \pi^{n}_{\mathbf{T}}
+$}
+\AxiomC
+{$
+\pi^{n}_{\mathbf{T}}, \pi^{0}_{\mathbf{R}} \vdash_{fp} rd_{1} : \pi^{1}_{\mathbf{R}}
+\;\ldots\;
+\pi^{n}_{\mathbf{T}}, \pi^{m-1}_{\mathbf{R}} \vdash_{fp} rd_{m} : \pi^{m}_{\mathbf{R}}
+$}
+\BinaryInfC
+{$
+\pi^{0}_{\mathbf{T}}, \pi^{0}_{\mathbf{R}} \vdash td_{1} \ldots td_{n} \; rd_{1} \ldots rd_{m}
+$}
+\end{prooftree}
+\end{adjustbox}
+\PR{donde los contextos iniciales son vacíos  $\pi^{0}_{\mathbf{T}} = \emptyset = \pi^{0}_{\mathbf{R}}$.}
 
 \end{document}
