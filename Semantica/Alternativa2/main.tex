@@ -153,15 +153,11 @@ A continuación se detallan los mismos.
 \end{lstlisting}
 
 Del lado de los tipos nativos estructurados, se tiene a los arreglos y a los punteros.
-Para los primeros, hay que especificar como se definen los rangos de los mismos.
+Para los primeros, hay que especificar como se definen los tamaños de los mismos.
 El no terminal \textit{bsize} representa al tamaño variable.
 
 \begin{lstlisting}[style = syntax]
-(-array-) -> $\T{array}$ (-range-) $\ldots$ (-range-) $\T{of}$ (-type-)
-
-(-range-) -> (-init-) : (-size-)
-
-(-init-) -> (-int-) | (-char-) | (-cname-)
+(-array-) -> $\T{array}$ (-size-) $\ldots$ (-size-) $\T{of}$ (-type-)
 
 (-size-) -> (-nat-) | (-bsize-)
 
@@ -188,7 +184,7 @@ También existen distintas clases para los tipos del programa.
 Las mismas representan una especie de interfaz que caracteriza las propiedades que cumplen cada uno de los tipos que las definen.
 
 \begin{lstlisting}[style = syntax]
-(-class-) -> $\T{Equatable}$ | $\T{Ordenable}$ | $\T{Enumerable}$ | $\T{Iterable}$
+(-class-) -> $\T{Eq}$ | $\T{Ord}$ | $\T{Iter}$
 \end{lstlisting}
 
 Finalmente, para la declaración de nuevos tipos por parte del usuario hay tres posibilidades.
@@ -242,7 +238,7 @@ También se pueden agregar restricciones para las variables de tipo en su protot
 
 (-procarg-) -> (-io-) (-id-) $:$ (-type-)
 
-(-constraint-) -> (-typevar-) $\ldots$ (-typevar-) $:$ (-class-) $\ldots$ (-class-)
+(-constraint-) -> (-typevar-) $:$ (-class-) $\ldots$ (-class-)
 \end{lstlisting}
 
 \section{Chequeos}
@@ -347,11 +343,11 @@ La validez de las mismas se garantiza solamente cuando se dan las condiciones an
 
 \ER{Regla DT para Tipos}{Arreglos}
 \begin{prooftree}
-\AxiomC{$\pi_{type} \vdash_r r_1$}
+\AxiomC{$\pi_{type} \vdash_s s_1$}
 \AxiomC{\ldots}
-\AxiomC{$\pi_{type} \vdash_r r_n$}
+\AxiomC{$\pi_{type} \vdash_s s_n$}
 \AxiomC{$\pi_{type} \vdash_t \theta$}
-\QuaternaryInfC{$\pi_{type} \vdash_t \T{array} \; r_1, \ldots, r_n \; \T{of} \; \theta$}
+\QuaternaryInfC{$\pi_{type} \vdash_t \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta$}
 \end{prooftree}
 
 \ER{Regla DT para Tipos}{Variables de Tipo}
@@ -371,31 +367,15 @@ La validez de las mismas se garantiza solamente cuando se dan las condiciones an
 \end{prooftree}
 \PR{donde se satisface que $\exists A, B. (t, A, B) \in \pi_{type}$.}
 
-Para el caso de los rangos de un arreglo hay que definir otra serie de reglas para comprobar la validez de los mismos.
-En particular, hay que verificar que el tamaño de los mismos no supere el valor máximo permitido.
+Para el caso de los tamaños de un arreglo, solo hay que verificar que los mismos sean naturales.
+Esto se debe a que en esta etapa, no se permiten tamaños variables para los mismos.
 
-\ER{Regla DT para Tipos}{Rangos}
+\ER{Regla DT para Tipos}{Tamaños}
 \begin{prooftree}
-\AxiomC{$init + size < limiteMaximo$}
+\AxiomC{\empty}
 \RightLabel{\quad cuando $size \in \NT{nat}$}
-\UnaryInfC{$\pi_{type} \vdash_r init \; : \; size$}
+\UnaryInfC{$\pi_{type} \vdash_s size$}
 \end{prooftree}
-
-Es necesario definir una función que calcule el tipo del rango de un arreglo.
-Hacer esto es inmediato, debido a que analizar su valor inicial provee la información requerida.
-\begin{gather*}
-indexT(i : s) = \T{int} \qquad i \in \NT{int}
-\\
-indexT(c : s) = \T{char} \qquad c \in \NT{char}
-\\
-indexT(e : s) = t \qquad e \in \NT{cname}
-\end{gather*}
-donde vale que $\exists A. (t, A) \in \pi_{enum} \wedge e \in A$.
-
-El valor del $limiteMaximo$ para un rango va a depender del tipo de sus índices.
-Para el caso de los enteros, será el número más alto definido.
-Para los caracteres, dependerá de la cantidad de símbolos válidos definidos.
-Y para cualquier constante enumerada, dependerá de la cantidad de constantes definidas por el usuario para ese tipo en particular.
 
 \subsubsection{Tipos Libres}
 
@@ -430,7 +410,7 @@ A continuación su definición dirigida por sintaxis.
 &=&\;
 \FT{\theta}
 \\
-&\FT{\T{array} \; r_1, \ldots, r_n \; \T{of} \; \theta}
+&\FT{\T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta}
 &=&\;
 \FT{\theta}
 \\
@@ -522,7 +502,7 @@ A \subset \NT{id} \times \NT{type}
 \wedge
 r \in \NT{id} \times \NT{type}
 \wedge
-T \subset \NT{typevar} \times \NT{class}
+T \subset \NT{typevar} \times \NT{class}^+
 \}
 \\
 \pi_{proc} =
@@ -533,7 +513,7 @@ p \in \NT{id}
 \wedge
 A \subset \NT{io} \times \NT{id} \times \NT{type}
 \wedge
-T \subset \NT{typevar} \times \NT{class}
+T \subset \NT{typevar} \times \NT{class}^+
 \}
 \end{gather*}
 
@@ -542,17 +522,17 @@ A la hora de analizar el cuerpo de una función o un procedimiento es fundamenta
 \begin{gather*}
 \pi = \pi_{type} \cup \pi_{method} \cup \pi_{var} \cup \pi_{typevar}
 \\
-\pi_{var} = \pi_{loc} \cup \pi_{bound}
+\pi_{var} = \pi_{loc} \cup \pi_{size}
 \end{gather*}
 
 En estos últimos contextos, se utiliza $\pi_{loc}$ para almacenar la información relacionada con las variables declaradas en el cuerpo del método.
-Mientras que se usa $\pi_{bound}$ para guardar los identificadores para los tamaños variables de arreglos.
+Mientras que se usa $\pi_{size}$ para guardar los identificadores para los tamaños variables de arreglos.
 Por último, con $\pi_{typevar}$ se busca recordar todos los tipos polimórficos introducidos en el prototipo del método.
 A continuación se detallan sus estructuras.
 \begin{gather*}
 \pi_{loc} \subset \NT{id} \times \NT{type}
 \\
-\pi_{bound} \subset \NT{id}
+\pi_{size} \subset \NT{bsize}
 \\
 \pi_{typevar} \subset \NT{typevar}
 \end{gather*}
@@ -622,13 +602,17 @@ Para lograr esto, es imprescindible aumentar los contextos con la información d
 Por lo tanto, en las reglas anteriores se modifica $\pi$ para poder analizar el cuerpo del método con el contexto $\pi^*$.
 \begin{gather*}
 \pi^*_r = \pi_r \cup
-\{ \; (f, \{ (a_1, \theta_1), \ldots, (a_l, \theta_l) \}, (a_r, \theta_r), \{ (tv_1, c_1), \ldots, (tv_t, c_t) \}) \; \}
+\{ \; (f, \{ (a_1, \theta_1), \ldots, (a_l, \theta_l) \}, (a_r, \theta_r),
+\ldots\\\ldots
+\{ (tv_1, \{ c^1_1, \ldots c^1_r \}), \ldots, (tv_t, \{ c^t_1, \ldots, c^t_r \}) \}) \; \}
 \\
 \pi^*_l = \pi_l \cup
-\{ \; (p, \{ (oi_1, a_1, \theta_1), \ldots, (oi_l, a_l, \theta_l) \}, \{ (tv_1, c_1), \ldots, (tv_t, c_t) \}) \; \}
+\{ \; (p, \{ (oi_1, a_1, \theta_1), \ldots, (oi_l, a_l, \theta_l) \},
+\ldots\\\ldots
+\{ (tv_1, \{ c^1_1, \ldots c^1_r \}), \ldots, (tv_t, \{ c^t_1, \ldots, c^t_r \}) \}) \; \}
 \end{gather*}
 
-Los valores de los elementos $tv_i$ y $c_i$ serán explicados en la sección de análisis en restricciones de métodos. 
+Los valores de los elementos $tv_i$ y $c_j$ serán explicados en la sección de análisis en restricciones de métodos.
 
 \subsubsection{Tipos en Prototipos de Métodos}
 
@@ -653,11 +637,11 @@ A continuación se detalla el conjunto de reglas de inferencia para los tipos es
 
 \ER{Regla M para Tipos}{Arreglos}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_r r_1$}
+\AxiomC{$\pi \vdash_s s_1$}
 \AxiomC{\ldots}
-\AxiomC{$\pi \vdash_r r_n$}
+\AxiomC{$\pi \vdash_s s_n$}
 \AxiomC{$\pi \vdash_t \theta$}
-\QuaternaryInfC{$\pi \vdash_t \T{array} \; r_1, \ldots, r_n \; \T{of} \; \theta$}
+\QuaternaryInfC{$\pi \vdash_t \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta$}
 \end{prooftree}
 
 \ER{Regla M para Tipos}{Variables de Tipo}
@@ -678,23 +662,23 @@ A continuación se detalla el conjunto de reglas de inferencia para los tipos es
 \end{prooftree}
 \PR{donde se satisface que $\exists A, B. (t, A, B) \in \pi_{type}$.}
 
-Las reglas para límites de arreglos son similares a las especificadas previamente, con la excepción que ahora se permiten usar índices variables.
+Las reglas para tamaños de arreglos son similares a las especificadas previamente, con la excepción que ahora se permiten usar tamaños variables.
 Por lo tanto, se agrega una nueva regla para la deducción.
 
-\ER{Regla M para Tipos}{Rangos Constantes}
+\ER{Regla M para Tipos}{Tamaños Constantes}
 \begin{prooftree}
-\AxiomC{$init + size < limiteMaximo$}
+\AxiomC{\empty}
 \RightLabel{\quad cuando $size \in \NT{nat}$}
-\UnaryInfC{$\pi \vdash_r init \; : \; size$}
+\UnaryInfC{$\pi \vdash_s size$}
 \end{prooftree}
 
-\ER{Regla M para Tipos}{Rangos Variables}
+\ER{Regla M para Tipos}{Tamaños Variables}
 \begin{prooftree}
 \AxiomC{\empty}
 \RightLabel{\quad cuando $size \in \NT{bsize}$}
-\UnaryInfC{$\pi \vdash_r init \; : \; size$}
+\UnaryInfC{$\pi \vdash_s size$}
 \end{prooftree}
-\PR{además, se agrega la variable $size$ al contexto $\pi_{bound}$.}
+\PR{además, se agrega la variable $size$ al contexto $\pi_{size}$.}
 
 % SOLUCIÓN
 % No hay ninguna inferencia sobre rangos vacíos cuando se usan límites variables.
@@ -714,11 +698,11 @@ Básicamente, se imponen clases que deben ser implementadas por los tipos en los
 \ER{Regla M}{Restricciones}
 \begin{prooftree}
 \AxiomC{\empty}
-\UnaryInfC{$tv_1, \ldots, tv_n : c_1, \ldots, c_m$}
+\UnaryInfC{$tv : c_1, \ldots, c_m$}
 \end{prooftree}
-\PR{donde todas las variables $tv_i$ son distintas entre sí, y las clases $c_j$ también. Además, se satisface que $tv_i \in \pi_{typevar}$. Finalmente, se agregan todos los pares $(tv_i, c_j)$ al contexto del prototipo del método correspondiente.}
+\PR{donde todas las clases $c_i$ son distintas entre sí. Además, se satisface que $tv \in \pi_{typevar}$. Finalmente, se agrega el par $(tv, \{ c_1, \ldots, c_m \})$ al contexto del prototipo del método correspondiente.}
 
-En el caso que se agregara un par $(tv_i, c_j)$ que ya estuviese presente en el conjunto $T$, del contexto $(f, A, r, T)$ o $(p, A, T)$, se debería generar un mensaje de advertencia sobre un posible error en el código.
+En el caso que se agregara un par $(tv, \{ c_1, \ldots, c_m \})$ donde la variable $tv$ ya estuviese presente en el conjunto $T$, del contexto $(f, A, r, T)$ o $(p, A, T)$, se debería generar un mensaje de error debido a que hay dos restricciones distintas para la misma variable de tipo.
 
 \subsection{Validaciones en Bloques}
 
@@ -777,7 +761,7 @@ InOuts_{\pi_{proc}}(p) = \{ a \mid \exists \theta. (\T{in/out}, a, \theta) \in A
 Finalmente, también sería importante saber cuales son los identificadores empleados para denotar a las distintas variables declaradas en el programa, junto con los tamaños variables introducidos en el prototipo del método analizado.
 Notar que la estructura de este conjunto es independiente a la clase de método que se esté analizando.
 \begin{gather*}
-Vars_{\pi_{var}} = \{ v \mid \exists \theta. (v, \theta) \in \pi_{loc} \} \cup \pi_{bound}
+Vars_{\pi_{var}} = \{ v \mid \exists \theta. (v, \theta) \in \pi_{loc} \} \cup \pi_{size}
 \end{gather*}
 
 \subsection{Validaciones en Declaración de Variables}
@@ -813,7 +797,7 @@ Al igual que en todos los analices anteriores, se deberán probar todas las cons
 Nuevamente, es necesario modificar nuestro conjunto de reglas para la especificación de tipos con el fin de adecuarnos al nuevo contexto de análisis.
 En esta ocasión, debemos limitar el uso de variables de tipo exclusivamente a las introducidas en el prototipo del método analizado.
 Para los tamaños variables debemos hacer algo similar.
-La mayoría de las reglas permanecen sin cambios, salvo en el caso de la especificación de rangos.
+La mayoría de las reglas permanecen sin cambios.
 
 \ER{Regla B para Tipos}{Básicos}
 \begin{prooftree}
@@ -830,11 +814,11 @@ La mayoría de las reglas permanecen sin cambios, salvo en el caso de la especif
 
 \ER{Regla B para Tipos}{Arreglos}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_r r_1$}
+\AxiomC{$\pi \vdash_s s_1$}
 \AxiomC{\ldots}
-\AxiomC{$\pi \vdash_r r_n$}
+\AxiomC{$\pi \vdash_s s_n$}
 \AxiomC{$\pi \vdash_t \theta$}
-\QuaternaryInfC{$\pi \vdash_t \T{array} \; r_1, \ldots, r_n \; \T{of} \; \theta$}
+\QuaternaryInfC{$\pi \vdash_t \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta$}
 \end{prooftree}
 
 \ER{Regla B para Tipos}{Variables de Tipo}
@@ -859,18 +843,18 @@ Solo hay dos casos.
 El primero es trivial, corresponde a la utilización de tamaños constantes, por lo que se procede de la misma manera que se hizo anteriormente.
 El segundo refiere al empleo de tamaños variables, donde solo hay que verificar que el identificador haya sido introducido previamente.
 
-\ER{Regla B para Tipos}{Rangos Constantes}
+\ER{Regla B para Tipos}{Tamaños Constantes}
 \begin{prooftree}
-\AxiomC{$init + size < limiteMaximo$}
+\AxiomC{\empty}
 \RightLabel{\quad cuando $size \in \NT{nat}$}
-\UnaryInfC{$\pi \vdash_r init \; : \; size$}
+\UnaryInfC{$\pi \vdash_s size$}
 \end{prooftree}
 
-\ER{Regla B para Tipos}{Rangos Variables}
+\ER{Regla B para Tipos}{Tamaños Variables}
 \begin{prooftree}
-\AxiomC{$size \in \pi_{bound}$}
+\AxiomC{$size \in \pi_{size}$}
 \RightLabel{\quad cuando $size \in \NT{bsize}$}
-\UnaryInfC{$\pi \vdash_r init \; : \; size$}
+\UnaryInfC{$\pi \vdash_s size$}
 \end{prooftree}
 
 \subsection{Variables Libres}
@@ -1225,9 +1209,9 @@ NameSpace_{\gamma} = FV(sblock)
 \pi_{loc} \subset RV(sblock) \cap AV(sblock)
 \end{equation*}
 
- \ER{Función Phi}{Evitar modificación de límites.}
+ \ER{Función Phi}{Evitar modificación de tamaños.}
 \begin{equation*}
-\pi_{bound} \cap AV(sblock) = \emptyset
+\pi_{size} \cap AV(sblock) = \emptyset
 \end{equation*}
 
 Cuando $\gamma$ hace referencia al identificador de una función, también es necesario verificar el siguiente conjunto de ecuaciones.
@@ -1325,9 +1309,9 @@ La función de sustitución tendría la siguiente forma.
 &=&\;
 \T{pointer} \; (\theta \mid \delta)
 \\
-&\T{array} \; r_1, \ldots, r_n \; \T{of} \; \theta \mid \delta
+&\T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta \mid \delta
 &=&\;
-\T{array} \; (r_1 \mid \delta), \ldots, (r_n \mid \delta) \; \T{of} \; (\theta \mid \delta)
+\T{array} \; (s_1 \mid \delta), \ldots, (s_n \mid \delta) \; \T{of} \; (\theta \mid \delta)
 \\
 &vt \mid \delta
 &=&\;
@@ -1343,19 +1327,15 @@ La sustitución se tiene que propagar también para los tamaños de arreglos.
 Esto se debe al uso de tamaños variables para especificar los mismos.
 Para los rangos, la función tendría el siguiente comportamiento.
 \begin{align*}
-&init \; : \; size \mid \delta
+&size \mid \delta
 &=&\;
-init \; : \; (size \mid \delta)
+size
+&size \in \NT{nat}
 \\
-&n \mid \delta
+&size \mid \delta
 &=&\;
-n
-&n \in \NT{nat}
-\\
-&b \mid \delta
-&=&\;
-\delta_{bs}(b)
-&b \in \NT{bsize}
+\delta_{bs}(size)
+&size \in \NT{bsize}
 \end{align*}
 
 % PREGUNTA
@@ -1363,7 +1343,7 @@ n
 % Es muy restrictivo, estoy haciendo chequeos de valor
 % Se debería verificar de forma dinámica si los valores coinciden
 
-\todo[color=green]{¿Esta bien sustituir también los tamaños variables? Suena muy restrictivo}
+\todo[color=green]{¿Esta bien sustituir también los tamaños variables? Suena muy restrictivo. PD: Ya me dieron el OK}
 
 La segunda verificación, está relacionada con la forma de los argumentos en su llamada.
 Debido a que un procedimiento puede modificar sus entradas, es necesario chequear que las expresiones correspondientes a las mismas sean variables para que efectivamente suceda el cambio de estado.
@@ -1390,7 +1370,7 @@ Debido a que un procedimiento puede modificar sus entradas, es necesario chequea
 \end{equation*}
 \PR{Todos los tipos satisfacen sus respectivas restricciones.}
 \begin{equation*}
-\forall (tv, c) \in T. tv \mid \delta = \theta \implies \theta \; \text{satisface la clase} \; c
+\forall (tv, \{ c_1, \ldots, c_m \}) \in T. tv \mid \delta = \theta \implies \theta \; \text{satisface las clases} \; c_1, \ldots, c_m
 \end{equation*}
 
 \ER{Regla B}{Alloc}
@@ -1424,7 +1404,7 @@ Debido a que un procedimiento puede modificar sus entradas, es necesario chequea
 
 Finalmente, especificamos las reglas para las sentencias \textit{for}.
 Todavía queda pendiente definir como se implementarán las \textit{typeclasses} en el lenguaje.
-En primera instancia, los tipos asociados a límites de arreglos deberían ser enumerables, mientras que un arreglo en sí sería iterable.
+En primera instancia, los enteros, los caracteres, y los enumerados deberían ser enumerables, mientras que un arreglo en sí sería iterable.
 En las sucesivas fases de desarrollo del intérprete se tomará una decisión respecto al asunto.
 Debido a esto, las siguientes pruebas pueden resultar ambiguas.
 
@@ -1527,7 +1507,7 @@ En base al contexto en el que fueron introducidas, se tendrá que emplear una u 
 
 \ER{Regla TC}{Tamaños Variables}
 \begin{prooftree}
-\AxiomC{$x \in \pi_{bound}$}
+\AxiomC{$x \in \pi_{size}$}
 \UnaryInfC{$\pi \vdash_e x : \T{int}$}
 \end{prooftree}
 
@@ -1546,7 +1526,7 @@ En base al contexto en el que fueron introducidas, se tendrá que emplear una u 
 \PR{durante el análisis del bloque $block_p$.}
 
 Para los tipos estructurados se emplean las siguientes reglas.
-En el caso de los arreglos, el tipo de las expresiones debe coincidir con el de los índices especificados en la declaración del mismo.
+En el caso de los arreglos, el tipo de las expresiones debe ser entero.
 No se hace ninguna clase de chequeo para comprobar que el acceso a una de estas estructuras sea dentro de los límites válidos.
 Esta verificación es delegada al análisis dinámico para realizar durante la ejecución del programa.
 \ER{Regla TC}{Acceso a Puntero}
@@ -1564,13 +1544,12 @@ Esta verificación es delegada al análisis dinámico para realizar durante la e
 
 \ER{Regla TC}{Acceso a Arreglos}
 \begin{prooftree}
-\AxiomC{$\pi \vdash_e v : \T{array} \; r_1, \ldots, r_n \; \T{of} \; \theta$}
-\AxiomC{$\pi \vdash_e e_1 : \theta_1$}
+\AxiomC{$\pi \vdash_e v : \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta$}
+\AxiomC{$\pi \vdash_e e_1 : \T{int}$}
 \AxiomC{\ldots}
-\AxiomC{$\pi \vdash_e e_n : \theta_n$}
+\AxiomC{$\pi \vdash_e e_n : \T{int}$}
 \QuaternaryInfC{$\pi \vdash_e v[e_1, \ldots, e_n] : \theta$}
 \end{prooftree}
-\PR{donde se satisface que $\forall i \in \{ 1 \ldots n \}. \; indexT(r_i) = \theta_i$.}
 
 Varios de los operadores del lenguaje se encuentran sobrecargados.
 Esto quiere decir que pueden ser utilizados para operar con valores de tipos diferentes, obteniendo resultados distintos en base a los mismos.
@@ -1654,7 +1633,7 @@ A continuación se detalla la misma.
 \end{equation*}
 \PR{Todos los tipos satisfacen sus respectivas restricciones.}
 \begin{equation*}
-\forall (tv, c) \in T. tv \mid \delta = \theta \implies \theta \; \text{satisface la clase} \; c
+\forall (tv, \{ c_1, \ldots, c_m \}) \in T. tv \mid \delta = \theta \implies \theta \; \text{satisface las clases} \; c_1, \ldots, c_m
 \end{equation*}
 
 Una regla fundamental para el tipado de las expresiones tiene que ver con el subtipado.
@@ -1706,9 +1685,9 @@ Al no permitirse el uso de tamaños variables en declaraciones de tipos, no nece
 &=&\;
 \T{pointer} \; (\theta \mid \delta)
 \\
-&\T{array} \; r_1, \ldots, r_n \; \T{of} \; \theta \mid \delta
+&\T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta \mid \delta
 &=&\;
-\T{array} \; r_1, \ldots, r_n \; \T{of} \; (\theta \mid \delta)
+\T{array} \; s_1, \ldots, s_n \; \T{of} \; (\theta \mid \delta)
 \\
 &vt \mid \delta
 &=&\;
@@ -1759,7 +1738,7 @@ A continuación, el listado de deducciones.
 \ER{Regla U}{Arreglos}
 \begin{prooftree}
 \AxiomC{$\theta \sim \theta'$}
-\UnaryInfC{$\T{array} \; r_1, \ldots, r_n \; \T{of} \; \theta \sim \T{array} \; r_1, \ldots, r_n \; \T{of} \; \theta'$}
+\UnaryInfC{$\T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta \sim \T{array} \; s_1, \ldots, s_n \; \T{of} \; \theta'$}
 \end{prooftree}
 
 \ER{Regla U}{Tipos Definidos}
