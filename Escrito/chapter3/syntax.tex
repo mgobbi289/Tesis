@@ -1,0 +1,319 @@
+% Sintaxis
+En el siguiente capítulo, nos dedicaremos principalmente al desarrollo del parser para nuestro intérprete.
+Lo primero a realizar, será precisar formalmente la sintaxis de nuestro lenguaje.
+Una vez definida, comenzaremos con la descripción de los aspectos principales sobre la implementación del parser de \Lenguaje{}.
+Idealmente, esta sección del trabajo será utilizada para la documentación del futuro intérprete.
+
+\section{Sintaxis Abstracta}
+
+La sintaxis del lenguaje ya se expuso de manera informal en capítulos anteriores, mediante los distintos ejemplos que se fueron ilustrando.
+A pesar de esto, si se quisiera hacer un estudio formal del lenguaje, lo correcto sería dar una definición precisa de la misma.
+Por lo tanto, a continuación se describirá la \textit{sintaxis abstracta} de \Lenguaje{} de forma matemática.
+
+\subsection{Expresiones}
+
+Una expresión puede adoptar distintas formas; puede ser un valor constante, una llamada a función, una operación sobre otras expresiones o una variable con sus respectivos operadores.
+Su composición se describe a continuación.
+
+\begin{lstlisting}[style = syntax]
+$\NT{expression}$ $::=$ $\NT{constant}$ | $\NT{functioncall}$ | $\NT{operation}$ | $\NT{variable}$
+\end{lstlisting}
+
+A su vez, una constante puede tomar alguno de los siguientes valores.
+Los no terminales \textit{integer}, \textit{real}, \textit{bool}, y \textit{character} denotan los conjuntos de valores esperados, mientras que \textit{cname} hace referencia a los identificadores de constantes definidas por el usuario.
+Los terminales \textbf{inf} y \textbf{null}, representan al infinito y al puntero nulo respectivamente.
+
+\begin{lstlisting}[style = syntax]
+$\NT{constant}$ $::=$ $\NT{integer}$ | $\NT{real}$ | $\NT{bool}$ | $\NT{character}$ | $\NT{cname}$ | $\T{inf}$ | $\T{null}$
+\end{lstlisting}
+
+Una llamada a función está compuesta por su nombre y la lista de parámetros que recibe.
+La misma puede tener una cantidad arbitraria de entradas.
+Notar que se utilizará la misma clase de identificadores tanto para funciones y procedimientos como para variables.
+
+\begin{lstlisting}[style = syntax]
+$\NT{functioncall}$ $::=$ $\NT{id}$ $($ $\NT{expression}$ $\ldots$ $\NT{expression}$ $)$
+\end{lstlisting}
+
+Los operadores del lenguaje están conformados por operados numéricos, booleanos, y de orden e igualdad.
+Observar que será necesaria la implementación de un chequeo de tipos para asegurar el uso apropiado de los mismos.
+
+\begin{lstlisting}[style = syntax]
+$\NT{operation}$ $::=$ $\NT{expression}$ $\NT{binary}$ $\NT{expression}$ | $\NT{unary}$ $\NT{expression}$
+
+$\NT{binary}$ $::=$ $+$ | $-$ | $*$ | $/$ | $\%$ | $||$ | $\&\&$ | $<=$ | $>=$ | $<$ | $>$ | $==$ | $!=$
+
+$\NT{unary}$ $::=$ $-$ | $!$
+\end{lstlisting}
+
+Finalmente, describimos las variables con sus respectivos operadores.
+Las mismas pueden simbolizar un único valor, un arreglo de varias dimensiones, una tupla con múltiples campos, o un puntero a otra estructura en memoria.
+El no terminal \textit{fname} representa el alias de una componente para una estructura de tipo tupla definida por el usuario.
+
+\begin{lstlisting}[style = syntax]
+$\NT{variable}$ $::=$ $\NT{id}$
+         | $\NT{variable}$ $[$ $\NT{expression}$ $\ldots$ $\NT{expression}$ $]$
+         | $\NT{variable}$ $.$ $\NT{fname}$
+         | $\star$ $\NT{variable}$
+\end{lstlisting}
+
+\subsection{Sentencias}
+
+Las sentencias del lenguaje se dividen en las siguientes instrucciones.
+La composición de la \textit{asignación} y el \textit{while} es bastante simple, por lo que se detallan también a continuación.
+Notar que el no terminal \textit{sentences} se utiliza para representar la secuencia de instrucciones.
+
+\begin{lstlisting}[style = syntax]
+$\NT{sentence}$ $::=$ $\T{skip}$ | $\NT{assignment}$ | $\NT{procedurecall}$ | $\NT{if}$ | $\NT{while}$ | $\NT{for}$
+
+$\NT{assignment}$ $::=$ $\NT{variable}$ $:=$ $\NT{expression}$
+
+$\NT{while}$ $::=$ $\T{while}$ $\NT{expression}$ $\T{do}$ $\NT{sentences}$
+
+$\NT{sentences}$ $::=$ $\NT{sentence}$ $\ldots$ $\NT{sentence}$
+\end{lstlisting}
+
+Para la llamada de procedimientos, se utiliza una sintaxis similar a la empleada para funciones.
+Además de esto, se encuentran definidos dos métodos especiales exclusivamente para el manejo explícito de memoria del programa.
+
+\begin{lstlisting}[style = syntax]
+$\NT{procedurecall}$ $::=$ $\NT{id}$ $($ $\NT{expression}$ $\ldots$ $\NT{expression}$ $)$
+             | $\T{alloc}$ $\NT{variable}$
+             | $\T{free}$ $\NT{variable}$
+\end{lstlisting}
+
+La instrucción \textit{if} es bastante compleja en su composición.
+Para simplificar la sintaxis abstracta, nos limitaremos a solo permitir una única opción para su especificación.
+Notar que las otras versiones de esta sentencia, utilizadas en capítulos previos, se pueden obtener mediante azúcar sintáctico (\textit{syntax sugar}).
+
+\begin{lstlisting}[style = syntax]
+$\NT{if}$ $::=$ $\T{if}$ $\NT{expression}$ $\T{then}$ $\NT{sentences}$ $\T{else}$ $\NT{sentences}$
+\end{lstlisting}
+
+Finalmente, otra instrucción que presenta varias opciones es el \textit{for}.
+Debido que nos encontramos desarrollando la primer versión del intérprete, algunas funcionalidades deseadas aún no se encuentran definidas.
+Esto se ve reflejado en la actual instrucción.
+En la misma, se pueden especificar rangos ascendentes con \textbf{to}, o descendentes con \textbf{downto}, pero la versión que admite estructuras iterables aún no ha sido determinada.
+
+\begin{lstlisting}[style = syntax]
+$\NT{for}$ $::=$ $\T{for}$ $\NT{id}$ $:=$ $\NT{expression}$ $\T{to}$ $\NT{expression}$ $\T{do}$ $\NT{sentences}$
+      | $\T{for}$ $\NT{id}$ $:=$ $\NT{expression}$ $\T{downto}$ $\NT{expression}$ $\T{do}$ $\NT{sentences}$
+\end{lstlisting}
+
+\subsection{Tipos}
+
+Los tipos que soporta \Lenguaje{} pueden dividirse en dos categorías, los nativos del lenguaje y los definidos por el usuario.
+A su vez, los primeros puede separarse en básicos o estructurados.
+A continuación se detallan los mismos.
+
+\begin{lstlisting}[style = syntax]
+$\NT{type}$ $::=$ $\T{int}$ | $\T{real}$ | $\T{bool}$ | $\T{char}$
+      | $\NT{array}$
+      | $\NT{pointer}$
+      | $\NT{definedtype}$
+      | $\NT{typevariable}$
+\end{lstlisting}
+
+Del lado de los tipos nativos estructurados, se tienen a los arreglos y a los punteros.
+Para los primeros, hay que especificar como se definen los tamaños para sus dimensiones.
+El no terminal \textit{sname} representa al tamaño polimórfico introducido en el prototipo de funciones y procedimientos.
+Para los segundos, solo se debe indicar cual es el tipo de valor que se va a referenciar. 
+
+\begin{lstlisting}[style = syntax]
+$\NT{array}$ $::=$ $\T{array}$ $\NT{size}$ $\ldots$ $\NT{size}$ $\T{of}$ $\NT{type}$
+
+$\NT{size}$ $::=$ $\NT{natural}$ | $\NT{sname}$
+
+$\NT{pointer}$ $::=$ $\T{pointer}$ $\NT{type}$
+\end{lstlisting}
+
+En el caso de las variables de tipo, las mismas poseen su propia clase de identificadores.
+En cambio, para los tipos definidos por el usuario, además de su nombre representado por el no terminal \textit{tname}, se deben detallar los tipos en los cuales se instanciará.
+Si el mismo no posee argumentos, el terminal \textbf{of} no se deberá especificar.
+
+\begin{lstlisting}[style = syntax]
+$\NT{typevariable}$ $::=$ $\NT{typeid}$
+
+$\NT{definedtype}$ $::=$ $\NT{tname}$ $\T{of}$ $\NT{type}$ $\ldots$ $\NT{type}$
+\end{lstlisting}
+
+Cuando se declara un procedimiento, es necesario especificar el rol que cumplirá cada una de sus entradas.
+Esto significa que se debe detallar, para todos los argumentos individualmente, si se emplearán para lectura (\textbf{in}), escritura (\textbf{out}), o ambas (\textbf{in/out}).
+
+\begin{lstlisting}[style = syntax]
+$\NT{io}$ $::=$ $\T{in}$ | $\T{out}$ | $\T{in/out}$
+\end{lstlisting}
+
+También existe una serie de clases predefinidas para los tipos del programa.
+Las mismas representan una especie de interfaz que caracteriza las propiedades que cumplen cada uno de los tipos que las definen.
+Debido que aún no se ha precisado formalmente la naturaleza de la clase \textbf{Iter}, la misma se omitirá en esta primera versión del intérprete.
+
+\begin{lstlisting}[style = syntax]
+$\NT{class}$ $::=$ $\T{Eq}$ | $\T{Ord}$
+\end{lstlisting}
+
+Finalmente, para la declaración de nuevos tipos por parte del usuario hay tres posibilidades.
+Se pueden crear tipos enumerados, sinónimos de tipos y tuplas.
+Para los dos últimos, se pueden especificar parámetros de tipos que permiten crear estructuras más abstractas.
+Similar a lo dicho anteriormente, si los tipos declarados no poseen argumentos, entonces el terminal \textbf{of} se omite.
+
+\begin{lstlisting}[style = syntax]
+$\NT{typedecl}$ $::=$ $\T{enum}$ $\NT{tname}$ $=$ $\NT{cname}$ $\ldots$ $\NT{cname}$
+         | $\T{syn}$ $\NT{tname}$ $\T{of}$ $\NT{typearguments}$ $=$ $\NT{type}$
+         | $\T{tuple}$ $\NT{tname}$ $\T{of}$ $\NT{typearguments}$ $=$ $\NT{field}$ $\ldots$ $\NT{field}$
+
+$\NT{typearguments}$ $::=$ $\NT{typevariable}$ $\ldots$ $\NT{typevariable}$
+
+$\NT{field}$ $::=$ $\NT{fname}$ $:$ $\NT{type}$
+\end{lstlisting}
+
+\subsection{Programas}
+
+Para finalizar con la sintaxis del lenguaje, describiremos como se especifica un programa en el mismo.
+Un programa está compuesto por una serie de definiciones de tipo, seguidas de una serie de declaraciones de funciones y/o procedimientos.
+
+\begin{lstlisting}[style = syntax]
+$\NT{program}$ $::=$ $\NT{typedecl}$ $\ldots$ $\NT{typedecl}$ $\NT{funprocdecl}$ $\ldots$ $\NT{funprocdecl}$
+
+$\NT{funprocdecl}$ $::=$ $\NT{function}$ | $\NT{procedure}$
+\end{lstlisting}
+
+A continuación, detallamos como se especifica el cuerpo de una función o procedimiento.
+El mismo está conformado primero por una lista de declaraciones de variables, y segundo por una lista de instrucciones.
+Para declarar una variable solo se tiene que especificar el identificador de la misma, junto con el tipo que posee.
+También existe la posibilidad de definir múltiples variables en una sola declaración.
+
+\begin{lstlisting}[style = syntax]
+$\NT{body}$ $::=$ $\NT{variabledecl}$ $\ldots$ $\NT{variabledecl}$ $\NT{sentences}$
+
+$\NT{variabledecl}$ $::=$ $\T{var}$ $\NT{id}$ $\ldots$ $\NT{id}$ $:$ $\NT{type}$
+\end{lstlisting}
+
+Una función posee un identificador propio, una lista de argumentos, un retorno, y un bloque que conforma su cuerpo.
+Tanto para los argumentos, como para el retorno, solo se tienen que detallar sus identificadores junto con el tipo del valor que representarán.
+
+\begin{lstlisting}[style = syntax]
+$\NT{function}$ $::=$ $\T{fun}$ $\NT{id}$ $($ $\NT{funargument}$ $\ldots$ $\NT{funargument}$ $)$ $\T{ret}$ $\NT{funreturn}$
+            $\T{where}$ $\NT{constraints}$
+            $\T{in}$ $\NT{body}$
+
+$\NT{funargument}$ $::=$ $\NT{id}$ $:$ $\NT{type}$
+
+$\NT{funreturn}$ $::=$ $\NT{id}$ $:$ $\NT{type}$
+\end{lstlisting}
+
+Un procedimiento posee una estructura muy similar a la de una función.
+Las dos diferencias fundamentales con esta, es que el primero no posee retorno ya que no producirá ningún valor como resultado, y que sus argumentos deben especificar que clase de uso se hará con los mismos.
+
+\begin{lstlisting}[style = syntax]
+$\NT{procedure}$ $::=$ $\T{proc}$ $\NT{id}$ $($ $\NT{procargument}$ $\ldots$ $\NT{procargument}$ $)$
+             $\T{where}$ $\NT{constraints}$
+             $\T{in}$ $\NT{body}$
+
+$\NT{procargument}$ $::=$ $\NT{io}$ $\NT{id}$ $:$ $\NT{type}$
+\end{lstlisting}
+
+Para agregar a lo anterior, debido que los argumentos de una función o procedimiento pueden tener tipo variable, es conveniente poder imponer restricciones a los mismos.
+De esta forma, se pueden crear funciones y procedimientos más abstractos que funcionen para una gran variedad de tipos, y al mismo tiempo, requerir que los mismos sean instancias de ciertas clases.
+
+\begin{lstlisting}[style = syntax]
+$\NT{constraints}$ $::=$ $\NT{constraint}$ $\ldots$ $\NT{constraint}$
+
+$\NT{constraint}$ $::=$ $\NT{typevariable}$ $:$ $\NT{class}$ $\ldots$ $\NT{class}$
+\end{lstlisting}
+
+\section{Sintaxis Concreta}
+
+La \textit{sintaxis concreta} de \Lenguaje{}, ya se presentó de manera informal en la introducción del lenguaje, y como para el estudio del mismo nos limitaremos a la \textit{sintaxis abstracta}, no entraremos demasiado en detalle en este aspecto.
+De todas formas, consideramos importante mencionar algunas características que pueden no haber sido detalladas de forma clara en el informe.
+
+\subsection{Identificadores}
+
+En el lenguaje hay diversas categorías de identificadores.
+Los mismos se pueden separar en dos clases, los que comienzan con minúscula (\textit{lower}), y los que comienzan con mayúscula (\textit{upper}).
+Para el resto de su cuerpo, se tiene la misma estructura en ambos casos.
+En la primera clase, se encuentran los identificadores de variables, funciones y procedimientos, a los tamaños de arreglos, los alias para campos de tuplas, y por último, los tipos definidos por el usuario.
+Mientras, la segunda clase está conformada por los identificadores para variables de tipo, y las constantes enumeradas.
+
+\begin{lstlisting}[style = syntax]
+$\NT{id}$ $::=$ $\NT{lower}$ $\NT{rest}$
+
+$\NT{sname}$ $::=$ $\NT{lower}$ $\NT{rest}$
+
+$\NT{fname}$ $::=$ $\NT{lower}$ $\NT{rest}$
+
+$\NT{tname}$ $::=$ $\NT{lower}$ $\NT{rest}$
+
+$\NT{typeid}$ $::=$ $\NT{upper}$ $\NT{rest}$
+
+$\NT{cname}$ $::=$ $\NT{upper}$ $\NT{rest}$
+\end{lstlisting}
+
+Con esto en mente, se puede observar que en base al contexto y al formato del identificador parseado, en la fase de \textit{análisis sintáctico} del intérprete, somos capaces de distinguir a que clase de elemento se está haciendo referencia en el código, a excepción de un caso particular.
+Dentro de una expresión, no podemos diferenciar al nombre de una variable del identificador utilizado para llamar al tamaño de un arreglo.
+Esto nos obliga a tener una precaución adicional a la hora de los chequeos estáticos para ser capaces de reconocer a los mismos.
+
+Volviendo a la sintaxis, podemos ser aún más concretos.
+A continuación describimos los distintos caracteres que pueden conformar un identificador del lenguaje.
+Para el resto de \textit{componentes léxicos}, como los números o los caracteres literales, su estructura no presenta ninguna particularidad relevante por lo que serán omitidos.
+
+\begin{lstlisting}[style = syntax]
+$\NT{rest}$ $::=$ $($ $\NT{letter}$ | $\NT{digit}$ | $\NT{other}$ $)^{*}$
+
+$\NT{letter}$ $::=$ $\NT{lower}$ | $\NT{upper}$
+
+$\NT{lower}$ $::=$ a | b | ... | z
+
+$\NT{upper}$ $::=$ A | B | ... | z
+
+$\NT{digit}$ $::=$ 0 | 1 | ... | 9
+
+$\NT{other}$ $::=$ $\_$ | $'$
+\end{lstlisting}
+
+\subsection{Azúcar Sintáctico}
+
+Existen una serie de construcciones en \Lenguaje{} que son definidas mediante \textit{syntax sugar}.
+Las mismas pueden ser expresadas utilizando elementos ya presentes en el lenguaje, y no expanden el poder expresivo del mismo.
+Pero su utilidad radica en que ofrecen una forma sucinta y legible de especificar ciertas operaciones comunes en los algoritmos.
+
+Una notación conveniente para acceder a los campos de una tupla señalada por un puntero es la flecha ($\rightarrow$).
+De esta forma, en lugar de acceder a la memoria referenciada por un puntero con la estrella ($\star$), y luego consultar uno de los campos de la tupla con el punto ($.$), uno puede hacer uso de esta abreviatura que resulta más conveniente.
+\begin{gather*}
+v \rightarrow fn
+\quad
+\overset{def}{=}
+\quad
+\star v . fn
+\end{gather*}
+
+Otra notación que resulta útil en el lenguaje, es la de agrupar argumentos.
+Dada la definición de una función o procedimiento, puede ocurrir que varias de sus entradas posean el mismo tipo.
+En estas ocasiones es conveniente unir todas sus declaraciones en una sola.
+De esta forma, queda más claro que todos los argumentos agrupados poseen el mismo tipo.
+\begin{gather*}
+\T{fun} \; f \; ( \; \ldots \; a_1 : \theta, a_2 : \theta, \ldots, a_n : \theta \; \ldots \; ) \; \ldots
+\quad
+\overset{def}{=}
+\quad
+\T{fun} \; f \; ( \; \ldots \; a_1, a_2, \ldots, a_n : \theta \; \ldots \; ) \; \ldots
+\end{gather*}
+
+Las últimas construcciones utilizadas para escribir código de forma concisa en el lenguaje, son todas las variantes de la sentencia \textit{if}.
+Anteriormente, solo se describió una única manera para especificar la instrucción.
+Con las siguientes definiciones, podemos hacer uso de los comandos introducidos en capítulos previos.
+La primer notación, permite omitir el último bloque de sentencias (\textit{else}).
+La segunda, nos da la capacidad de agregar una cantidad arbitraria de condicionales adicionales (\textit{elif}).
+\begin{gather*}
+\T{if} \; b \; \T{then} \; ss
+\quad
+\overset{def}{=}
+\quad
+\T{if} \; b \; \T{then} \; ss \; \T{else} \; \T{skip}
+\\
+\T{if} \; b_1 \; \T{then} \; ss_1 \; \T{elif} \; b_2 \; \T{then} \; ss_2 \; \T{else} \; ss_3
+\quad
+\overset{def}{=}
+\quad
+\T{if} \; b_1 \; \T{then} \; ss_1 \; \T{else} \; \T{if} \; b_2 \; \T{then} \; ss_2 \; \T{else} \; ss_3
+\end{gather*}

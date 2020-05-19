@@ -26,7 +26,7 @@ Algunos de los mismos son listados a continuación:
     \item Suficiencia para analizar algoritmos, compararlos según su eficiencia en tiempo de ejecución y en espacio de almacenamiento.
     \item Hábito de identificar abstracciones relevantes al abordar un problema computacional, y aptitud para la especificación e implementación de las mismas.
     \item Familiaridad con técnicas de diseño de algoritmos de uso frecuente, y comprensión de diversos algoritmos conocidos.
-    \item Contacto con la programación (principalmente en el lenguaje \textit{C}) de algoritmos y estructura de datos.
+    \item Contacto con la programación (principalmente en el lenguaje \C{}) de algoritmos y estructura de datos.
     \item Aptitud para la utilización de diversos niveles de abstracción y adaptación a distintos lenguajes de programación.
 \end{itemize}
 
@@ -64,7 +64,7 @@ Un último tema que se enseña en la materia, es la recorrida de grafos, y las d
 
 Una vez detallados los fundamentos en los que se basa el lenguaje, es hora de describir sus características más importantes.
 \Lenguaje{} es una formalización del pseudocódigo utilizado en la materia \Materia{}, por lo que está diseñado para enseñar conceptos fundamentales de forma clara y natural.
-Es un lenguaje imperativo similar a \textit{Pascal}.
+Es un lenguaje imperativo similar a \Pascal{}.
 Este último fue diseñado por \textit{Niklaus Wirth} cerca de 1970.
 Algunos elementos básicos que comparten son:
 \begin{itemize}
@@ -94,7 +94,7 @@ Para manipular valores de estos tipos, se ofrecen las operaciones aritméticas y
 A su vez, también se encuentran definidas las operaciones de igualdad y orden para estos valores, a pesar que su aplicación no se limita solo a los mismos.
 
 Por otro lado, los tipos estructurados incorporados son los arreglos y los punteros.
-Los primeros tendrán un funcionamiento similar a los especificados en el lenguaje \textit{C}.
+Los primeros tendrán un funcionamiento similar a los especificados en el lenguaje \C{}.
 Además, existirá la posibilidad de definir arreglos multidimensionales, y arreglos cuyos tamaños serán variables.
 Los segundos, permitirán el manejo dinámico de la memoria de un programa y serán útiles para la creación de nuevos tipos de datos.
 
@@ -105,14 +105,12 @@ Los sinónimos serán un renombrado de un tipo ya existente.
 Y las tuplas permitirán la creación de estructuras con múltiples campos.
 Todos estos elementos serán fundamentales para el estudio de los \textit{TAD's} en la materia.
 
-Similar a \textit{Haskell}, en el lenguaje existen ciertas clases predefinidas que caracterizan el comportamiento de los tipos que las implementan.
+Similar a \Haskell{}, en el lenguaje existen ciertas clases predefinidas que caracterizan el comportamiento de los tipos que las implementan.
 Estas son \textbf{Eq}, \textbf{Ord}, e \textbf{Iter}.
 La primera, será implementada por todos los tipos que se pueden igualar.
 La segunda, es satisfecha por las categorías de elementos que son ordenables.
 Finalmente, la última clase indica si cierta estructura puede ser recorrida de forma iterativa.
 Una vez que el usuario declara un tipo, puede implementar todas las operaciones que una determinada clase requiera, para convertir a su nueva estructura de datos en una instancia de la misma.
-
-%puede implementar las clases que son satisfechas por el mismo, definiendo todas las operaciones propias de esta requiera.
 
 \subsection{Polimorfismo}
 
@@ -148,16 +146,16 @@ Durante la segunda y tercera parte de la materia, este es un concepto central qu
 Para la implementación de \textit{TAD's}, resulta un tema recurrente que sirve para comparar distintos diseños en base a su claridad, portabilidad, y eficiencia.
 
 Mediante el uso de punteros, y la llamada de los procedimientos especiales \textbf{alloc} y \textbf{free}, el usuario puede hacer un uso explícito sobre la memoria utilizada por el programa.
-Con algunos conceptos similares a \textit{C}, uno puede reservar memoria que será accesible mediante el uso de punteros.
+Con algunos conceptos similares a \C{}, uno puede reservar memoria que será accesible mediante el uso de punteros.
 Durante la ejecución del programa, se podrá manipular la memoria reservada y, cuando ya no sea necesaria, se podrá liberar la misma.
 
 \subsection{Encapsulamiento}
 
 Una última característica relevante que fue tomada de los contenidos de la materia y sentó las bases para el desarrollo del lenguaje, es el encapsulamiento.
-En el pseudocódigo esta particularidad muchas veces era omitida, debido que un programa en este pseudo-lenguaje solo se podía ejecutar en el \textit{aire}.
+En el pseudocódigo esta particularidad muchas veces era omitida, debido que un programa en este pseudo-lenguaje solo se podía ejecutar \textit{en el aire}.
 Debido a esto, se contaba con una intuición sobre que era parte de la especificación y que era parte de la implementación de un tipo de dato, de manera informal.
 
-Cuando pasamos al lenguaje formal, hay una clara diferenciación entre el código que se utiliza para especificar un \textit{TAD}, y el código empleado para su implementación.
+Cuando pasamos al lenguaje formal, hay una evidente diferenciación entre el código que se utiliza para especificar un \textit{TAD}, y el código empleado para su implementación.
 En \Lenguaje{} se busca tener una clara separación en módulos para los elementos definidos de un programa.
 De esta forma, podemos abstraernos de los detalles propios de la implementación de una estructura de datos, y basarnos solo en su especificación para resolver cierto problema algorítmico.
 

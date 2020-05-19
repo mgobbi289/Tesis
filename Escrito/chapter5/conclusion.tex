@@ -1,0 +1,89 @@
+% Conclusión
+A lo largo de este trabajo desarrollamos la etapa de \textit{análisis} de nuestro intérprete.
+Las fases de \textit{análisis léxico} y \textit{análisis sintáctico} se implementaron con el parser, mientras que la de \textit{análisis semántico} fue realizada junto con los chequeos estáticos del lenguaje...
+% Incompleto :)
+
+\section{Trabajos Futuros}
+
+El diseño del intérprete aún está lejos de estar terminado.
+Este trabajo solo comprendió la primer etapa de desarrollo del mismo, y sentó las bases para su implementación.
+Por lo tanto, a continuación describiremos distintos trabajos futuros relacionados con nuestro objetivo.
+Algunos estarán destinados a completar la especificación del intérprete, mientras que otros podrán ser realizados con el fin de mejorar y expandir el mismo.
+
+\subsection{Síntesis}
+
+Siguiendo con el desarrollo natural del intérprete, la siguiente fase a diseñar es la de \textit{síntesis}.
+Una vez terminada la parte \textit{estática}, es hora de comenzar la parte \textit{dinámica}.
+Para esto, necesitaremos definir formalmente la semántica \textit{small step} del lenguaje, junto con todos los mecanismos necesarios para poder ejecutar nuestros programas.
+Tendremos que diseñar los chequeos dinámicos del lenguaje, junto con la generación de fallas durante la interpretación del código. 
+Además, se deberá proveer una interfaz de usuario para el uso interactivo del intérprete.
+% Incompleto :)
+
+\subsection{Generación de Múltiples Errores}
+
+Unos de los aspectos que se pueden mejorar del intérprete, es la generación de múltiples errores tanto en la etapa de \textit{análisis sintáctico} como en la de \textit{análisis semántico}.
+Actualmente, cuando se encuentra un error durante el parsing o la verificación de un programa se aborta por completo el análisis del mismo, generando un mensaje de error informativo sobre la causa de la falla.
+Una característica deseable en el intérprete, es poder capturar la mayor cantidad posible de errores encontrados en una determinada etapa, antes de fallar, y generar todos los mensajes necesarios correspondientes.
+Esto obviamente beneficiaría al usuario, ya que se tendría que dedicar menor tiempo a la corrección de errores, agilizando efectivamente el uso de la herramienta, y podría destinar mayor atención al diseño de algoritmos.
+
+\subsubsection{Análisis Sintáctico}
+
+La librería \Megaparsec{} ofrece un mecanismo para señalar múltiples errores en una sola corrida del parser.
+Un requisito para poder utilizar esta funcionalidad, es que debe ser posible omitir una sección problemática de la entrada (donde comúnmente se generaría un error de parsing) y resumir el análisis en una posición que se considere estable.
+Esto se consigue con el uso de la primitiva \lstinline[style = haskell]{withRecovery}.
+
+Si quisiéramos aprovechar esta funcionalidad, deberíamos adaptar nuestro parser.
+Debido que identificar cual puede ser un buen punto de recuperación es una tarea compleja, es necesario realizar algunas modificaciones al intérprete para poder facilitar la misma.
+Un cambio conveniente posible, sería utilizar el punto y coma (\textbf{;}) para separar la secuencia de instrucciones del lenguaje.
+De esta forma, al fallar el parser se podrían consumir \textit{tokens} hasta encontrar este delimitador, punto donde se puede recuperar y continuar el análisis normal del programa.
+
+\subsubsection{Análisis Semántico}
+
+Una posibilidad para la generación de múltiples errores en esta etapa, está descripta en el mismo artículo en el que se basó el diseño de los chequeos estáticos del intérprete \parencite{MonadicTC}.
+Esta opción consiste en la implementación de un combinador, que es invocado cada vez que se deben verificar una serie de elementos sintácticos.
+La idea es que se puedan combinar la lista de chequeos a realizar y, si todos tienen éxito, se devuelven sus resultados correspondientes.
+En caso contrario, se deberán acumular la totalidad de los errores producidos, y luego generar los mensajes informativos adecuados.
+Esta técnica \textit{ad hoc}, resulta ser la más simple, y requiere pocas modificaciones del código actual.
+De todas formas, no aprovecha al máximo la estructura en la que se organiza un programa, y puede no ser trivial cuando se debe aplicar el combinador, y cuando no.
+Esto se debe que muchas veces la corrección semántica de cierta construcción, depende de la validez de los elementos previos a los que la misma hace referencia.
+
+Otra opción, es rediseñar los chequeos estáticos actuales para realizar más de una recorrida al \textit{árbol de sintaxis abstracta}.
+La idea es que en una primera pasada, se puedan analizar todos los prototipos de las definiciones de tipo, y las declaraciones de funciones y procedimientos del programa.
+Una vez finalizado este análisis, se deberá realizar una segunda pasada donde esta vez se deberán verificar los cuerpos de las construcciones anteriormente mencionadas.
+De esta manera, se pueden acumular la totalidad de errores encontrados en una de estas fases, antes de abortar el análisis del programa con un mensaje de error.
+Comparada con la técnica anterior, la opción actual resulta mucha más compleja y necesita modificar gran parte de la implementación.
+A pesar de esto, la misma aprovecha la idea que los prototipos son válidos de forma mutuamente independiente entre ellos, al igual que como ocurre con sus respectivos cuerpos.
+Otra ventaja de la técnica actual sobre la opción anterior, es que la misma permitiría invocar funciones y procedimientos sin importar el lugar espacial donde hayan sido declaradas.
+
+\subsection{Funcionalidades Adicionales}
+
+Existe una serie de funcionalidades que fueron consideradas a lo largo del desarrollo de este trabajo, pero que no llegaron a ser incluidas en esta primera versión del intérprete.
+Las mismas fueron relegadas por diversas causas.
+Algunas debieron ser omitidas por falta de tiempo, otras porque no se llegó a un concenso en su diseño, e incluso algunas por las dificultades encontradas durante su implementación.
+A continuación daremos una breve descripción de cada una de estas.
+% Incompleto
+
+\subsubsection{Soporte para Múltiples Módulos}
+
+\subsubsection{Inferencia de Tipos}
+
+\subsubsection{Estructuras Iterables}
+
+\subsubsection{Clases}
+
+\iffalse
+
+\subsection{Inferencia de Tipos}
+\subsubsection{Llamada de funciones y procedimientos con null}
+
+\subsection{Múltiples Módulos}
+
+\subsection{Agregado de Clases Adicionales}
+\subsection{Implementación de Estructuras Iterables}
+\subsection{Refinamiento en Implementación de Instancias}
+
+\fi
+
+\iffalse
+\subsection{Forzar Indentación}
+\fi

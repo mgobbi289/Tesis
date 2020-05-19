@@ -1,0 +1,51 @@
+% Lenguaje
+\ProvidesPackage{packages/lang}
+
+% Mostrar Sintaxis / Código
+\usepackage{listings}
+
+% Defino Sintaxis
+\lstdefinelanguage{Syntax}
+{
+  frame      = single,
+  mathescape = true,
+  basicstyle = \itshape,
+}
+
+% Defino Estilo: Sintaxis
+\lstdefinestyle{syntax}{language = Syntax}
+
+% Defino Estilo: Haskell
+\lstdefinestyle{haskell}{
+    language        = Haskell,
+    basicstyle      = \ttfamily,
+    captionpos      = b,
+    numbers         = left,
+    numberstyle     = \tiny\color{Gray},
+    commentstyle    = \color{OliveGreen},
+    % Palabras Claves
+    keywords        = [1]{ data, type },
+    keywordstyle    = [1]\color{Magenta},
+    % Módulos
+    keywords        = [2]{ Syntax, Parser },
+    keywordstyle    = [2]\color{Orange},
+    % Constructores
+    keywords        = [3]{ L, I, Const, Loc, UOp, BOp, FCall},
+    keywordstyle    = [3]\color{Purple},
+    % Funciones
+    keywords        = [4]{ info, item, sLin, sCol, eLin, eCol, makeExprParser, getSourcePos, withRecovery },
+    keywordstyle    = [4]\color{LimeGreen},
+    % Tipos
+    keywords        = [5]{ Located, Info, Line, Column, Id, LExpr, Expr, LConstant, LLocation, BinOp, UnOp },
+    keywordstyle    = [5]\color{Cyan},
+    % Parche de Módulos
+    morestring      = [b].,
+    stringstyle     = \color{Orange},
+}
+
+% Terminales
+\newcommand{\T}[1]
+{\mathbf{#1}}
+% No Terminales
+\newcommand{\NT}[1]
+{\langle #1 \rangle}
