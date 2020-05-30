@@ -1,27 +1,68 @@
 % Conclusión
-A lo largo de este trabajo desarrollamos la etapa de \textit{análisis} de nuestro intérprete.
-Las fases de \textit{análisis léxico} y \textit{análisis sintáctico} se implementaron con el parser, mientras que la de \textit{análisis semántico} fue realizada junto con los chequeos estáticos del lenguaje...
-% Incompleto :)
+En este trabajo de tesis hemos presentado un nuevo lenguaje, \Lenguaje{}.
+Se han descripto las motivaciones principales que justificaron su creación, y se hizo mención de los elementos más relevantes que lo definen.
+Junto a esto, con una serie de ejemplos sobre casos de uso y explicaciones informales, se han expuesto las diversas construcciones que ofrece el lenguaje.
+Desde un punto de vista teórico, las contribuciones de la tesis se pueden resumir en:
+
+\begin{itemize}
+    \item La especificación de un lenguaje de programación que podrá ser utilizado para la formación de estudiantes en la carrera.
+    \item La definición de su sintaxis, abstracta y concreta, lo cual permite su aplicación durante el desarrollo de la asignatura.
+    \item La formulación de los chequeos estáticos, que determinan cuando un programa está bien formado antes de su ejecución.
+\end{itemize}
+
+Sumado a lo anterior, hemos realizado la primer iteración en el desarrollo para el respectivo intérprete del lenguaje.
+Utilizando la formalización previa como base, se ha implementado la etapa de \textit{análisis} de nuestro programa.
+Desde un punto de vista práctico, algunas de las contribuciones de este trabajo son:
+
+\begin{itemize}
+    \item La implementación de las fases de \textit{análisis léxico} y \textit{análisis sintáctico}, las cuales fueron desarrolladas junto al parser del intérprete.
+    \item La implementación de la fase de \textit{análisis semántico}, que comprende las verificaciones estáticas que realiza el intérprete previa la ejecución de un programa.
+\end{itemize}
 
 \section{Trabajos Futuros}
 
 El diseño del intérprete aún está lejos de estar terminado.
 Este trabajo solo comprendió la primer etapa de desarrollo del mismo, y sentó las bases para su implementación.
-Por lo tanto, a continuación describiremos distintos trabajos futuros relacionados con nuestro objetivo.
-Algunos estarán destinados a completar la especificación del intérprete, mientras que otros podrán ser realizados con el fin de mejorar y expandir el mismo.
+Por lo tanto, a continuación describiremos distintas tareas para realizar a futuro, con el fin de cumplir nuestro objetivo.
+Algunas estarán destinadas a completar la especificación restante del intérprete, siguiendo con las fases posteriores necesarias para su definición.
+Mientras, otras podrán ser realizadas con la finalidad de mejorar y expandir las funcionalidades actuales de nuestro programa.
 
-\subsection{Síntesis}
+\subsection{Continuando el Desarrollo}
 
-Siguiendo con el desarrollo natural del intérprete, la siguiente fase a diseñar es la de \textit{síntesis}.
-Una vez terminada la parte \textit{estática}, es hora de comenzar la parte \textit{dinámica}.
-Para esto, necesitaremos definir formalmente la semántica \textit{small step} del lenguaje, junto con todos los mecanismos necesarios para poder ejecutar nuestros programas.
-Tendremos que diseñar los chequeos dinámicos del lenguaje, junto con la generación de fallas durante la interpretación del código. 
-Además, se deberá proveer una interfaz de usuario para el uso interactivo del intérprete.
-% Incompleto :)
+Hasta ahora, solo hemos trabajado en la etapa de \textit{análisis} del intérprete.
+Partiendo de un archivo de texto, somos capaces de obtener la estructura sintáctica de un programa, y verificar de forma \textit{estática} las distintas propiedades semánticas requeridas por el lenguaje.
+Pero ahora debemos pasar a una nueva etapa, la fase de \textit{síntesis}.
+Utilizando la representación intermedia obtenida previamente, queremos tener la capacidad de realizar una ejecución del código provisto, y durante la misma, también poder validar de forma \textit{dinámica} ciertas condiciones necesarias para asegurar el correcto funcionamiento del programa.
+Sumado a todo esto, es indispensable diseñar un medio de interacción para que el programador pueda comunicarse con nuestro intérprete.
+El desarrollo de una \textit{interfaz de usuario} es otro aspecto fundamental para la implementación del programa, y su posterior aplicación en el dictado de la asignatura.
+
+\subsubsection{Síntesis}
+
+La etapa de \textit{síntesis} comprende todos los aspectos \textit{dinámicos} sobre la interpretación de un programa.
+Comenzando con el \textit{árbol de sintaxis abstracta} obtenido durante el \textit{análisis} del código, debemos simular la ejecución del programa en base a los datos de entrada provistos por el usuario.
+Para poder realizar esta acción, necesitaremos definir formalmente la semántica \textit{small step} del lenguaje; la cual facilitará los medios necesarios para examinar detalles particulares sobre el orden de evaluación de las distintas construcciones especificadas en el código.
+Esto nos permitirá efectuar una por una las instrucciones del programa, al mismo tiempo que se exhiben los estados intermedios obtenidos durante su computación.
+
+Sumado a lo anterior, durante la ejecución del código, es necesario llevar a cabo la validación \textit{dinámica} del mismo.
+Debido que la totalidad de errores de un programa no puede ser detectada de forma \textit{estática}, hay ciertas verificaciones que son realizadas durante esta etapa.
+Las mismas consistirán en su mayoría de asegurar el uso adecuado de memoria por parte del usuario.
+Ya sea para liberar o reservar memoria mediante el empleo de punteros, o incluso el acceso a ciertas ubicaciones de memoria representadas por variables, es fundamental asegurar que la ejecución del programa se pueda realizar de forma consistente, y que no se presenten comportamientos inesperados durante la misma.
+
+\subsubsection{Interfaz de Usuario}
+
+Uno de los motivos por el que se inició el desarrollo del intérprete, fue para facilitar el estudio de los contenidos presentados en la materia \Materia{}.
+Debido que los usuarios finales de nuestro programa serán, en su mayoría, estudiantes que se están introduciendo en el ámbito de la implementación de algoritmos, es importante proveer una \textit{interfaz de usuario} intuitiva y amigable para el uso del intérprete.
+Actualmente, no hay ningún aspecto completamente definido sobre el futuro diseño de la interfaz, sino más bien, se están valorando distintas alternativas y funcionalidades particulares para su próxima implementación.
+
+En la versión presente del intérprete, solo se cuenta con una interfaz básica por línea de comando, la cual se asemeja más a una herramienta para la verificación del código implementado del programa que a un mecanismo para interactuar propiamente con el intérprete.
+Una de las opciones consideradas, es la creación de una interfaz gráfica de usuario la cual permita observar la evolución del estado de las variables del programa a medida que se avanza en su ejecución.
+También se analiza la posibilidad de utilizar una codificación de colores para resaltar los errores encontrados durante la interpretación del código.
+Obviamente, se proveería un editor de texto dentro del programa para facilitar esta característica.
+Incluso se discutió adicionar soporte web a la herramienta, lo que permitiría utilizar el intérprete desde el navegador.
 
 \subsection{Generación de Múltiples Errores}
 
-Unos de los aspectos que se pueden mejorar del intérprete, es la generación de múltiples errores tanto en la etapa de \textit{análisis sintáctico} como en la de \textit{análisis semántico}.
+Uno de los aspectos que se puede mejorar del intérprete, es la generación de múltiples errores tanto en la etapa de \textit{análisis sintáctico} como en la de \textit{análisis semántico}.
 Actualmente, cuando se encuentra un error durante el parsing o la verificación de un programa se aborta por completo el análisis del mismo, generando un mensaje de error informativo sobre la causa de la falla.
 Una característica deseable en el intérprete, es poder capturar la mayor cantidad posible de errores encontrados en una determinada etapa, antes de fallar, y generar todos los mensajes necesarios correspondientes.
 Esto obviamente beneficiaría al usuario, ya que se tendría que dedicar menor tiempo a la corrección de errores, agilizando efectivamente el uso de la herramienta, y podría destinar mayor atención al diseño de algoritmos.
@@ -39,7 +80,7 @@ De esta forma, al fallar el parser se podrían consumir \textit{tokens} hasta en
 
 \subsubsection{Análisis Semántico}
 
-Una posibilidad para la generación de múltiples errores en esta etapa, está descripta en el mismo artículo en el que se basó el diseño de los chequeos estáticos del intérprete \parencite{MonadicTC}.
+Una posibilidad para la generación de múltiples errores en esta etapa, está descripta en el artículo que se empleó como guía para el diseño de los chequeos estáticos del intérprete \cite{MonadicTC}.
 Esta opción consiste en la implementación de un combinador, que es invocado cada vez que se deben verificar una serie de elementos sintácticos.
 La idea es que se puedan combinar la lista de chequeos a realizar y, si todos tienen éxito, se devuelven sus resultados correspondientes.
 En caso contrario, se deberán acumular la totalidad de los errores producidos, y luego generar los mensajes informativos adecuados.
@@ -54,36 +95,184 @@ De esta manera, se pueden acumular la totalidad de errores encontrados en una de
 Comparada con la técnica anterior, la opción actual resulta mucha más compleja y necesita modificar gran parte de la implementación.
 A pesar de esto, la misma aprovecha la idea que los prototipos son válidos de forma mutuamente independiente entre ellos, al igual que como ocurre con sus respectivos cuerpos.
 Otra ventaja de la técnica actual sobre la opción anterior, es que la misma permitiría invocar funciones y procedimientos sin importar el lugar espacial donde hayan sido declaradas.
+Incluso se admitiría la posibilidad de definir de forma mutua las construcciones previamente mencionadas.
 
 \subsection{Funcionalidades Adicionales}
 
-Existe una serie de funcionalidades que fueron consideradas a lo largo del desarrollo de este trabajo, pero que no llegaron a ser incluidas en esta primera versión del intérprete.
-Las mismas fueron relegadas por diversas causas.
-Algunas debieron ser omitidas por falta de tiempo, otras porque no se llegó a un concenso en su diseño, e incluso algunas por las dificultades encontradas durante su implementación.
-A continuación daremos una breve descripción de cada una de estas.
-% Incompleto
+Existen una serie de funcionalidades que fueron consideradas a lo largo del desarrollo de este trabajo, pero que no llegaron a ser incluidas en esta primera versión del intérprete.
+Las mismas fueron relegadas por diversos motivos.
+Algunas debieron ser omitidas por falta de tiempo, otras a causa de no poder llegar a un concenso en su diseño, e incluso algunas por las dificultades encontradas durante su implementación.
+A continuación daremos una breve descripción de cada una de estas, junto con sugerencias para facilitar su futura incorporación al intérprete.
 
 \subsubsection{Soporte para Múltiples Módulos}
 
-\subsubsection{Inferencia de Tipos}
+Nuestro intérprete solo permite definir programas en un único archivo.
+Esto puede no ser un limitante en el poder expresivo del lenguaje, pero si resulta un inconveniente para su incorporación en el dictado de la materia.
+Debido que durante la asignatura se hace hincapié en la importancia de la separación de los módulos para la especificación de \textit{tipos abstracto de datos}, y los correspondientes a su implementación, es fundamental que el lenguaje provea las herramientas necesarias para mantener esa abstracción mediante el encapsulamiento de las construcciones involucradas.
+
+Para incorporar esta funcionalidad, se deberá determinar la sintaxis adecuada para poder importar y exportar tipos, funciones, y procedimientos definidos dentro de un determinado módulo.
+Sumado a esto, se tendrán que adaptar los chequeos semánticos para soportar estas nuevas situaciones.
+En particular, los sinónimos de tipos actualmente son interpretados como una definición transparente, similar a como lo hace \Haskell{} cuando se declaran con \lstinline[style = haskell]{type}.
+Idealmente, quisiéramos que su definición se vuelva opaca fuera del módulo en el que fueron declarados, o incluso, reproducir un comportamiento parecido a \lstinline[style = haskell]{newtype} en \Haskell{}; lo cual también permitiría declarar nuevas instancias de clase para el tipo aludido.
+Adicionalmente, se deberá adaptar la información de posición \lstinline[style = haskell]{Info} para almacenar además, el nombre del archivo \lstinline[style = haskell]{File} correspondiente a la ocurrencia del elemento sintáctico analizado.
+
+\subsubsection{Coersiones y Subtipado}
+
+En el lenguaje, hay dos tipos numéricos; los valores enteros y los valores reales.
+En ambos casos, se encuentra definido un listado de operadores sobrecargados que pueden ser utilizados para trabajar con cualquiera de los valores previos.
+Una restricción de la implementación actual, es que ambos tipos son percibidos como valores completamente diferentes.
+Esto significa, por ejemplo, que la operación de sumar enteros con reales es detectada como un error de tipos.
+Al mismo tiempo, la constante \textbf{inf} es interpretada como un valor entero, al igual como sucede con los tamaños polimórficos.
+Esto imposibilita especificar ciertos algoritmos donde deseamos realizar operaciones donde se combinan ambos tipos de valores numéricos, como es el caso de querer calcular el promedio de un arreglo de números reales, el cual posee tamaño variable.
+El código presentado en (\ref{promedioReal}) ilustra esta situación mencionada.
+Notar que al analizar la última instrucción de la función, el intérprete fallará debido a un error de tipos producido por la división de un número real por uno de tipo entero.
+
+Para flexibilizar el intérprete, podríamos implementar una \textit{coersión} implícita que convierta un número de tipo entero, a otro equivalente de tipo real, si fuese necesario.
+De esta forma, obtendríamos la capacidad de emplear valores enteros en contextos donde se esperan números reales, como es el caso del ejemplo previo, donde deseamos dividir la sumatoria de valores en un arreglo de reales por su tamaño entero.
+Otras situaciones que también se permitirían, comprenden la asignación de enteros a variables reales, o la llamada de funciones con parámetros del primer tipo cuando se esperaban del segundo.
+Incluso podríamos ir un paso más adelante, y declarar a los números enteros como un \textit{subtipo} de los valores reales.
+Esto implicaría una modificación estructural del actual sistema de tipos, donde deberíamos permitir situaciones más complejas que las contempladas anteriormente, como puede ser la de manipular un arreglo de enteros como si fuese un arreglo de reales.
+La propiedad aún debe ser discutida y evaluada, ya que es necesario determinar su verdadera utilidad para el dictado de la materia.
+
+\begin{lstlisting}[ style = lang, caption = Promedio en Arreglo de Reales, label = promedioReal ]
+fun promedioReal ( a : array [n] of real ) ret promedio : real
+  var sumatoria : real
+  sumatoria := 0
+  for i := 1 to n do
+    sumatoria := a[i] + sumatoria
+  od
+  promedio := sumatoria / n { Error de Tipos }
+end fun
+\end{lstlisting}
 
 \subsubsection{Estructuras Iterables}
 
-\subsubsection{Clases}
+Durante el desarrollo del intérprete, se analizó la posibilidad de incluir la clase \textbf{Iter} para caracterizar a todas las construcciones que posean la capacidad de ser iteradas.
+Ejemplos de la misma, podrían ser los arreglos y las listas.
+El primero formaría parte de esta clase de manera predefinida, mientras que el segundo necesita de su respectiva implementación.
+Estas estructuras representan una serie de elementos con algún orden determinado.
+Una vez que el usuario define la instancia correspondiente a esta clase, para un tipo en particular, se podrán utilizar valores del mismo dentro de la instrucción $\T{for} \; x \; \T{in} \; e \; \T{do} \; ss$, lo cual permitiría recorrer estas construcciones, e ir obteniendo uno por uno todos los elementos que las conforman.
+Un ejemplo posible se ilustra en (\ref{sumatoriaIter}), donde se calcula la sumatoria de elementos de un arreglo.
+
+\begin{lstlisting}[ style = lang, caption = Sumatoria de Arreglo Iterable, label = sumatoriaIter ]
+fun sumatoriaIter ( a : array [n] of int ) ret sumatoria : int
+  sumatoria := 0
+  for i in a do
+    sumatoria := i + sumatoria
+  od
+end fun
+\end{lstlisting}
+
+Se estudiaron los mecanismos que lenguajes como \Python{} y \Java{} emplean para crear objetos iterables.
+En base a esto, se discutieron distintas maneras para declarar instancias de la clase en nuestro lenguaje.
+Una alternativa considerada, consistía en definir tres métodos para la estructura iterable.
+El primero, inicializaba un cursor para referenciar al primer elemento de la construcción.
+El segundo, verificaba si existía un sucesor en base al puntero actual.
+Y finalmente, el tercero obtenía el siguiente elemento, desplazando el cursor hacia adelante.
+Debido que la declaración de estructuras iterables no se adecuaba a la manera utilizada para definir instancias en el lenguaje, se decidió aplazar el diseño de esta funcionalidad para la siguiente etapa de desarrollo del intérprete.
+
+\subsubsection{Clases e Instancias}
+
+Actualmente, en \Lenguaje{} solo hay definidas dos clases, \textbf{Eq} y \textbf{Ord}.
+Las mismas representan a los tipos que permiten comparaciones entre sus valores, ya sea en base a su igualdad en el caso de la primera, o según su orden para la segunda.
+Hay una posibilidad que en un futuro resulte útil añadir nuevas clases al lenguaje.
+Para lograr esta tarea, solo habría que agregar los operadores, funciones y/o procedimientos correspondientes a la clase que se quiere incorporar, junto con la adición de los chequeos adecuados para los mismos.
+Sobre esta característica, una opción posible sería añadir la clase \textbf{Enum}.
+La cual se emplearía para representar a todos los tipos que pueden ser enumerados desde su primer valor hasta el último.
+Incluso, otra alternativa sería adicionar la clase \textbf{Num}.
+Para representar a cualquier conjunto de valores que admita las operaciones de suma, resta, multiplicación, y demás; se utilizaría esta última clase.
+
+\begin{lstlisting}[ style = lang, caption = Declaración de Instancia para Nodo, label = instanciaNodo ]
+type nodo = tuple
+              valor : int,
+              sucesor : pointer of nodo
+            end tuple
+
+  inst Eq ( n1, n2 : nodo ) ret igual : bool
+    igual := n1.valor == n2.valor && n1.sucesor == n2.sucesor
+  end inst
+
+end type
+\end{lstlisting}
+
+Sobre como declarar una instancia para una clase determinada, en el lenguaje solo se ha definido una sintaxis provisoria en este aspecto.
+En el fragmento (\ref{instanciaNodo}) se ilustra un ejemplo particular, en el cual se especifica la operación de igualdad para el tipo \textit{nodo}.
+Inicialmente al limitarnos a solo dos clases, que caracterizan propiedades similares, la verificación de sus instancias se simplifica.
+A continuación, describimos informalmente las validaciones que se deberían efectuar para asegurar que una definición de instancia es correcta.
+
+\begin{enumerate}
+    \item Para todo tipo definido, existe una única instancia para una determinada clase.
+    Similar a \Haskell{}, se pueden emplear tipos concretos, o agregar restricciones de clase a las variables de tipo, en las declaraciones de instancias para tipos parametrizados.
+    \item Las instancias solo pueden tomar dos argumentos, y deben ser del mismo tipo.
+    En particular, la definición del tipo y sus declaraciones de instancias deben ir juntas.
+    Esta verificación es propia de las únicas dos clases del lenguaje.
+    \item El retorno de una instancia debe ser un valor booleano.
+    Esta propiedad, al igual que la anterior, es específica de las clases mencionadas previamente.
+    \item El cuerpo de la declaración de instancias deberá cumplir las mismas verificaciones que satisface el cuerpo de una función.
+    Esto se debería mantener incluso para las validaciones realizadas durante el tiempo de ejecución.
+\end{enumerate}
+
+Un último detalle importante a mencionar, es que la declaración de instancias se permite solamente para las estructuras de tipo tupla.
+Esto es debido que un tipo enumerado satisface ambas clases de forma natural.
+Mientras que un sinónimo de tipo, hereda todas las clases que implementa el tipo de su definición.
+Si en un futuro se adoptará otro juicio, la modificación de la implementación actual es sencilla.
+
+\subsubsection{Inferencia de Tipos}
+
+El sistema de tipos que se encuentra actualmente implementado en el intérprete, puede resultar básico a la hora de resolver ciertas cuestiones.
+Debido a esto, se presentan algunas limitaciones cuando se utiliza el mismo.
+Un ejemplo particular, es la llamada de funciones y procedimientos con la constante \textbf{null}, la cual simboliza un puntero vacío.
+Supongamos que hemos declarado una función como en el código de (\ref{inferenciaNull}); la cual obtiene el elemento señalado por un puntero si el mismo no es nulo, o devuelve su segundo argumento en caso contrario.
+Si quisiéramos invocar a la misma con la llamada \lstinline[style = lang]{accesoPuntero(null, 5)}, entonces se generaría un error en la etapa de \textit{análisis semántico} del intérprete, debido a la imposibilidad de chequear los tipos involucrados.
+Esto es debido que la constante \textbf{null} tiene tipo polimórfico, lo que significa que puede ser utilizada como un puntero a un entero, como también un puntero a un arreglo, o alguna otra estructura diferente.
+Esta característica permite un sistema de tipos más flexible, lo que facilita el uso del intérprete; pero al mismo tiempo, imposibilita el chequeo de tipos cuando el \textit{algoritmo de unificación} necesita de información adicional para inferir un tipo particular en la llamada de una función o procedimiento.
+
+\begin{lstlisting}[ style = lang, caption = Ejemplo para Inferencia de Tipos, label = inferenciaNull ]
+fun accesoPuntero ( p : pointer of T, t : T) ret valor : T
+  if p == null then
+    valor := t
+  else
+    valor := #p
+  fi
+end fun
+\end{lstlisting}
+
+Debido a esta constante, es necesario adaptar nuestro sistema de tipos para poder contemplar esta clase de situaciones.
+En otros contextos donde se puede emplear el valor \textbf{null}, el algoritmo de \textit{type check} es capaz de resolver esta particularidad mediante el uso de técnicas \textit{ad hoc}.
+El conflicto sucede cuando es necesario realizar algún tipo de inferencia para esta constante polimórfica, combinada con el polimorfismo paramétrico que admite una función o un procedimiento, lo que nos fuerza a requerir una mayor cantidad de información contextual para poder realizar las validaciones correspondientes.
+Para resolver este limitante, se presentan dos opciones que requieren la modificación de la implementación actual.
+
+La primera, orientada al tipado explícito, implica la adaptación de la sintaxis del lenguaje para forzar al usuario a anotar el tipo concreto que tendrá la constante en el momento que se utiliza.
+De esta forma, durante la verificación se tendrá la suficiente cantidad de información para que el \textit{juicio de tipado} sea directo.
+Como consecuencia de esta alternativa, el sistema de tipos se simplifica a costa de una sintaxis más verbosa.
+Volviendo al ejemplo, si se efectuara la llamada \lstinline[style = lang]{accesoPuntero(null[int], 5)}, el \textit{algoritmo de unificación} sería capaz de verificar todas las propiedades necesarias de forma exitosa, y se continuaría con el análisis del programa.
+
+La segunda opción, orientada al tipado implícito, supone la implementación de un algoritmo de \textit{inferencia de tipos}.
+Extrayendo ideas del \textit{algoritmo Hindley-Milner} \cite{Inferencia}, se podría adecuar nuestro sistema de tipos para lograr que el mismo sea capaz de inferir los \textit{juicios de tipado} apropiados, sin necesidad de anotar el tipo de nuestra constante.
+El ejemplo previo permanecería sin cambios, sin embargo se necesitaría de una modificación estructural del algoritmo de \textit{type check} implementado.
+De manera opuesta a la alternativa anterior, la sintaxis no se debería ajustar pero el sistema de tipos resultaría más complejo.
+Una propiedad que se ganaría al elegir esta opción, es que se permitirían declarar otras clases de funciones como la del fragmento (\ref{inferenciaLista}).
+En la misma, se inicializa una lista de forma genérica, sin conocer el tipo de sus elementos.
+
+\begin{lstlisting}[ style = lang, caption = Inicialización de Lista con Inferencia de Tipos, label = inferenciaLista ]
+fun inicializarLista ( ) ret lista : lista of (T)
+  lista := null
+end fun
+\end{lstlisting}
 
 \iffalse
 
-\subsection{Inferencia de Tipos}
-\subsubsection{Llamada de funciones y procedimientos con null}
+% \subsection{Múltiples Módulos}
+% \subsection{Implementación de Estructuras Iterables}
+% \subsection{Agregado de Clases Adicionales}
+% \subsection{Refinamiento en Implementación de Instancias}
+% \subsection{Inferencia de Tipos}
+% \subsubsection{Llamada de F/P con Null}
 
-\subsection{Múltiples Módulos}
-
-\subsection{Agregado de Clases Adicionales}
-\subsection{Implementación de Estructuras Iterables}
-\subsection{Refinamiento en Implementación de Instancias}
-
+Este concepto permitiría deducir el tipo de la constante, sin necesidad de modificar la sintaxis del lenguaje pero complicando el chequeo de tipos del intérprete.
 \fi
 
 \iffalse
 \subsection{Forzar Indentación}
+\subsection{Phantom Types}
 \fi

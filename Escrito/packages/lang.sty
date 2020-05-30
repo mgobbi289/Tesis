@@ -4,48 +4,88 @@
 % Mostrar Sintaxis / Código
 \usepackage{listings}
 
-% Defino Sintaxis
+% Lenguaje: Sintaxis
 \lstdefinelanguage{Syntax}
 {
   frame      = single,
   mathescape = true,
-  basicstyle = \itshape,
+  basicstyle = {\itshape},
 }
 
-% Defino Estilo: Sintaxis
+% Lenguaje: Haskell
+\lstdefinelanguage{Haskell}
+{
+  % Operadores
+  otherkeywords = { :, =, |, \{, \}, \[, \], \, },
+  morekeywords  = [1]{ :, =, |, \{, \}, \[, \], \, },
+  % Constructores
+  keywords      = [2]{ L, I, Const, Loc, UOp, BOp, FCall},
+  % Funciones
+  keywords      = [3]{ info, item, sLin, sCol, eLin, eCol, makeExprParser, getSourcePos, withRecovery },
+  % Tipos
+  keywords      = [4]{ Located, Info, Line, Column, Id, LExpr, Expr, LConstant, LLocation, BinOp, UnOp, File },
+  % Palabras Claves
+  keywords      = [5]{ data, type, newtype },
+  % Colores
+  basicstyle    = {\ttfamily \color{Black}},
+  keywordstyle  = [1]{\color{Mahogany}},
+  keywordstyle  = [2]{\color{Purple}},
+  keywordstyle  = [3]{\color{LimeGreen}},
+  keywordstyle  = [4]{\color{Cyan}},
+  keywordstyle  = [5]{\color{Magenta}},
+  % Comentarios
+  morecomment   = [l]{--},
+  commentstyle  = {\itshape \color{OliveGreen}},
+  % Otros
+  captionpos    = b,
+  numbers       = left,
+  numberstyle   = {\tiny \color{Gray}},
+}
+
+% Lenguaje: DeltaLang
+\lstdefinelanguage{Lang}
+{
+  % Operadores
+  otherkeywords = { :, :=, =, (, ), +, -, *, /, \%, !, &&, ||, ==, !=, <, >, <=, >=, ., \#, \[, \], \, },
+  morekeywords  = [1]{ :, :=, =, (, ), +, -, *, /, \%, !, &&, ||, ==, !=, <, >, <=, >=, ., \#, \[, \], \, },
+  % Tipos
+  keywords      = [2]{ int, real, bool, char, array, pointer, of },
+  % Palabras Claves
+  keywords      = [3]{ var, proc, in, out, fun, end, ret, if, then, elif, else, fi, while, for, to, downto, do, od, type, tuple, inst, where },
+  % Constantes
+  keywords      = [4]{ true, false, inf, null },
+  % Sentencias
+  keywords      = [5]{ alloc, free, skip },
+  % Clases
+  keywords      = [6]{ Eq, Ord },
+  % Colores
+  basicstyle    = {\ttfamily \color{Black}},
+  keywordstyle  = [1]{\color{RoyalBlue}},
+  keywordstyle  = [2]{\color{ForestGreen}},
+  keywordstyle  = [3]{\color{BurntOrange}},
+  keywordstyle  = [4]{\color{Maroon}},
+  keywordstyle  = [5]{\color{Purple}},
+  keywordstyle  = [6]{\color{WildStrawberry}},
+  % Comentarios
+  morecomment   = [s]{\{}{\}},
+  commentstyle  = {\itshape \color{OliveGreen}},
+  % Caracteres
+  morestring    = [b]',
+  stringstyle   = {\itshape},
+  % Otros
+  captionpos    = b,
+  numbers       = left,
+  numberstyle   = {\tiny \color{Gray}},
+}
+
+% Estilo: Sintaxis
 \lstdefinestyle{syntax}{language = Syntax}
 
-% Defino Estilo: Haskell
-\lstdefinestyle{haskell}{
-    language        = Haskell,
-    basicstyle      = \ttfamily,
-    captionpos      = b,
-    numbers         = left,
-    numberstyle     = \tiny\color{Gray},
-    commentstyle    = \color{OliveGreen},
-    % Palabras Claves
-    keywords        = [1]{ data, type },
-    keywordstyle    = [1]\color{Magenta},
-    % Módulos
-    keywords        = [2]{ Syntax, Parser },
-    keywordstyle    = [2]\color{Orange},
-    % Constructores
-    keywords        = [3]{ L, I, Const, Loc, UOp, BOp, FCall},
-    keywordstyle    = [3]\color{Purple},
-    % Funciones
-    keywords        = [4]{ info, item, sLin, sCol, eLin, eCol, makeExprParser, getSourcePos, withRecovery },
-    keywordstyle    = [4]\color{LimeGreen},
-    % Tipos
-    keywords        = [5]{ Located, Info, Line, Column, Id, LExpr, Expr, LConstant, LLocation, BinOp, UnOp },
-    keywordstyle    = [5]\color{Cyan},
-    % Parche de Módulos
-    morestring      = [b].,
-    stringstyle     = \color{Orange},
-}
+% Estilo: Haskell
+\lstdefinestyle{haskell}{language = Haskell}
 
-% Terminales
-\newcommand{\T}[1]
-{\mathbf{#1}}
-% No Terminales
-\newcommand{\NT}[1]
-{\langle #1 \rangle}
+% Estilo: DeltaLang
+\lstdefinestyle{lang}{language = Lang}
+
+% Estilo: Módulo
+\lstdefinestyle{module}{ basicstyle = {\ttfamily \color{Orange}} }

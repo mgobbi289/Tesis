@@ -18,17 +18,36 @@
 
 % Entorno de Ecuaciones
 \usepackage{amsmath}
+\usepackage{amsthm}
+% Especificación de Reglas
+\usepackage{bussproofs}
+% Ajustar Bordes
+\usepackage{adjustbox}
+% Ambiente para Pruebas
+\theoremstyle{definition}
+\newtheorem{Prueba}{Prueba}
 
 % Estilo de Referencias
-\usepackage[style = authoryear]{biblatex}
+\usepackage[sorting = none]{biblatex}
 \addbibresource{references.bib}
 
 % Formato de Cabeza / Pie
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 
-% Uso de Colores
-\usepackage{packages/colors}
+% Definición de Colores
+\usepackage[dvipsnames]{xcolor}
+
+% Referencias para Navegación
+\usepackage{hyperref}
+\hypersetup
+{
+  pdftitle    = {Tesis},
+  pdfauthor   = {Matías Federico Gobbi},
+  pdfpagemode = UseOutlines,
+}
+\usepackage[all]{hypcap}
+
 % Uso de Comandos
 \usepackage{packages/commands}
 % Uso de Sintaxis

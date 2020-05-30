@@ -1,0 +1,99 @@
+% Chequeos
+Una vez especificada la sintaxis del lenguaje, junto con la implementación del parser para el intérprete, es hora de comenzar la etapa de \textit{análisis semántico}.
+En este capítulo, describiremos los distintos chequeos estáticos que el intérprete deberá realizar para tener una mayor certeza que el programa a ejecutar es correcto.
+También haremos mención de algunos chequeos dinámicos que puede ser conveniente implementar, debido que la totalidad de los errores de un programa no puede ser capturada solo con un análisis estático.
+
+Nuestra tarea entonces, consistirá del diseño e implementación de los distintos chequeos estáticos para nuestro lenguaje.
+La idea es que el intérprete sea más robusto, y pueda detectar errores en etapas tempranas del desarrollo de un programa.
+De esta manera, al ejecutar un programa previamente verificado de forma estática, habrá más posibilidades de que su ejecución finalice de forma exitosa.
+Del otro lado, para las validaciones que serán delegadas al análisis dinámico, solo haremos comentarios breves al respecto ya que la realización de las mismas será un trabajo futuro en el desarrollo del intérprete.
+
+Para dar un formato estructurado a la sección, la misma se organizará en base al orden temporal en el que las distintas validaciones se efectúan en la implementación del intérprete.
+Se dará una descripción formal para cada uno de los chequeos a realizar, acompañada de una explicación informal para facilitar su comprensión.
+Idealmente, este capítulo formará parte de la documentación de \Lenguaje{}.
+
+Los fundamentos teóricos utilizados en esta sección están basados en la bibliografía de Reynolds \cite{Reynolds}.
+En particular, los capítulos sobre el sistema de tipos (\texttt{15}), el subtipado (\texttt{16}), y el polimorfismo (\texttt{18}), son de fundamental importancia para el desarrollo del trabajo.
+Por el otro lado, la implementación de los chequeos estáticos siguió la idea planteada en el artículo de Castegren y Reyes \cite{MonadicTC}.
+Las secciones más relevantes, para la realización de nuestro trabajo, comprenden la definición del \textit{typechecker} (\texttt{2}), el soporte para \textit{backtraces} (\texttt{4}), y el agregado de \textit{warnings} (\texttt{5}).
+
+\section{Metavariables}
+
+Como mencionamos en capítulos previos, para el estudio del lenguaje nos apoyaremos en la especificación de su \textit{sintaxis abstracta}.
+A lo largo de la sección, se utilizarán diversas metavariables (a veces acompañadas de superíndices, o subíndices) para representar distintas clases de construcciones sintácticas.
+A continuación se listan las mismas, junto con el elemento sintáctico que comúnmente simbolizarán, a menos que se especifique lo contrario en el momento.
+
+\begin{align*}
+&\text{\underline{Expresiones}}
+\\
+&e       & &\NT{expression}     &  &ct      & &\NT{constant}       \\
+&v       & &\NT{variable}       &  &n       & &\NT{integer}        \\
+&x, a    & &\NT{id}             &  &r       & &\NT{real}           \\
+&\oplus  & &\NT{binary}         &  &b       & &\NT{bool}           \\
+&\ominus & &\NT{unary}          &  &c       & &\NT{character}      \\
+\\
+&\text{\underline{Sentencias}}
+\\
+&s       & &\NT{sentence}       &  &ss      & &\NT{sentences}      \\
+\\
+&\text{\underline{Tipos}}
+\\
+&\theta & &\NT{type}            &  &as      & &\NT{size}           \\
+&td     & &\NT{typedecl}        &  &tn      & &\NT{tname}          \\
+&tv     & &\NT{typevariable}    &  &cn      & &\NT{cname}          \\
+&cl     & &\NT{class}           &  &fn      & &\NT{fname}          \\
+&io     & &\NT{io}              &  &fd      & &\NT{field}          \\
+\\
+&\text{\underline{Programas}}
+\\
+&fpd     & &\NT{funprocdecl}    &  &cs     & &\NT{constraints}     \\
+&vd      & &\NT{variabledecl}   \\
+\end{align*}
+
+\section{Notación}
+
+Antes de comenzar propiamente con la definición de los distintos chequeos, es necesario describir el significado de la notación que emplearemos a lo largo del capítulo.
+Cuando uno de los elementos verificados satisfaga todas las propiedades requeridas por el análisis, diremos que el mismo se encuentra \textit{bien formado}.
+Comúnmente, utilizaremos la siguiente notación para decir que la construcción sintáctica $\chi$ está \textit{bien formada} bajo el contexto $\pi$, en base a las reglas de la categoría $\gamma$.
+\begin{gather*}
+\pi \vdash_{\gamma} \chi
+\end{gather*}
+
+También denominadas reglas para \textit{juicios de tipado}, estas construcciones a veces producirán resultados luego de finalizado su análisis.
+Los mismos podrán extender los contextos involucrados en la verificación, a medida que se recolecta información del programa, o también podrán generar nuevos elementos sintácticos, como es el caso para los chequeos de tipos.
+En estas situaciones, se utilizará la siguiente notación, donde $\omega$ representa el resultado final obtenido.
+\begin{gather*}
+\pi \vdash_{\gamma} \chi : \omega
+\end{gather*}
+
+Otra situación que se suele presentar a la hora del análisis, es el uso de una cantidad arbitraria de contextos.
+Debido que comúnmente se deberá almacenar información de distintos índoles para efectuar la verificación, se hará uso de la siguiente notación para reflejar esta condición.
+Notar que también existe la posibilidad que no se necesite utilizar ninguna información contextual, por lo que en estos escenarios se omite el listado de contextos.
+\begin{gather*}
+\pi_1, \ldots, \pi_n \vdash_{\gamma} \chi : \omega
+\end{gather*}
+
+A lo largo del informe, se darán distintos conjuntos de reglas $\gamma$ en base al elemento sintáctico que $\chi$ represente.
+Al mismo tiempo, se definirán diversos contextos $\pi$ que almacenarán la información recopilada a lo largo de la validación del programa.
+Sumado a todo esto, la clase de resultados $\omega$ obtenidos durante la verificación también dependerá del entorno de análisis en el que nos encontremos inmersos.
+
+Una última notación que puede ser conveniente presentar, es la utilizada para expandir contextos.
+Los contextos que emplearemos a lo largo del trabajo serán conjuntos compuestos por \textit{n-uplas} de elementos sintácticos del lenguaje.
+Debido que la operación principal sobre estas construcciones será el agregado de las distintas componentes que conforman el elemento sintáctico recientemente analizado, se hará uso de la siguiente abreviatura para simplificar la notación.
+\begin{gather*}
+(\chi_1, \ldots, \chi_n) \triangleright \pi \overset{def}{=} \{ (\chi_1, \ldots, \chi_n) \} \cup \pi
+\end{gather*}
+
+\section{Chequeos}
+
+Comenzando con la especificación de los chequeos, avanzaremos progresivamente en el análisis de un programa a medida que las distintas propiedades sean enunciadas y verificadas.
+Para asegurar la corrección estática de un programa, se deben validar cada una de sus componentes, y en el caso que todas superen su respectiva verificación, se dirá que el mismo se encuentra \textit{bien formado}.
+Según la sintaxis del lenguaje, un programa posee la siguiente estructura, donde vale que $n \geq 0$ y $m > 0$.
+\begin{gather*}
+typedecl_1 \\
+\ldots \\
+typedecl_n \\
+funprocdecl_1 \\
+\ldots \\
+funprocdecl_m
+\end{gather*}

@@ -2,22 +2,49 @@
 \ProvidesPackage{packages/commands}
 
 % Nombre del Lenguaje
-\newcommand{\Lenguaje}
-{$\Delta\Delta$Lang}
+\newcommand{\Lenguaje}{$\Delta\Delta$Lang}
 % Nombre de la Materia
-\newcommand{\Materia}
-{\textit{Algoritmos y Estructura de Datos II}}
+\newcommand{\Materia}{\textit{Algoritmos y Estructura de Datos II}}
 
 % Lenguajes de Programación
-\newcommand{\Haskell}
-{\textit{Haskell}}
-\newcommand{\Pascal}
-{\textit{Pascal}}
-\newcommand{\C}
-{\textit{C}}
+\newcommand{\Haskell}{\textit{Haskell}}
+\newcommand{\Pascal}{\textit{Pascal}}
+\newcommand{\C}{\textit{C}}
+\newcommand{\Python}{\textit{Python}}
+\newcommand{\Java}{\textit{Java}}
 
 % Nombre de Librerías
-\newcommand{\Parsec}
-{\textit{Parsec}}
-\newcommand{\Megaparsec}
-{\textit{Megaparsec}}
+\newcommand{\Parsec}{\textit{Parsec}}
+\newcommand{\Megaparsec}{\textit{Megaparsec}}
+
+% Variables Libres
+\newcommand{\FV}[1]{ FV(#1) }
+% Variables Asignables
+\newcommand{\AV}[1]{ AV(#1) }
+% Variables Lectura
+\newcommand{\RV}[1]{ RV(#1) }
+% Variables Tipo
+\newcommand{\FTV}[1]{ FTV(#1) }
+
+% Terminales
+\newcommand{\T}[1]{\mathbf{#1}}
+% No Terminales
+\newcommand{\NT}[1]{\langle #1 \rangle}
+
+% Contextos
+\newcommand{\PI}[1]{\pi_{\mathbf{#1}}}
+
+% Encabezado Reglas
+\newcommand{\ER}[2]
+{
+  \begin{flushleft}
+  \textbf{#1:} #2
+  \end{flushleft}
+}
+% Pie Reglas
+\newcommand{\PR}[1]
+{
+  \begin{flushleft}
+  #1
+  \end{flushleft}
+}
