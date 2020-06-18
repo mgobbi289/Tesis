@@ -19,13 +19,20 @@
 % Entorno de Ecuaciones
 \usepackage{amsmath}
 \usepackage{amsthm}
-% Especificación de Reglas
+\usepackage{mathtools}
+% Especificación de Reglas/Pruebas
 \usepackage{bussproofs}
-% Ajustar Bordes
-\usepackage{adjustbox}
-% Ambiente para Pruebas
+% Ambiente para Reglas/Pruebas
 \theoremstyle{definition}
 \newtheorem{Prueba}{Prueba}
+\newtheorem{Regla}{Regla}
+\newtheorem{TRegla}[Regla]{Regla para Tipos}
+\newtheorem{DTRegla}[Regla]{Regla para Declaración de Tipos}
+\newtheorem{FPRegla}[Regla]{Regla para Función/Procedimiento}
+\newtheorem{SRegla}[Regla]{Regla para Sentencias}
+\newtheorem{ERegla}[Regla]{Regla para Expresiones}
+\newtheorem{ETRegla}[Regla]{Regla para Equivalencia de Tipos}
+\newtheorem{PRegla}[Regla]{Regla para Programas}
 
 % Estilo de Referencias
 \usepackage[sorting = none]{biblatex}
@@ -44,7 +51,11 @@
 {
   pdftitle    = {Tesis},
   pdfauthor   = {Matías Federico Gobbi},
-  pdfpagemode = UseOutlines,
+  pdfpagemode = FullScreen,
+  colorlinks  = true,
+  linkcolor   = OrangeRed,
+  citecolor   = PineGreen,
+  urlcolor    = Mulberry,
 }
 \usepackage[all]{hypcap}
 

@@ -1,0 +1,625 @@
+% Chequeos para Expresiones
+\subsection{Chequeos para Expresiones}
+
+En esta sección, presentaremos las verificaciones para las expresiones del lenguaje.
+Las propiedades a analizar consistirán, en esencia, de los chequeos de tipos para expresiones; por lo que las reglas especificadas posiblemente resulten ser las más naturales de pensar hasta el momento.
+De manera adicional, también formalizaremos conceptos sobre equivalencia de tipos y subtipado, fundamentales para la derivación de \textit{juicios de tipado} donde es posible emplear expresiones cuyos tipos caracterizan un comportamiento semejante al esperado.
+
+\subsubsection{Reglas para Expresiones}
+
+La notación utilizada para el análisis ya fue introducida en la sección previa, de todas formas, a continuación describiremos su significado formalmente.
+El siguiente \textit{juicio de tipado} determina que una expresión $e$ de tipo $\theta$ es válida, bajo los contextos comprendidos por $\PI{P}$.
+Notar que contamos con la misma información que para el análisis de sentencias.
+\begin{gather*}
+\PI{P} \DASHFP{fp}{e} e : \theta
+\end{gather*}
+
+Comenzaremos con la especificación de las reglas de deducción.
+Para el caso de las constantes del lenguaje, no se presenta ninguna situación compleja.
+Las reglas son directas, y su resultado es esperable.
+Recordar que cada una de las siguiente metavariables representa un elemento cualquier de la construcción sintáctica a la que están asociadas.
+
+\begin{ERegla}
+\label{EConstante}
+Valores Constantes
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} n : \T{int}
+$}
+\AxiomC{}
+\noLine
+\UnaryInfC{}
+\AxiomC{}
+\UnaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} r : \T{real}
+$}
+\noLine
+\TrinaryInfC{}
+\end{prooftree}
+%
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} b : \T{bool}
+$}
+\AxiomC{}
+\noLine
+\UnaryInfC{}
+\AxiomC{}
+\UnaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} c : \T{char}
+$}
+\noLine
+\TrinaryInfC{}
+\end{prooftree}
+\end{ERegla}
+
+Cuando se utiliza una constante enumerada, se tiene que consultar el contexto de tipos definidos correspondiente.
+El tipo resultado de la expresión, corresponderá al nombre empleado en la definición del tipo en el que la constante fue declarada.
+
+\begin{ERegla}
+\label{EEnumerada}
+Constantes Enumeradas
+\begin{prooftree}
+\AxiomC
+{$
+(tn, \{ cn_{1}, \ldots, cn_{i}, \ldots, cn_{m} \}) \in \pi_{e}
+$}
+\UnaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t}, \PI{FP}, \PI{V} \DASHFP{fp}{e} cn_{i} : tn
+$}
+\end{prooftree}
+\end{ERegla}
+
+Para la constante especial $\T{inf}$, su deducción es inmediata.
+En primera instancia, se asume que la misma tiene tipo entero.
+Luego, con la introducción del subtipado, también podrá ser utilizada como un valor de tipo real.
+Esta constante se emplea como límite superior, o inferior si se encuentra negada, para los conjuntos numéricos del lenguaje.
+
+\begin{ERegla}
+\label{EInfinito}
+Infinito
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} \T{inf} : \T{int}
+$}
+\end{prooftree}
+\end{ERegla}
+
+La constante $\T{null}$ tiene tipo polimórfico.
+La misma simboliza un puntero que no señala a ninguna posición válida de memoria.
+Debido a esto, la constante puede pasar como un puntero que señala a cualquier tipo de estructura.
+Se utiliza principalmente para evitar \textit{dangling pointers}.
+
+\begin{ERegla}
+\label{ENull}
+Puntero Nulo
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} \T{null} : \T{pointer} \; \theta
+$}
+\end{prooftree}
+\end{ERegla}
+
+Para las variables empleadas en una función o procedimiento, hay cuatro reglas diferentes para la deducción de su tipo.
+En base al contexto en el que fueron introducidas, se tendrá que emplear una u otra de las siguientes inferencias.
+Comenzando propiamente con las variables declaradas dentro de un bloque, solo hay que consultar el contexto correspondiente.
+
+\begin{ERegla}
+\label{EVariable}
+Variables Declaradas
+\begin{prooftree}
+\AxiomC
+{$
+(x, \theta) \in \pi_{v}
+$}
+\UnaryInfC
+{$
+\PI{T}, \PI{FP}, \pi_{sn}, \pi_{v} \DASHFP{fp}{e} x : \theta
+$}
+\end{prooftree}
+\end{ERegla}
+
+Los tamaños variables introducidos en el prototipo de una función o procedimiento, pueden ser empleados como una variable más en el código.
+En este caso, se debe verificar que el mismo exista en el contexto adecuado.
+El tipo inferido para estos elementos, será siempre entero.
+
+\begin{ERegla}
+\label{EDinamico}
+Tamaños Dinámico
+\begin{prooftree}
+\AxiomC
+{$
+as \in \pi_{sn}
+$}
+\UnaryInfC
+{$
+\PI{T}, \PI{FP}, \pi_{sn}, \pi_{v} \DASHFP{fp}{e} as : \T{int}
+$}
+\end{prooftree}
+\end{ERegla}
+
+Si nos encontramos analizando el bloque de una función $f$, puede ocurrir que aparezca alguno de los argumentos, o retorno, introducidos en el prototipo de la misma durante la verificación.
+En este caso, el tipo inferido será el mismo detallado en el encabezado de la rutina.
+
+\begin{ERegla}
+\label{EParametroF}
+Parámetros de Función
+\begin{prooftree}
+\AxiomC
+{$
+\PI{FP}(fp) = (\{ a_1: \theta_1, \ldots, a_l: \theta_l \}, a_r: \theta_r, cs )
+$}
+\UnaryInfC
+{$
+\PI{T}, \PI{FP}, \PI{V} \DASHFP{fp}{e} a_i : \theta_i
+$}
+\end{prooftree}
+\end{ERegla}
+
+En el análisis de un procedimiento $p$, puede ocurrir una situación análoga a la anterior.
+Al encontrar una variable especificada como entrada del mismo, se infiere el tipo que se asocia a esta en el encabezado del procedimiento.
+
+\begin{ERegla}
+\label{EParametroP}
+Parámetros de Procedimiento
+\begin{prooftree}
+\AxiomC
+{$
+\PI{FP}(fp) = (\{ oi_1 \; a_1: \theta_1, \ldots, oi_l \; a_l: \theta_l \}, cs )
+$}
+\UnaryInfC
+{$
+\PI{T}, \PI{FP}, \PI{V} \DASHFP{fp}{e} a_i : \theta_i
+$}
+\end{prooftree}
+\end{ERegla}
+
+A continuación, detallaremos las distintas reglas utilizadas para los diversos operadores de variables.
+Comenzando con los punteros, se debe verificar que la variable que se intenta acceder sea efectivamente uno.
+El tipo inferido en la deducción será el referenciado por el puntero en la premisa.
+
+\begin{ERegla}
+\label{EPuntero}
+Acceso a Puntero
+\begin{prooftree}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} v : \T{pointer} \; \theta
+$}
+\UnaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} \star v : \theta
+$}
+\end{prooftree}
+\end{ERegla}
+
+Para el acceso a tuplas, la regla es un poco más compleja.
+Primero, se debe verificar que la variable a la que se intenta acceder sea efectivamente una tupla.
+Luego, en base a los argumentos declarados en la definición de la tupla, se debe aplicar una sustitución de variables de tipo finita, con respecto a los parámetros de tipo que fueron especificados cuando se introdujo la variable mencionada.
+
+\begin{ERegla}
+\label{ETupla}
+Acceso a Tuplas
+\begin{prooftree}
+\AxiomC
+{$
+\pi_{e}, \pi_{s}, \pi_{t}, \PI{FP}, \PI{V} \DASHFP{fp}{e} v : tn \; \T{of} \; \theta_1, \ldots, \theta_l
+$}
+\AxiomC
+{$
+(tn, \{ a_1, \ldots, a_l \}, \{ fn_1: \theta^*_1, \ldots, fn_m: \theta^*_m \} ) \in \pi_{t}
+$}
+\BinaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t}, \PI{FP}, \PI{V} \DASHFP{fp}{e} v . fn_{i} : (\theta^*_i \mid [a_1 : \theta_1, \ldots, a_l : \theta_l]_{tv})
+$}
+\end{prooftree}
+\end{ERegla}
+
+Finalmente, analizaremos el acceso a arreglos.
+Al igual que en las reglas anteriores, tenemos que comprobar que la variable con la que operamos sea efectivamente uno.
+Luego, hay que verificar que todas las expresiones sean de tipo entero, y que la cantidad de las mismas coincida con las dimensiones que posee la estructura.
+Notar que asegurar que el acceso a un arreglo sea dentro de los límites válidos, solo se puede realizar durante el análisis dinámico.
+
+\begin{ERegla}
+\label{EArreglo}
+Acceso a Arreglos
+\begin{prooftree}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} v : \T{array} \; as_1, \ldots, as_n \; \T{of} \; \theta
+$}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e_i : \T{int}
+$}
+\BinaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} v[e_1, \ldots, e_n] : \theta
+$}
+\end{prooftree}
+\end{ERegla}
+
+Pasando al análisis de los operadores del lenguaje, se puede observar que varios de los mismos se encuentran sobrecargados.
+Esto quiere decir, que pueden ser utilizados para operar con valores de tipos diferentes, obteniendo resultados distintos en base a los mismos.
+Comenzando con los operadores numéricos, los mismos pueden ser utilizados para trabajar con enteros y con reales.
+Luego de introducidas las reglas de subtipado, se podrá notar que las deducciones son aún más flexibles, permitiendo argumentos de tipos distintos.
+
+\begin{ERegla}
+\label{EOperadorBN}
+Operadores Binarios Numéricos
+\begin{prooftree}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e_1 : \T{int}
+$}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e_2 : \T{int}
+$}
+\BinaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} e_1 \oplus e_2 : \T{int}
+$}
+\AxiomC{}
+\noLine
+\UnaryInfC{}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e_1 : \T{real}
+$}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e_2 : \T{real}
+$}
+\BinaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} e_1 \oplus e_2 : \T{real}
+$}
+\noLine
+\TrinaryInfC{}
+\end{prooftree}
+donde $\oplus \in \{ +, -, *, /, \% \}$.
+\end{ERegla}
+
+\begin{ERegla}
+\label{EOperadorUN}
+Operadores Unarios Numéricos
+\begin{prooftree}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e : \T{int}
+$}
+\UnaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} -e : \T{int}
+$}
+\AxiomC{}
+\noLine
+\UnaryInfC{}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e : \T{real}
+$}
+\UnaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} -e : \T{real}
+$}
+\noLine
+\TrinaryInfC{}
+\end{prooftree}
+\end{ERegla}
+
+Los siguientes operadores que analizaremos serán los booleanos.
+Las reglas para los mismos son bastante básicas.
+En esta ocasión, no hay ninguna especie de sobrecarga, ni tampoco se tendrán que usar reglas de subtipado para hacer coincidir los tipos de los operandos.
+
+\begin{ERegla}
+\label{EOperadorBB}
+Operadores Binarios Booleanos
+\begin{prooftree}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e_1 : \T{bool}
+$}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e_2 : \T{bool}
+$}
+\BinaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} e_1 \oplus e_2 : \T{bool}
+$}
+\end{prooftree}
+donde $\oplus \in \{ \&\&, || \}$.
+\end{ERegla}
+
+\begin{ERegla}
+\label{EOperadorUB}
+Operadores Unarios Booleanos
+\begin{prooftree}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e : \T{bool}
+$}
+\UnaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} !e : \T{bool}
+$}
+\end{prooftree}
+\end{ERegla}
+
+Los últimos operadores que estudiaremos serán los de igualdad y orden.
+Sus argumentos tendrán que tener el mismo tipo, y el resultado será un valor booleano.
+Estos operadores estarán definidos para una gran variedad de tipos, siempre y cuando, los mismos implementen las clases $\T{Eq}$, y $\T{Ord}$ respectivamente.
+En secciones anteriores se dio una descripción informal sobre que tipos satisfacen que clases.
+Teniendo en cuenta esta información previa, las reglas se detallan a continuación.
+
+\begin{ERegla}
+\label{EOperadorI}
+Operadores de Igualdad
+\begin{prooftree}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e_1 : \theta
+$}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e_2 : \theta
+$}
+\BinaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} e_1 \oplus e_2 : \T{bool}
+$}
+\end{prooftree}
+donde $\oplus \in \{ ==, != \}$, y se satisface que el tipo $\theta$ es igualable.
+\end{ERegla}
+
+\begin{ERegla}
+\label{EOperadorO}
+Operadores de Orden
+\begin{prooftree}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e_1 : \theta
+$}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e_2 : \theta
+$}
+\BinaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} e_1 \oplus e_2 : \T{bool}
+$}
+\end{prooftree}
+donde $\oplus \in \{ <, >, <=, >= \}$, y se satisface que el tipo $\theta$ es ordenable.
+\end{ERegla}
+
+Para las funciones debemos hacer esto.
+
+\begin{ERegla}
+\label{EFuncion}
+Funciones
+\begin{prooftree}
+\AxiomC
+{$
+\PI{T}, \pi_{f}, \pi_{p}, \PI{V} \DASHFP{fp}{e} e_i : \theta_i
+$}
+\UnaryInfC
+{$
+\PI{T}, \pi_{f}, \pi_{p}, \PI{V} \DASHFP{fp}{e} f(e_1, \ldots, e_n) : \theta_{r}
+$}
+\end{prooftree}
+\end{ERegla}
+
+Una regla fundamental para el tipado de las expresiones tiene que ver con el subtipado.
+La misma fue mencionada previamente, como una forma de flexibilizar las deducciones de tipo.
+En el lenguaje, es simplemente la conversión de un valor de tipo $\T{int}$ a uno de tipo $\T{real}$.
+Esto permite que programas que funcionan para números reales, también lo hagan con enteros.
+Se especifica a continuación.
+
+\begin{ERegla}
+\label{ESubtipado}
+Subtipado
+\begin{prooftree}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e : \T{int}
+$}
+\UnaryInfC
+{$
+\PI{P} \DASHFP{fp}{e} e : \T{real}
+$}
+\end{prooftree}
+\end{ERegla}
+
+\subsubsection{Equivalencia de Tipos}
+
+Se puede observar que algunos tipos de nuestro sistema son equivalentes entre sí, a pesar de utilizar construcciones sintácticas diferentes.
+Un ejemplo podría ser la declaración de un sinónimo de tipo por parte del usuario, junto con el tipo especificado en el cuerpo de su definición.
+Sintácticamente estos dos elementos serán distintos ya que, el primero se representará solo con su nombre y sus argumentos, mientras que el segundo podrá ser un tipo válido cualquiera del lenguaje.
+A pesar de esto, es claro que se puede establecer una igualdad semántica entre ambos elementos.
+
+Para el siguiente conjunto de reglas, emplearemos la siguiente notación.
+Diremos que un tipo $\theta$ unifica a otro tipo $\theta'$, bajo el contexto de tipos definidos por el usuario $\PI{T}$, mediante la siguiente fórmula.
+\begin{gather*}
+\PI{T} \DASH{u} \theta \sim \theta'
+\end{gather*}
+
+Con el siguiente conjunto de reglas se puede observar que la unificación es una relación de equivalencia sobre nuestro sistema de tipos.
+La misma satisface las propiedades de reflexividad, simetría, y transitividad.
+A continuación, el listado de deducciones correspondientes.
+
+\begin{ETRegla}
+\label{ETReflexiva}
+Reflexividad
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC
+{$
+\PI{T} \DASH{u} \theta \sim \theta
+$}
+\end{prooftree}
+\end{ETRegla}
+
+\begin{ETRegla}
+\label{ETSimetrica}
+Simetría
+\begin{prooftree}
+\AxiomC
+{$
+\PI{T} \DASH{u} \theta \sim \theta'
+$}
+\UnaryInfC
+{$
+\PI{T} \DASH{u} \theta' \sim \theta
+$}
+\end{prooftree}
+\end{ETRegla}
+
+\begin{ETRegla}
+\label{ETTransitiva}
+Transitividad
+\begin{prooftree}
+\AxiomC
+{$
+\PI{T} \DASH{u} \theta \sim \theta'
+$}
+\AxiomC
+{$
+\PI{T} \DASH{u} \theta' \sim \theta''
+$}
+\BinaryInfC
+{$
+\PI{T} \DASH{u} \theta \sim \theta''
+$}
+\end{prooftree}
+\end{ETRegla}
+
+Quizá la regla más importante que podemos obtener al introducir la unificación en nuestro conjunto de derivaciones, es la siguiente.
+La misma, especifica que si podemos deducir cierto tipo sobre una expresión cualquiera, y al mismo tiempo, este tipo puede unificar a otro; entonces podemos deducir este último tipo para nuestra expresión inicial.
+
+\begin{ETRegla}
+\label{ETUnificacion}
+Unificación
+\begin{prooftree}
+\AxiomC
+{$
+\PI{T}, \PI{FP}, \PI{V} \DASHFP{fp}{e} e : \theta
+$}
+\AxiomC
+{$
+\PI{T} \DASH{u} \theta \sim \theta'
+$}
+\BinaryInfC
+{$
+\PI{T}, \PI{FP}, \PI{V} \DASHFP{fp}{e} e : \theta'
+$}
+\end{prooftree}
+\end{ETRegla}
+
+Obviamente, con solo el conjunto anterior de deducciones no alcanza.
+Tenemos que dar reglas más concretos para unificar tipos de nuestro sistema.
+Comenzando con los punteros, la inferencia es bastante simple.
+Si dos tipos cualquiera unifican, entonces un puntero que referencia a uno de estos, puede unificar a un puntero que señala al otro.
+
+\begin{ETRegla}
+\label{ETPuntero}
+Punteros
+\begin{prooftree}
+\AxiomC
+{$
+\PI{T} \DASH{u} \theta \sim \theta'
+$}
+\UnaryInfC
+{$
+\PI{T} \DASH{u} \T{pointer} \; \theta \sim \T{pointer} \; \theta'
+$}
+\end{prooftree}
+\end{ETRegla}
+
+Para los arreglos, se aplica una idea idéntica a la anterior.
+Si el tipo interno del arreglo unifica a otro tipo cualquiera, entonces el arreglo inicial puede unificar a otra estructura nueva con el tipo recientemente introducido como tipo interno.
+
+\begin{ETRegla}
+\label{ETArreglo}
+Arreglos
+\begin{prooftree}
+\AxiomC
+{$
+\PI{T} \DASH{u} \theta \sim \theta'
+$}
+\UnaryInfC
+{$
+\PI{T} \DASH{u} \T{array} \; as_1, \ldots, as_n \; \T{of} \; \theta \sim \T{array} \; as_1, \ldots, as_n \; \T{of} \; \theta'
+$}
+\end{prooftree}
+\end{ETRegla}
+
+Para el uso de tipos definidos, la idea es análoga a la empleada en las reglas previas.
+Si cada uno de los parámetros puede unificar a otro tipo, entonces el tipo definido podrá unificar a otro con los argumentos modificados.
+
+\begin{ETRegla}
+\label{ETDefinido}
+Tipos Definidos
+\begin{prooftree}
+\AxiomC
+{$
+\PI{T} \DASH{u} \theta_i \sim \theta_i'
+$}
+\UnaryInfC
+{$
+\PI{T} \DASH{u} tn \; \T{of} \; \theta_1, \ldots, \theta_n \sim tn \; \T{of} \; \theta_1', \ldots, \theta_n'
+$}
+\end{prooftree}
+\end{ETRegla}
+
+Finalmente, la regla para los sinónimos del lenguaje.
+Esta deducción permite intercambiar libremente el uso del tipo declarado, con el tipo de su definición a lo largo del programa.
+Esto equivaldría a la creación de un tipo transparente en el lenguaje.
+Para el caso de los sinónimos sin parámetros, la derivación es directa, ya que solo se tiene que consultar la existencia del mismo en el contexto correspondiente a sinónimos del programa.
+
+\begin{ETRegla}
+\label{ETSinonimo}
+Sinónimos sin Argumentos
+\begin{prooftree}
+\AxiomC
+{$
+(tn, \emptyset, \theta) \in \pi_{s}
+$}
+\UnaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \DASH{u} tn \sim \theta
+$}
+\end{prooftree}
+\end{ETRegla}
+
+En el caso de un sinónimo con argumentos, se necesita realizar una transformación adicional.
+No alcanza con solo verificar que el tipo se encuentre declarado, y que la cantidad de parámetros sea la correcta.
+Además, se tiene que aplicar una sustitución de variables de tipo finita al cuerpo de su definición, en base a los argumentos pasados al mismo, para obtener el nuevo tipo unificado.
+
+\begin{ETRegla}
+\label{ETSinonimoP}
+Sinónimos con Argumentos
+\begin{prooftree}
+\AxiomC
+{$
+(tn, \{ tv_1, \ldots, tv_n \}, \theta ) \in \pi_{s}
+$}
+\UnaryInfC
+{$
+\pi_{e}, \pi_{s}, \pi_{t} \DASH{u} tn \; \T{of} \; \theta_1, \ldots, \theta_n \sim (\theta \mid [tv_1 : \theta_1, \ldots, tv_n : \theta_n]_{tv})
+$}
+\end{prooftree}
+\end{ETRegla}

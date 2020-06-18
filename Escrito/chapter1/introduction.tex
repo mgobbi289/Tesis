@@ -65,7 +65,7 @@ Un último tema que se enseña en la materia, es la recorrida de grafos, y las d
 Una vez detallados los fundamentos en los que se basa el lenguaje, es hora de describir sus características más importantes.
 \Lenguaje{} es una formalización del pseudocódigo utilizado en la materia \Materia{}, por lo que está diseñado para enseñar conceptos fundamentales de forma clara y natural.
 Es un lenguaje imperativo similar a \Pascal{}.
-Este último fue diseñado por \textit{Niklaus Wirth} cerca de 1970 \cite{Pascal}.
+Este último fue diseñado por \textit{Niklaus Wirth} cerca de 1970~\cite{Pascal}.
 Algunos elementos básicos que comparten son:
 \begin{itemize}
     \item Una sintaxis verbosa, pero fácil de leer.
@@ -167,7 +167,7 @@ Con respecto a este trabajo de tesis en particular, realizaremos la implementaci
 En la misma, luego de definir la sintaxis del lenguaje, desarrollaremos tanto el parser como los chequeos estáticos que conforman esta etapa.
 
 A continuación, daremos un breve marco teórico sobre distintas cuestiones que consideramos importante mencionar sobre el diseño del intérprete en general.
-Para el mismo, nos basaremos en los primeros capítulos de la bibliografía de Aho, Sethi y Ullman \cite{Dragon}.
+Para el mismo, nos basaremos en los primeros capítulos de la bibliografía de Aho, Sethi y Ullman~\cite{Dragon}.
 
 \begin{figure}[h]
 \centering
@@ -180,11 +180,11 @@ Un lenguaje de programación es una notación para describir computaciones a per
 Pero para que un programa sea ejecutable, antes debe ser traducido a un formato comprensible para una máquina.
 Los sistemas de software que se encargan de esta traducción son denominados \textit{compiladores}.
 De forma simple, un compilador es un programa que puede leer un programa especificado en un \textit{lenguaje fuente} y traducirlo en un programa equivalente en un \textit{lenguaje objetivo}.
-En la imagen \ref{Compilador} se puede observar un esquema simplificado de esta idea.
+En la imagen~\ref{Compilador} se puede observar un esquema simplificado de esta idea.
 
 Un intérprete es otra clase común de procesador de lenguajes.
 En lugar de producir un programa objetivo como resultado de una traducción, un intérprete simula ejecutar directamente las operaciones especificadas en el programa fuente, en base a las entradas suministradas por el usuario y retornando las salidas producidas como resultado de la ejecución.
-En la figura \ref{Intérprete} se puede apreciar la diferencia esencial entre ambas clases de procesadores de lenguajes.
+En la figura~\ref{Intérprete} se puede apreciar la diferencia esencial entre ambas clases de procesadores de lenguajes.
 
 \begin{figure}[h]
 \centering
@@ -239,7 +239,7 @@ Además, durante estas fases comúnmente se aplica algún proceso de optimizaci�
 Del otro lado, como el objetivo de un intérprete difiere con el de un compilador, sus etapas de síntesis también lo hacen en la misma manera.
 Para obtener los resultados del programa, debemos partir del \textit{árbol de sintaxis abstracta} obtenido luego de la fase de \textit{análisis} del intérprete y, junto con los datos de entrada sustentados por el usuario, simular la ejecución del programa en base a las acciones especificadas en el código del mismo.
 De esta forma, una vez finalizada la ejecución, se obtienen las salidas del programa.
-En la imagen \ref{Fases} se puede observar la estructura de nuestro intérprete.
+En la imagen~\ref{Fases} se puede observar la estructura de nuestro intérprete.
 
 \begin{figure}[h]
 \centering

@@ -1,0 +1,353 @@
+% Chequeos para Sentencias
+\subsection{Chequeos para Sentencias}
+
+Ya estamos en condiciones para comenzar con el análisis de las sentencias del lenguaje.
+Algunas propiedades que se deberán verificar comprenden la asignación adecuada de expresiones a variables, la especificación de límites válidos para la sentencia \textit{for}, el empleo de guardas de tipo booleano para las sentencias \textit{if} y \textit{while}, entre otras.
+En particular, para la llamada a procedimientos haremos uso de los últimos conceptos introducidos sobre la operación de sustitución, y las instancias de clases.
+
+\subsubsection{Reglas para Sentencias}
+
+Para el \textit{juicio de tipado} de una sentencia, tenemos a nuestro alcance los contextos sobre los tipos definidos, las funciones y los procedimientos declarados, los tamaños dinámicos especificados en el prototipo, y las variables introducidas previamente en el cuerpo.
+Prescindimos de la información sobre las variables de tipo detalladas en el encabezado, ya que no será necesaria para el siguiente análisis.
+Para abreviar la notación empleada, utilizaremos $\PI{V}$ para representar al conjunto de variables, y al de tamaños dinámicos de arreglos.
+Adicionalmente, haremos referencia al contexto $\PI{P}$ para simbolizar a toda la información necesaria para efectuar el análisis.
+\begin{align*}
+\PI{T}, \PI{FP}, \pi_{sn}, \pi_{v}
+&
+\DASHFP{fp}{s} sentence
+\\
+\PI{T}, \PI{FP}, \PI{V}
+&
+\DASHFP{fp}{s} sentence
+\\
+\PI{P}
+&
+\DASHFP{fp}{s} sentence
+\end{align*}
+
+El análisis de la sentencia \textit{skip} es trivial.
+Su verificación es inmediata, ya que la regla no presenta ninguna premisa y no es necesario consultar la información almacenada en ninguno de los contextos reunidos.
+
+\begin{SRegla}
+\label{SSkip}
+Skip
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC
+{$
+\PI{P} \DASHFP{fp}{s} \T{skip}
+$}
+\end{prooftree}
+\end{SRegla}
+
+La regla de la asignación presenta la primer situación interesante en el análisis de las sentencias.
+Se deben verificar sus dos componentes, la variable a modificar y la expresión que se le asignará, para asegurar que ambas poseen el mismo tipo.
+
+\begin{SRegla}
+\label{SAsignacion}
+Asignación
+\begin{prooftree}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} v : \theta
+$}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e : \theta
+$}
+\BinaryInfC
+{$
+\PI{P} \DASHFP{fp}{s} v := e
+$}
+\end{prooftree}
+\end{SRegla}
+
+Para el procedimiento particular \textit{alloc}, es necesario realizar un chequeo de tipos.
+Debido que la sentencia es empleada para reservar espacio en memoria, para almacenar la estructura que referencia un puntero, hay que garantizar que su argumento tenga el tipo correspondiente.
+Notar que la sintaxis del lenguaje solo permite la especificación de variables como argumento en la llamada del procedimiento.
+
+\begin{SRegla}
+\label{SAlloc}
+Alloc
+\begin{prooftree}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} v : \T{pointer} \; \theta
+$}
+\UnaryInfC
+{$
+\PI{P} \DASHFP{fp}{s} \T{alloc} \; v
+$}
+\end{prooftree}
+\end{SRegla}
+
+Para el procedimiento \textit{free}, ocurre una situación similar.
+Es necesario verificar que el argumento recibido sea efectivamente un puntero.
+En este caso, la sentencia se encarga de liberar el espacio de memoria que referencia el puntero.
+Nuevamente, la sintaxis solo permite la especificación de variables como argumento en la llamada del procedimiento.
+
+\begin{SRegla}
+\label{SFree}
+Free
+\begin{prooftree}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} v : \T{pointer} \; \theta
+$}
+\UnaryInfC
+{$
+\PI{P} \DASHFP{fp}{s} \T{free} \; v
+$}
+\end{prooftree}
+\end{SRegla}
+
+Una instrucción habitual de los lenguajes imperativos es el \textit{while}.
+Para su verificación, se debe comprobar que su guarda sea de tipo booleano.
+Adicionalmente, es necesario analizar la secuencia de sentencias que conforman su cuerpo.
+
+\begin{SRegla}
+\label{SWhile}
+While
+\begin{prooftree}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e : \T{bool}
+$}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{s} s_{i}
+$}
+\BinaryInfC
+{$
+\PI{P} \DASHFP{fp}{s} \T{while} \; e \; \T{do} \; s_{1} \ldots s_{m}
+$}
+\end{prooftree}
+\end{SRegla}
+
+La verificación de la sentencia \textit{if} es similar a la descripta para la instrucción anterior.
+Se debe comprobar que la guarda sea de tipo booleano, sumado a que todas las sentencias especificadas en cualquiera de los dos bloques sean correctas.
+Recordar que el lenguaje ofrece otras alternativas para la sentencia, mediante el uso de \textit{syntax sugar}.
+
+\begin{SRegla}
+\label{SIf}
+If
+\begin{prooftree}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{e} e : \T{bool}
+$}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{s} s_{i}
+$}
+\AxiomC
+{$
+\PI{P} \DASHFP{fp}{s} s'_{j}$}
+\TrinaryInfC
+{$
+\PI{P} \DASHFP{fp}{s} \T{if} \; e \; \T{then} \; s_{1} \ldots s_{m} \; \T{else} \; s'_{1} \ldots s'_{n}
+$}
+\end{prooftree}
+\end{SRegla}
+
+La sentencia \textit{for} presenta dos maneras distintas de ser especificada, pero la verificación de ambas es idéntica.
+Debido que la sentencia declara de forma implícita una variable, es necesario verificar que el identificador introducido es fresco con respecto al alcance actual.
+Adicionalmente, hay que chequear que el tipo de los límites coincida, y que el mismo sea efectivamente enumerable.
+Finalmente, se debe analizar la secuencia de sentencias que forman el cuerpo de la iteración.
+Notar que la variable declarada es local a este último bloque de sentencias.
+
+\begin{SRegla}
+\label{SForTo}
+For To
+\begin{prooftree}
+\AxiomC
+{$
+x \notin \PI{FP}(fp) \cup \pi_{sn} \cup \pi_{v}
+$}
+\AxiomC
+{$
+\PI{T}, \PI{FP}, \pi_{sn}, \pi_{v} \DASHFP{fp}{e} e_{i} : \theta
+$}
+\AxiomC
+{$
+\PI{T}, \PI{FP}, \pi_{sn}, \pi'_{v} \DASHFP{fp}{s} s_{i}
+$}
+\TrinaryInfC
+{$
+\PI{T}, \PI{FP}, \pi_{sn}, \pi_{v} \DASHFP{fp}{s} \T{for} \; x := e_1 \; \T{to} \; e_2 \; \T{do} \; s_{1} \ldots s_{m}
+$}
+\end{prooftree}
+donde $\pi'_{v} = (x, \theta) \triangleright \pi_{v}$, y se satisface que el tipo $\theta$ es enumerable.
+\end{SRegla}
+
+\begin{SRegla}
+\label{SForDownTo}
+For Downto
+\begin{prooftree}
+\AxiomC
+{$
+x \notin \PI{FP}(fp) \cup \pi_{sn} \cup \pi_{v}
+$}
+\AxiomC
+{$
+\PI{T}, \PI{FP}, \pi_{sn}, \pi_{v} \DASHFP{fp}{e} e_{i} : \theta
+$}
+\AxiomC
+{$
+\PI{T}, \PI{FP}, \pi_{sn}, \pi'_{v} \DASHFP{fp}{s} s_{i}
+$}
+\TrinaryInfC
+{$
+\PI{T}, \PI{FP}, \pi_{sn}, \pi_{v} \DASHFP{fp}{s} \T{for} \; x := e_1 \; \T{downto} \; e_2 \; \T{do} \; s_{1} \ldots s_{m}
+$}
+\end{prooftree}
+donde $\pi'_{v} = (x, \theta) \triangleright \pi_{v}$, y se satisface que el tipo $\theta$ es enumerable.
+\end{SRegla}
+
+Es importante aclarar que se entiende cuando decimos que un tipo es enumerable.
+Un tipo enumerable es aquel que presenta una relación de orden entre sus constructores; donde dado un valor determinado del tipo, se puede calcular su respectivo antecesor y sucesor, siempre y cuando este valor no sea un límite inferior o superior del tipo.
+Solo un subconjunto limitado de los tipos del lenguaje tienen la capacidad de ser enumerados.
+Los números enteros \textbf{int}, y los caracteres \textbf{char}, podrán ser especificados como límites de la sentencia \textit{for}.
+Adicionalmente los tipos enumerados \textit{tn}, definidos de la forma $\T{enum} \; tn = cn_1, \ldots, cn_m$, también serán otra de las construcciones que tendrán esta facultad.
+
+El análisis de la llamada a un procedimiento es el más complejo de todos los especificados, hasta el momento, para las sentencias.
+Será necesario verificar una serie de propiedades relacionadas con el polimorfismo que admite el procedimiento; para las cuales utilizaremos los conceptos previos sobre la operación de sustitución, y las instancias de clases del lenguaje.
+El primero será empleado para resolver el polimorfismo paramétrico, mientras que el segundo para garantizar el cumplimiento de las restricciones de clases.
+
+Con la operación de sustitución se pretende hacer coincidir los tipos esperados por los parámetros del procedimiento, contra los tipos de los argumentos recibidos en la respectiva llamada.
+Para lo cual es necesario encontrar una función de sustitución para las variables de tipo, y otra para los tamaños dinámicos, que se especifican en el prototipo de la declaración.
+Claramente no siempre será posible establecer una igualdad entre los tipos esperados y los tipos recibidos, por lo que la existencia de las funciones de sustitución anteriores, es lo que buscamos para verificar la validez de la llamada al procedimiento.
+Denominaremos a esta operación, \textit{unificación}.
+
+Con la función de sustitución para tamaños dinámicos, se intenta reemplazar todas las variables de tamaño que ocurren en los parámetros de la declaración, para hacerlas coincidir con los tamaños actuales de los argumentos de la llamada.
+De forma análoga, con la función de sustitución para variables de tipo se pretende igualar todos las variables de tipo especificadas en el encabezado del procedimiento, con los tipos actuales de las expresiones recibidas como argumento de la llamada.
+Notar que la idea es encontrar la existencia de las funciones de sustitución, lo cual nos asegura que existe la unificación que buscamos.
+En la implementación del intérprete, esto implicará el desarrollo de un algoritmo para la inferencia de tipos.
+
+El polimorfismo paramétrico que admite un procedimiento, puede ser refinado mediante la especificación de restricciones de clase para las variables de tipo introducidas en el prototipo.
+En base a la función de sustitución para variables de tipo obtenida en la unificación, debemos verificar que todas las restricciones sean satisfechas.
+El tipo que adopta una determinada variable, luego de aplicada la sustitución, tendrá que ser instancia de todas las clases que se le imponen de acuerdo a las reglas especificadas previamente.
+
+Una vez descripto el razonamiento detrás de la verificación para la llamada de un procedimiento, estamos en condiciones para formalizar la regla que justifica la validez de la sentencia.
+Por claridad, ciertas premisas de la regla son especificadas fuera de la misma.
+Será necesario verificar tres propiedades.
+Primero, el procedimiento debe haber sido definido y la cantidad de argumentos en la llamada tiene que coincidir con el número de parámetros en la declaración.
+Segundo, es posible unificar los tipos esperados con los tipos actuales de las expresiones, mediante la aplicación de alguna función de sustitución.
+Tercero, se satisfacen las restricciones de clases impuestas para las variables de tipo de la declaración.
+Notar que si el procedimiento definido no introduce ningún elemento polimórfico en su prototipo, es decir variables de tipo o tamaños dinámicos, entonces no será necesario probar la existencia de ninguna función de sustitución.
+
+\begin{SRegla}
+\label{SProcedimiento}
+Procedimientos
+\begin{prooftree}
+\AxiomC
+{$
+(p, \{ io_1 \; a_1: \theta^*_1, \ldots, io_n \; a_n: \theta^*_n \}, cs) \in \pi_{p}
+$}
+\AxiomC
+{$
+\PI{T}, \pi_{f}, \pi_{p}, \PI{V} \DASHFP{fp}{e} e_{i} : \theta_i
+$}
+\AxiomC{\eqref{PUnif}}
+\AxiomC{\eqref{PRest}}
+\QuaternaryInfC
+{$
+\PI{T}, \pi_{f}, \pi_{p}, \PI{V} \DASHFP{fp}{s} p(e_1, \ldots, e_n)
+$}
+\end{prooftree}
+Donde existe una sustitución tal que, los tipos de los parámetros esperados se unifican con los tipos de los argumentos recibidos.
+\begin{equation*}
+\exists \delta_{sn} \in \Delta_{sn}, \delta_{tv} \in \Delta_{tv}. \;
+\forall i \in \{ 1 \ldots n \}. \; \theta^*_i \mid \delta_{sn} \mid \delta_{tv} = \theta_i
+\tag{Unif.}
+\label{PUnif}
+\end{equation*}
+Si esta sustitución existe, entonces se deben satisfacer todas las restricciones de clase impuestas en el prototipo del procedimiento.
+\begin{equation*}
+\forall (tv: cl_1, \ldots, cl_m) \in cs. \;
+\delta_{tv}(tv) \; \text{satisface las clases} \; cl_1, \ldots, cl_m
+\tag{Rest.}
+\label{PRest}
+\end{equation*}
+\end{SRegla}
+
+\subsubsection{Ejemplo de Sustitución}
+
+Debido a la complejidad de la regla, ilustraremos la aplicación de una sustitución con un breve ejemplo.
+Supongamos que hemos definido un algoritmo de ordenación.
+El fragmento~(\ref{swap}) se encargará de permutar los valores en dos posiciones válidas de un arreglo.
+Mientras, en el código~(\ref{selectionSort}) se aplica la ordenación \textit{por selección} a un arreglo.
+Notar que ambos procedimientos trabajan con un arreglo de tamaño dinámico, y los valores que almacena tienen un tipo variable particular.
+La abstracción permite definir un algoritmo de ordenación para arreglos, que será independiente del tamaño y del tipo de valores almacenados por esta estructura.
+
+\begin{lstlisting}[ style = lang, caption = Permutación de Valores, label = swap ]
+{ PRE: 1 <= i, j <= m }
+proc swap (in/out a : array [m] of T, in i, j : int)
+  var temp : T
+  temp := a[i]
+  a[i] := a[j]
+  a[j] := temp
+end proc
+\end{lstlisting}
+
+\begin{lstlisting}[ style = lang, caption = Ordenación por Selección, label = selectionSort ]
+proc selectionSort (in/out a : array [n] of T)
+where (T : Ord)
+  var minP : int
+  for i := 1 to n do
+    minP := i
+    for j := i + 1 to n do
+      if a[j] < a[minP] then minP := j fi
+    od
+    swap(a, i, minP)
+  od
+end proc
+\end{lstlisting}
+
+Durante el proceso de ordenación, se aplican las permutaciones de valor adecuadas a medida que se avanza en la ejecución del código.
+En el procedimiento principal, se realiza la llamada \lstinline[style = lang]{swap(a, i, minP)} una vez que se encuentra al valor, ubicado en la posición \texttt{minP}, que correspondería a la posición \texttt{i} en la ordenación definitiva del arreglo \texttt{a}.
+Para probar la corrección de esta sentencia, es necesario demostrar la existencia de las sustituciones $\delta_{sn}$ y $\delta_{tv}$, las cuales permiten unificar los tipos esperados por el procedimiento contra los tipos recibidos en la llamada.
+Notar que ambos índices son de tipo entero, por lo que solo debemos concentrarnos en igualar el tipo de los arreglos.
+Sea $\delta_{sn}(m) = n$ y $\delta_{tv}(T) = T$, entonces mediante su aplicación obtenemos la unificación deseada.
+\begin{align*}
+\T{array} \; m \; \T{of} \; T \mid \delta_{sn} \mid \delta_{tv}
+&=
+\T{array} \; n \; \T{of} \; T
+\\
+\T{int} \mid \delta_{sn} \mid \delta_{tv}
+&=
+\T{int}
+\end{align*}
+
+Supongamos que en el alcance actual se encuentra declarado un arreglo de enteros, con tamaño diez, representado con el identificador \texttt{a'}.
+Para aplicar el algoritmo de ordenación sobre el arreglo, es necesario realizar la llamada \lstinline[style = lang]{selectionSort(a')}.
+Puesto que el procedimiento especifica una restricción de clase para el tipo de los valores almacenados en el arreglo, hay una condición adicional que satisfacer.
+En este caso para probar la validez de la sentencia, debemos demostrar la existencia de las sustituciones $\delta_{sn}$ y $\delta_{tv}$, necesarias para efectuar la unificación adecuada, sumado a verificar que los elementos del arreglo pueden ser ordenados.
+Sea $\delta_{sn}(n) = 10$ y $\delta_{tv}(T) = \T{int}$, entonces mediante su aplicación obtenemos la unificación deseada y se satisface trivialmente
+la restricción de clase.
+\begin{gather*}
+\T{array} \; n \; \T{of} \; T \mid \delta_{sn} \mid \delta_{tv} = \T{array} \; 10 \; \T{of} \; \T{int}
+\\
+\delta_{tv}(T) \; \text{satisface la clase} \; \T{Ord}
+\end{gather*}
+
+\subsubsection{Sentencia \emph{For} para Estructuras Iterables}
+
+Existe otra alternativa para especificar la sentencia \textit{for}, la cual nos permite trabajar con estructuras iterables.
+Comenzando con el hipotético primer elemento de la estructura, en cada iteración se obtendría un nuevo elemento de la misma hasta haber examinado la totalidad de los valores que la conforman.
+La verificación a realizar es similar a la formalizada para las otras versiones.
+Debido que la sentencia declara de forma implícita una variable, es necesario verificar que el identificador introducido $x$ se encuentre disponible en el alcance actual.
+Adicionalmente, hay que chequear que el tipo de la expresión a iterar $e$ soporte la operación de iteración.
+Por último, se debe analizar la secuencia de sentencias $s_{1} \ldots s_{m}$ que forman el cuerpo de la instrucción.
+La variable declarada será local a este último bloque de sentencias.
+
+% Espacio de Formato
+
+\begin{gather*}
+\T{for} \; x \; \T{in} \; e \; \T{do} \; s_{1} \ldots s_{m}
+\end{gather*}
+
+Debido que aún no hemos definido que se entiende por una estructura iterable en el lenguaje, no formalizaremos la regla para el \textit{juicio de tipado} de esta sentencia.
+Claramente, esto implica que tampoco existen los medios para definir instancias de esta hipotética clase.
+De manera informal, diremos que un tipo $\theta$ puede ser iterado cuando representa un conjunto de elementos de tipo $\theta'$, y soporta una serie de operaciones que permiten recorrer su estructura, obteniendo de forma iterativa cada uno de los valores que la conforman.
+Actualmente, se considera que ningún tipo nativo posee esta capacidad; y solo los tipos definidos por el usuario, que implementan los mecanismos de iteración necesarios, podrían ser empleados en esta clase de sentencias.

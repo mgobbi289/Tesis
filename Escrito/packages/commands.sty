@@ -25,6 +25,8 @@
 \newcommand{\RV}[1]{ RV(#1) }
 % Variables Tipo
 \newcommand{\FTV}[1]{ FTV(#1) }
+% Tamaños Dinámicos
+\newcommand{\DAS}[1]{ DAS(#1) }
 
 % Terminales
 \newcommand{\T}[1]{\mathbf{#1}}
@@ -33,18 +35,8 @@
 
 % Contextos
 \newcommand{\PI}[1]{\pi_{\mathbf{#1}}}
-
-% Encabezado Reglas
-\newcommand{\ER}[2]
-{
-  \begin{flushleft}
-  \textbf{#1:} #2
-  \end{flushleft}
-}
-% Pie Reglas
-\newcommand{\PR}[1]
-{
-  \begin{flushleft}
-  #1
-  \end{flushleft}
-}
+% Referencias
+\newcommand{\RULE}[1]{\scriptsize(#1)}
+% Inferencia
+\newcommand{\DASH}[2][\empty]{\overset{#1}{\vdash_{#2}}}
+\newcommand{\DASHFP}[2]{\vdash^{#1}_{#2}}

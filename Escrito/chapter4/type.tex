@@ -1,7 +1,11 @@
-\subsection{Chequeos para Declaración de Tipos}
+% Chequeos para Tipos
+\subsection{Chequeos para Tipos}
 
-Las primeras reglas que precisaremos serán sobre las declaraciones de tipo de un programa.
-Con las mismas, buscamos verificar una serie de propiedades tales como la unicidad de los identificadores empleados para representar determinadas construcciones, la validez de los tipos especificados dentro de las declaraciones, e incluso el uso adecuado de las variables de tipo introducidas como parámetros en las definiciones.
+Las primeras reglas que precisaremos serán sobre los tipos que ocurren en el programa.
+Con las mismas, buscamos verificar propiedades tales como el uso adecuado de los tipos definidos por el usuario, y limitar la ocurrencia de variables de tipo, y tamaños dinámicos de arreglos, en entornos donde su especificación sea válida.
+Debido a esto, a continuación describiremos los distintos contextos que serán necesarios utilizar para la aplicación de las reglas.
+
+\subsubsection{Contextos para Declaración de Tipos}
 
 Una definición de tipo \textit{typedecl} consiste en alguna de las siguientes tres construcciones sintácticas; un tipo enumerado, un sinónimo de tipo, o una estructura de tipo tupla.
 Cuando una de estas declaraciones se encuentre \textit{bien formada} su información será almacenada en el contexto adecuado.
@@ -28,14 +32,14 @@ cn_i \in \NT{cname}
 \end{gather*}
 
 Para los sinónimos, además del nombre, se deben guardar las variables de tipo utilizadas como argumentos, junto con el tipo que lo define.
-En este contexto, la invariante debe asegurar que dentro de una declaración no se repitan los identificadores empleados para representar a los parámetros de la misma.
+En este contexto, la invariante debe asegurar que dentro de una declaración no se repitan los identificadores empleados para representar a sus parámetros.
 \begin{gather*}
 \pi_{s} =
 \{
 (tn, \{ tv_1, \ldots, tv_l \} , \theta) \mid 
 tn \in \NT{tname}
 \wedge
-tv_i \in \NT{typevar}
+tv_i \in \NT{typevariable}
 \wedge
 \theta \in \NT{type}
 \}
@@ -49,7 +53,7 @@ En esta situación, además de evitar la repetición de variables de tipo, se ti
 (tn, \{ tv_1, \ldots, tv_l \}, \{ fd_1, \ldots, fd_m \} ) \mid
 tn \in \NT{tname} 
 \wedge
-tv_i \in \NT{typevar}
+tv_i \in \NT{typevariable}
 \wedge
 fd_j \in \NT{field}
 \}
@@ -60,19 +64,48 @@ A todas las condiciones de consistencia mencionadas anteriormente se le tiene qu
 Los nombres de tipos definidos deben ser únicos.
 Es decir, que no puede haber más de una definición para el mismo identificador de tipo entre los distintos contextos.
 
-\subsubsection{Tipos en Declaración de Tipos}
+\subsubsection{Contexto para Variables de Tipo}
 
-A continuación, especificamos cuando un tipo empleado dentro de una declaración de un tipo nuevo, es válido.
-Claramente esto nos permitirá determinar cuando una definición de tipo se encuentra \textit{bien formada}.
-El siguiente conjunto de reglas será utilizado en diversas secciones del análisis de un programa; en cada una de estas situaciones se evidenciarán ligeras modificaciones realizadas al mismo con el fin de adecuarlo al chequeo vigente.
+Cuando se analiza un tipo, es necesario llevar un registro de las variables de tipo introducidas en el alcance actual.
+Ya sea como parámetro de tipo en una declaración de tipo, o como tipo polimórfico para algún argumento de una función o un procedimiento, solo se deben permitir la especificación de esta clase de variables cuando se han introducido previamente en el código.
+De lo contrario, durante la ejecución del programa no se podría obtener el tipo concreto que las mismas representarían.
+\begin{gather*}
+\pi_{tv} \subseteq \NT{typevariable}
+\end{gather*}
 
-Cuando nos encontramos en la derivación de una declaración de tipo, a la hora de analizar propiamente un tipo, utilizamos la siguiente notación para denotar que el tipo representado por $\theta$ es válido en el contexto de los tipos definidos; enumerados $\pi_{e}$, sinónimos $\pi_{s}$, y tuplas $\pi_{t}$.
+\subsubsection{Contexto para Tamaños Dinámicos}
+
+Similar como sucede con las variables de tipo, hay una necesidad de llevar registro de todos los tamaños variables que son introducidos a lo largo del análisis.
+En el prototipo de funciones y procedimientos, se pueden especificar tamaños dinámicos para las dimensiones de arreglos.
+Esto permite que dentro de sus cuerpos, se puedan utilizar estos identificadores para declarar nuevos arreglos cuyas dimensiones coincidirán con los arreglos correspondientes en el encabezado, independientemente del tamaño concreto de los mismos.
+\begin{gather*}
+\pi_{sn} \subseteq \NT{sname}
+\end{gather*}
+
+\subsubsection{Reglas para Tipos}
+
+En un programa, hay tres situaciones diferentes donde se puede precisar un tipo.
+En base a estas, las propiedades que se deben verificar varían levemente.
+Siendo más precisos, un tipo puede ocurrir en una declaración de tipo, en una definición de función o procedimiento, e incluso en la declaración de una variable.
+En todos estos contextos distintos, el uso de una variable de tipo o un tamaño dinámico de arreglo, se debe permitir solo si durante una hipotética ejecución del programa se cuenta con la información suficiente para dar un tipo o valor concreto, respectivamente, a esta construcción.
+
+Cuando nos encontramos analizando un tipo, utilizaremos la siguiente notación para denotar que el tipo representado por $\theta$ es válido en el contexto de los tipos definidos; enumerados $\pi_{e}$, sinónimos $\pi_{s}$, y tuplas $\pi_{t}$.
+Sumados a los mismos, los conjuntos $\pi_{tv}$ de variables de tipo, y $\pi_{sn}$ de tamaños dinámicos, determinarán también cuando la especificación de un tipo polimórfico particular está permitida.
 Utilizando una notación más compacta, comúnmente haremos referencia al contexto $\PI{T}$ para representar a la anterior tripla de contextos.
+Mientras que emplearemos $\overline{\pi}$ para simbolizar a los últimos dos conjuntos.
 Esta salvedad la tendremos para facilitar la lectura de las reglas, y poder concentrarnos propiamente en las derivaciones.
 \begin{align*}
-\pi_{e}, \pi_{s}, \pi_{t} &\vdash_t \theta
+\pi_{e}, \pi_{s}, \pi_{t}
+\quad
+&\DASH[\mathclap{\pi_{tv}, \pi_{sn}}]{t}
+\quad
+\theta
 \\
-\PI{T} &\vdash_t \theta
+\PI{T}
+\quad
+&\DASH[\overline{\pi}]{t}
+\quad
+\theta
 \end{align*}
 
 Para decidir si uno de estos \textit{juicios} es válido, tenemos que proveer una derivación utilizando las reglas que definiremos a continuación.
@@ -82,7 +115,9 @@ Comenzaremos con los tipos básicos del lenguaje.
 La prueba de los mismos es inmediata, ya que su regla no presenta ninguna premisa.
 Por lo tanto, todo tipo básico es considerado un tipo correcto.
 
-\ER{Regla DT para Tipos}{Básicos}
+\begin{TRegla}
+\label{TBasico}
+Básicos
 \begin{prooftree}
 \AxiomC{}
 \RightLabel
@@ -91,63 +126,111 @@ Por lo tanto, todo tipo básico es considerado un tipo correcto.
 }
 \UnaryInfC
 {$
-\PI{T} \vdash_t \theta
+\PI{T} \DASH[\overline{\pi}]{t} \theta
 $}
 \end{prooftree}
+\end{TRegla}
 
 Un puntero será correcto, siempre que el tipo del valor al que hace referencia sea correcto.
 Notar que la premisa de la regla requiere de la prueba de un tipo estructuralmente menor al inicial.
 
-\ER{Regla DT para Tipos}{Punteros}
+\begin{TRegla}
+\label{TPuntero}
+Punteros
 \begin{prooftree}
 \AxiomC
 {$
-\PI{T} \vdash_t \theta
+\PI{T} \DASH[\overline{\pi}]{t} \theta
 $}
 \UnaryInfC
 {$
-\PI{T} \vdash_t \T{pointer} \; \theta
+\PI{T} \DASH[\overline{\pi}]{t} \T{pointer} \; \theta
 $}
 \end{prooftree}
+\end{TRegla}
 
-Para los arreglos, solo se debe verificar el tipo de los valores que almacenará.
-Debido que en la declaración de tipos no se permite utilizar tamaños variables para las dimensiones de un arreglo, la regla se simplifica al no tener que realizar ninguna validación sobre los mismos.
-Si quisiéramos permitir el uso de tamaños polimórficos en esta instancia del programa, deberíamos adaptar la forma en que se declaran los nuevos tipos definidos por el usuario. 
+Para los arreglos, se necesitarán verificar los tamaños de sus dimensiones, junto con el tipo de valores que almacenará.
+Notar que para analizar los primeros, solo se requiere la información de los tamaños dinámicos presentes en el alcance actual.
 
-\ER{Regla DT para Tipos}{Arreglos}
+\begin{TRegla}
+\label{TArreglo}
+Arreglos
 \begin{prooftree}
 \AxiomC
 {$
-\PI{T} \vdash_t \theta
+\DASH[\pi_{sn}]{as} as_i
 $}
-\RightLabel
-{
-\quad cuando $as_i \in \NT{natural}$
-}
-\UnaryInfC
+\AxiomC
 {$
-\PI{T} \vdash_t \T{array} \; as_1, \ldots, as_n \; \T{of} \; \theta
+\PI{T} \DASH[\pi_{tv}, \pi_{sn}]{t} \theta
+$}
+\BinaryInfC
+{$
+\PI{T} \DASH[\pi_{tv}, \pi_{sn}]{t} \T{array} \; as_1, \ldots, as_n \; \T{of} \; \theta
 $}
 \end{prooftree}
+\end{TRegla}
 
-En primera instancia, una variable de tipo es correcta de forma inmediata.
-Inicialmente, esto puede resultar inadecuado para las propiedades que queremos verificar en un programa.
-La razón de esta definición quedará clara más adelante, de momento adelantamos que la declaración de un tipo tiene restricciones bien duras con respecto a la introducción de variables de tipo y su utilización; de esta manera el chequeo de la corrección de un tipo en el contexto del chequeo de la declaración de uno tiende a simplificarse para el caso de las variables.
+Para las dimensiones de un arreglo, se pueden especificar sus tamaños de dos formas.
+Si el mismo es un valor natural, la verificación es inmediata ya que la regla no presenta ninguna premisa.
+En cambio, cuando se utilizan tamaños dinámicos, es necesario comprobar que su empleo sea válido.
+El único lugar de un programa donde se permiten introducir tamaños variables, es en el prototipo de funciones y procedimientos.
+Luego, estos elementos podrán ser utilizados en sus respectivos cuerpos para declarar nuevos arreglos.
 
-\ER{Regla DT para Tipos}{Variables de Tipo}
+\begin{TRegla}
+\label{TConcreto}
+Tamaños Concretos
 \begin{prooftree}
 \AxiomC{}
+\RightLabel{\quad cuando $as \in \NT{natural}$}
 \UnaryInfC
 {$
-\PI{T} \vdash_t tv
+\DASH[\pi_{sn}]{as} as
 $}
 \end{prooftree}
+\end{TRegla}
 
-Las reglas para los tipos definidos, pueden separarse en dos categorías en base si los mismos poseen, o no, argumentos de tipo.
-La prueba de un \textit{juicio de tipado} para un tipo definido no parametrizado, consiste simplemente de constatar que su nombre se encuentra declarado en algún contexto determinado.
+\begin{TRegla}
+\label{TDinamico}
+Tamaños Dinámicos
+\begin{prooftree}
+\AxiomC
+{$
+as \in \pi_{sn}
+$}
+\UnaryInfC
+{$
+\DASH[\pi_{sn}]{as} as
+$}
+\end{prooftree}
+\end{TRegla}
+
+Al utilizar una variable de tipo, es necesario verificar que su uso sea válido en el alcance actual.
+Similar a los tamaños dinámicos de arreglos, se permiten introducir esta clase de variables en el encabezado de funciones y procedimientos, lo que luego posibilitará emplearlas en sus respectivos cuerpos.
+Adicionalmente, existe la posibilidad de declarar un tipo de forma paramétrica, lo que concede la capacidad de usar las variables de tipo, especificadas como argumento, en la definición del nuevo tipo.
+
+\begin{TRegla}
+\label{TVariable}
+Variables de Tipo
+\begin{prooftree}
+\AxiomC
+{$
+tv \in \pi_{tv}
+$}
+\UnaryInfC
+{$
+\PI{T} \DASH[\pi_{tv}, \pi_{sn}]{t} tv
+$}
+\end{prooftree}
+\end{TRegla}
+
+Las reglas para los tipos definidos, pueden separarse en dos categorías de acuerdo si los mismos poseen argumentos de tipo, o no.
+La verificación de un tipo definido no parametrizado, consiste simplemente de constatar que su nombre se encuentra declarado en alguno de los contextos de tipos correspondientes.
 Evidentemente, hay que asegurar que en su definición no se haya especificado ningún argumento de tipo.
 
-\ER{Regla DT para Tipos}{Tipos Enumerados}
+\begin{TRegla}
+\label{TEnumerado}
+Tipos Enumerados
 \begin{prooftree}
 \AxiomC
 {$
@@ -155,11 +238,14 @@ Evidentemente, hay que asegurar que en su definición no se haya especificado ni
 $}
 \UnaryInfC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn
+\pi_{e}, \pi_{s}, \pi_{t} \DASH[\overline{\pi}]{t} tn
 $}
 \end{prooftree}
+\end{TRegla}
 
-\ER{Regla DT para Tipos}{Sinónimos sin Argumentos}
+\begin{TRegla}
+\label{TSinonimo}
+Sinónimos sin Argumentos
 \begin{prooftree}
 \AxiomC
 {$
@@ -167,11 +253,14 @@ $}
 $}
 \UnaryInfC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn
+\pi_{e}, \pi_{s}, \pi_{t} \DASH[\overline{\pi}]{t} tn
 $}
 \end{prooftree}
+\end{TRegla}
 
-\ER{Regla DT para Tipos}{Tuplas sin Argumentos}
+\begin{TRegla}
+\label{TTupla}
+Tuplas sin Argumentos
 \begin{prooftree}
 \AxiomC
 {$
@@ -179,14 +268,17 @@ $}
 $}
 \UnaryInfC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn
+\pi_{e}, \pi_{s}, \pi_{t} \DASH[\overline{\pi}]{t} tn
 $}
 \end{prooftree}
+\end{TRegla}
 
 En cambio, para un tipo parametrizado, es necesario realizar unas verificaciones adicionales.
-En particular, se deben validar todos los tipos especificados como argumentos del mismo, y que la cantidad de estos coincida con los declarados en su definición.
+En particular, se deben validar todos los tipos especificados como argumentos del mismo, y asegurar que la cantidad de argumentos coincida con el número de parámetros declarados en la definición del tipo.
 
-\ER{Regla DT para Tipos}{Sinónimos con Argumentos}
+\begin{TRegla}
+\label{TSinonimoP}
+Sinónimos con Argumentos
 \begin{prooftree}
 \AxiomC
 {$
@@ -194,15 +286,18 @@ En particular, se deben validar todos los tipos especificados como argumentos de
 $}
 \AxiomC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_i
+\pi_{e}, \pi_{s}, \pi_{t} \DASH[\overline{\pi}]{t} \theta_i
 $}
 \BinaryInfC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn \; \T{of} \; \theta_1, \ldots, \theta_l
+\pi_{e}, \pi_{s}, \pi_{t} \DASH[\overline{\pi}]{t} tn \; \T{of} \; \theta_1, \ldots, \theta_l
 $}
 \end{prooftree}
+\end{TRegla}
 
-\ER{Regla DT para Tipos}{Tuplas con Argumentos}
+\begin{TRegla}
+\label{TTuplaP}
+Tuplas con Argumentos
 \begin{prooftree}
 \AxiomC
 {$
@@ -210,15 +305,18 @@ $}
 $}
 \AxiomC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_i
+\pi_{e}, \pi_{s}, \pi_{t} \DASH[\overline{\pi}]{t} \theta_i
 $}
 \BinaryInfC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_t tn \; \T{of} \; \theta_1, \ldots, \theta_l
+\pi_{e}, \pi_{s}, \pi_{t} \DASH[\overline{\pi}]{t} tn \; \T{of} \; \theta_1, \ldots, \theta_l
 $}
 \end{prooftree}
+\end{TRegla}
 
-A continuación, presentamos como es una derivación para probar la corrección de un tipo determinado del lenguaje.
+\subsubsection{Ejemplo de Prueba}
+
+A continuación, presentamos como es la derivación para una prueba de corrección de un tipo determinado del lenguaje.
 Supongamos los siguientes contextos donde no hay declarados tipos enumerados, ni sinónimos de tipo, y solo tenemos definido el tipo tupla \textit{node} parametrizado en \textit{Z}.
 Notar que el campo \textit{elem} es de tipo variable \textit{Z}, y \textit{next} es un puntero al mismo tipo.
 \begin{gather*}
@@ -229,44 +327,64 @@ Notar que el campo \textit{elem} es de tipo variable \textit{Z}, y \textit{next}
 \pi_t = \{ (node, \{ Z \}, \{ elem: Z, next: \T{pointer} \; node \; \T{of} \; Z \} ) \}
 \end{gather*}
 
-Si nos adelantamos un poco, y quisiéramos probar la declaración de tipo $\T{syn} \; list \; \T{of} \; A = \T{pointer} \; node \; \T{of} \; A$, entonces una parte de la prueba consistirá en demostrar la validez del tipo que ocurre dentro de la definición.
-Por lo tanto, con los contextos previos, se puede hacer lo siguiente.
+Sumados a los contextos anteriores, también se encuentran definidos los siguientes conjuntos.
+No hay ningún tamaño dinámico declarado en el alcance actual, y solo se ha introducido la variable de tipo \textit{A}.
+\begin{gather*}
+\pi_{sn} = \emptyset
+\\
+\pi_{tv} = \{ A \}
+\end{gather*}
+
+Si nos adelantamos un poco, y quisiéramos probar la declaración del sinónimo de tipo $\T{syn} \; list \; \T{of} \; A = \T{pointer} \; node \; \T{of} \; A$, entonces una parte de la prueba consistirá en demostrar la validez del tipo que ocurre dentro de la definición.
+Por lo tanto, con los contextos previos, se puede realizar la siguiente derivación.
 Notar el uso de las reglas para punteros, tuplas definidas, y variables de tipo.
 
 \begin{Prueba}
-\label{PointerNode}
+\label{PTPointerNode}
 Demostración de corrección para el tipo \emph{puntero a nodo}.
 \begin{prooftree}
 \AxiomC
 {$
 (node, \{ Z \}, \{ elem: Z, next: \T{pointer} \; node \; \T{of} \; Z \}) \in \pi_{t}
 $}
-\AxiomC{}
+\AxiomC
+{$
+A \in \pi_{tv}
+$}
+\RightLabel{\RULE{\ref{TVariable}}}
 \UnaryInfC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_t A
+\pi_{e}, \pi_{s}, \pi_{t} \DASH[\pi_{tv}, \pi_{sn}]{t} A
 $}
+\RightLabel{\RULE{\ref{TTuplaP}}}
 \BinaryInfC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_t node \; \T{of} \; A
+\pi_{e}, \pi_{s}, \pi_{t} \DASH[\pi_{tv}, \pi_{sn}]{t} node \; \T{of} \; A
 $}
+\RightLabel{\RULE{\ref{TPuntero}}}
 \UnaryInfC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \T{pointer} \; node \; \T{of} \; A
+\pi_{e}, \pi_{s}, \pi_{t} \DASH[\pi_{tv}, \pi_{sn}]{t} \T{pointer} \; node \; \T{of} \; A
 $}
 \end{prooftree}
 \end{Prueba}
 
-\subsubsection{Variables de Tipo en Declaración de Tipos}
+\subsection{Variables de Tipo Libres}
 
-Además de las reglas para el chequeo de tipos que hemos especificado, necesitamos definir cuando una variable de tipo es considerada \textit{libre}.
-En el lenguaje no hay ninguna clase de cuantificación para estos elementos, pero nos referiremos de esta manera informal a todas las variables que ocurran dentro de una declaración de tipo, y que no estén en el alcance de un parámetro con el mismo identificador.
+Una variable de tipo solo puede ser utilizada en determinados contextos.
+Es fundamental que durante la ejecución de un programa, se cuente con la suficiente cantidad de información para poder deducir el tipo concreto que esta clase de construcciones representarán.
+Debido a esto, la especificación de variables de tipo se permite bajo ciertas condiciones particulares.
+
+En una declaración de tipo, las únicas variables que se pueden utilizar son las que fueron previamente especificadas como parámetros del mismo.
+En cambio, para el argumento de una función o procedimiento, se permite introducir cualquier variable de tipo para su definición.
+Luego, cuando se declara una variable en el cuerpo, existe la posibilidad de utilizar las variables de tipo introducidas en el prototipo de la función o procedimiento correspondiente.
 \begin{gather*}
-FTV: \NT{type} \rightarrow \{ \; \NT{typevar} \; \}
+FTV: \NT{type} \rightarrow \{ \; \NT{typevariable} \; \}
 \end{gather*}
 
-El propósito de esta definición, es poder chequear que todos los argumentos de una declaración de tipo sean efectivamente utilizados en su cuerpo, y al mismo tiempo, que todas las ocurrencias de variables estén asociadas a un parámetro determinado.
-La función para calcular el conjunto de \textit{variables de tipo} presentes en un tipo se describe a continuación.
+Debido a todo esto, necesitamos definir cuando una variable de tipo es considerada \textit{libre}.
+En el lenguaje no hay ninguna clase de cuantificación, a nivel de tipos, para estos elementos; pero nos referiremos de esta manera informal a todas las variables que ocurran dentro de uno.
+El propósito de esta definición, es poder facilitar el chequeo de las condiciones previas.
 \begin{align*}
 &\FTV{\T{int}}
 &=&\;
@@ -305,7 +423,15 @@ La función para calcular el conjunto de \textit{variables de tipo} presentes en
 \FTV{\theta_1} \cup \ldots \cup \FTV{\theta_n}
 \end{align*}
 
-\subsubsection{Declaración de Tipos}
+\subsection{Chequeos para Declaración de Tipos}
+
+A continuación, precisaremos las reglas para analizar las declaraciones de tipo en un programa.
+Con las mismas, buscamos verificar una serie de propiedades necesarias para asegurar la corrección de las construcciones aludidas.
+Se debe garantizar la unicidad de los identificadores empleados para representar determinadas componentes, como los nombres de constantes enumeradas, campos de tupla, y parámetros de tipo.
+Adicionalmente, debemos probar la validez de los tipos especificados dentro de las declaraciones.
+Incluso, hay que asegurar el uso adecuado de las variables de tipo introducidas como parámetros de las definiciones.
+
+\subsubsection{Reglas para Declaración de Tipos}
 
 Definidas las reglas para chequear cuando un tipo es válido, y la función que calcula las variables de tipo que ocurren en el mismo, comenzaremos con la especificación de las reglas empleadas en la prueba de corrección para declaraciones de tipo.
 Cuando se determina que una definición esta \textit{bien formada}, su información es añadida al contexto apropiado y se continua con el análisis del programa.
@@ -316,101 +442,109 @@ El \textit{juicio de tipado} que prueba la validez de una declaración de tipo e
 Luego del análisis, se producirá un nuevo contexto donde se agrega la información de la definición recientemente verificada al contexto inicial.
 Recordar que al realizarse estas extensiones, se deben seguir respetando las invariantes de consistencia para los conjuntos involucrados.
 \begin{gather*}
-\PI{T} \vdash_{td} typedecl : \PI{T}'
+\PI{T} \DASH{td} typedecl : \PI{T}'
 \end{gather*}
 
 La regla para la definición de tipos enumerados es simple.
 Debido a las invariantes de los contextos de tipos, la deducción es inmediata.
-Con la construcción del nuevo conjunto, uno puede asegurar la unicidad del nombre de tipo respecto a las otras definiciones, y que los constructores empleados en la misma no se repiten a lo largo del programa.
+Con la construcción del nuevo conjunto, uno puede asegurar la unicidad del nombre de tipo respecto a las otras definiciones, y que los constructores empleados en la declaración no son utilizados en otras definiciones de tipo.
 
-\ER{Regla DT}{Enumerados}
+\begin{DTRegla}
+\label{DTEnumerado}
+Enumerados
 \begin{prooftree}
 \AxiomC{}
 \UnaryInfC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_{td} \T{enum} \; tn = cn_1, \ldots, cn_m : \pi'_{e}, \pi_{s}, \pi_{t}
+\pi_{e}, \pi_{s}, \pi_{t} \DASH{td} \T{enum} \; tn = cn_1, \ldots, cn_m : \pi'_{e}, \pi_{s}, \pi_{t}
 $}
 \end{prooftree}
-\PR{donde $\pi'_{e} = (tn, \{ cn_1, \ldots, cn_m \}) \triangleright \pi_{e}$.}
+donde $\pi'_{e} = (tn, \{ cn_1, \ldots, cn_m \}) \triangleright \pi_{e}$.
+\end{DTRegla}
 
 Para los sinónimos, hay que realizar un par de verificaciones.
-Primero, se tiene que comprobar que el conjunto de parámetros de la declaración coincida con el conjunto de variables de tipo utilizadas en la definición del mismo.
+Primero, se tiene que asegurar que el conjunto de parámetros de la declaración coincida con el conjunto de variables de tipo utilizadas en la definición del mismo.
 Esta condición evita la ocurrencia de variables \textit{libres} en el cuerpo de la declaración, y también obliga el uso de todos los argumentos de la misma.
 Segundo, el tipo que propiamente define al sinónimo tiene que ser válido.
-La invariante del contexto garantiza la unicidad de los identificadores empleados para los argumentos de la declaración.
+Notar que no se permite la especificación de tamaños dinámicos en esta instancia.
+La invariante del contexto garantiza la unicidad de los identificadores empleados como parámetros de la declaración.
 
-\ER{Regla DT}{Sinónimos sin Argumentos}
+\begin{DTRegla}
+\label{DTSinonimo}
+Sinónimos sin Argumentos
 \begin{prooftree}
 \AxiomC
 {$
-\FTV{\theta} = \emptyset
+\pi_{e}, \pi_{s}, \pi_{t} \DASH[\emptyset_{tv}, \emptyset_{sn}]{t} \theta
 $}
-\AxiomC
+\UnaryInfC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta
-$}
-\BinaryInfC
-{$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_{td} \T{syn} \; tn = \theta : \pi_{e}, \pi'_{s}, \pi_{t}
+\pi_{e}, \pi_{s}, \pi_{t} \DASH{td} \T{syn} \; tn = \theta : \pi_{e}, \pi'_{s}, \pi_{t}
 $}
 \end{prooftree}
-\PR{donde $\pi'_{s} = (tn, \emptyset, \theta) \triangleright \pi_{s}$.}
+donde $\pi'_{s} = (tn, \emptyset, \theta) \triangleright \pi_{s}$.
+\end{DTRegla}
 
-\ER{Regla DT}{Sinónimos con Argumentos}
+\begin{DTRegla}
+\label{DTSinonimoP}
+Sinónimos con Argumentos
 \begin{prooftree}
 \AxiomC
 {$
-\FTV{\theta} = \{ tv_1, \ldots, tv_l \}
+\pi_{tv} \subseteq \FTV{\theta}
 $}
 \AxiomC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta
+\pi_{e}, \pi_{s}, \pi_{t} \DASH[\pi_{tv}, \emptyset_{sn}]{t} \theta
 $}
 \BinaryInfC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_{td} \T{syn} \; tn \; \T{of} \; tv_1, \dots, tv_l = \theta : \pi_{e}, \pi'_{s}, \pi_{t}
+\pi_{e}, \pi_{s}, \pi_{t} \DASH{td} \T{syn} \; tn \; \T{of} \; tv_1, \dots, tv_l = \theta : \pi_{e}, \pi'_{s}, \pi_{t}
 $}
 \end{prooftree}
-\PR{donde $\pi'_{s} = (tn, \{ tv_1, \ldots, tv_l \}, \theta) \triangleright \pi_{s}$.}
+donde $\pi'_{s} = (tn, \{ tv_1, \ldots, tv_l \}, \theta) \triangleright \pi_{s}$, y $\pi_{tv} = \{ tv_1, \ldots, tv_l \}$.
+\end{DTRegla}
 
 Las verificaciones para tuplas son similares a las de sinónimos, salvo que se deben adecuar para los múltiples campos de la misma.
-Hay que asegurar la igualdad entre los argumentos de la definición, y las variables de tipo que ocurren en todos los campos.
-Además, se tienen que analizar todos los tipos para asegurar su corrección.
+Hay que asegurar la igualdad entre los parámetros de la definición, y las variables de tipo que ocurren en todos los campos.
+Adicionalmente, se tienen que analizar todos los tipos para asegurar su corrección.
 Por último, se deben respetar las invariantes de unicidad tanto para los nombres de campos, como para los argumentos de tipo.
 
-\ER{Regla DT}{Tuplas sin Argumentos}
+\begin{DTRegla}
+\label{DTTupla}
+Tuplas sin Argumentos
 \begin{prooftree}
 \AxiomC
 {$
-\FTV{\theta_1} \cup \ldots \cup \FTV{\theta_m} = \emptyset
+\pi_{e}, \pi_{s}, \pi_{t} \DASH[\emptyset_{tv}, \emptyset_{sn}]{t} \theta_i
 $}
-\AxiomC
+\UnaryInfC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_i
-$}
-\BinaryInfC
-{$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_{td} \T{tuple} \; tn = fn_1: \theta_1, \ldots, fn_m: \theta_m : \pi_{e}, \pi_{s}, \pi'_{t}
+\pi_{e}, \pi_{s}, \pi_{t} \DASH{td} \T{tuple} \; tn = fn_1: \theta_1, \ldots, fn_m: \theta_m : \pi_{e}, \pi_{s}, \pi'_{t}
 $}
 \end{prooftree}
-\PR{donde $\pi'_{t} = (tn, \emptyset, \{ fn_1: \theta_1, \ldots, fn_m: \theta_m \}) \triangleright \pi_{t}$.}
+donde $\pi'_{t} = (tn, \emptyset, \{ fn_1: \theta_1, \ldots, fn_m: \theta_m \}) \triangleright \pi_{t}$.
+\end{DTRegla}
 
-\ER{Regla DT}{Tuplas con Argumentos}
+\begin{DTRegla}
+\label{DTTupleP}
+Tuplas con Argumentos
 \begin{prooftree}
 \AxiomC
 {$
-\FTV{\theta_1} \cup \ldots \cup \FTV{\theta_m} = \{ tv_1, \ldots, tv_l \}
+\pi_{tv} \subseteq \FTV{\theta_1} \cup \ldots \cup \FTV{\theta_m}
 $}
 \AxiomC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_i
+\pi_{e}, \pi_{s}, \pi_{t} \DASH[\pi_{tv}, \emptyset_{sn}]{t} \theta_i
 $}
 \BinaryInfC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_{td} \T{tuple} \; tn \; \T{of} \; tv_1, \ldots, tv_l = fn_1: \theta_1, \ldots, fn_m: \theta_m : \pi_{e}, \pi_{s}, \pi'_{t}
+\pi_{e}, \pi_{s}, \pi_{t} \DASH{td} \T{tuple} \; tn \; \T{of} \; tv_1, \ldots, tv_l = fn_1: \theta_1, \ldots, fn_m: \theta_m : \pi_{e}, \pi_{s}, \pi'_{t}
 $}
 \end{prooftree}
-\PR{donde $\pi'_{t} = (tn, \{ tv_1, \ldots, tv_l \}, \{ fn_1: \theta_1, \ldots, fn_m: \theta_m \}) \triangleright \pi_{t}$.}
+donde $\pi'_{t} = (tn, \{ tv_1, \ldots, tv_l \}, \{ fn_1: \theta_1, \ldots, fn_m: \theta_m \}) \triangleright \pi_{t}$, y $\pi_{tv} = \{ tv_1, \ldots, tv_l \}$.
+\end{DTRegla}
 
 La última regla es la que permite la definición de tipos recursivos.
 La única posibilidad de declarar un tipo que se define en términos de si mismo es mediante el uso de punteros dentro de tuplas.
@@ -420,44 +554,46 @@ Solo se permiten utilizar las mismas variables de tipo paramétricas que en la d
 En particular, si un tipo representa una llamada recursiva al tipo declarado, entonces el mismo quedará exceptuado del chequeo de validez para tipos.
 Las invariantes de consistencia para los contextos se deben respetar al igual que en las reglas anteriores.
 
-\ER{Regla DT}{Recursión para Tuplas sin Argumentos}
+\begin{DTRegla}
+\label{DTRecursion}
+Recursión para Tuplas sin Argumentos
 \begin{prooftree}
 \AxiomC
 {$
-\FTV{\theta_1} \cup \ldots \cup \FTV{\theta_m} = \emptyset
+\theta_i \neq \T{pointer} \; tn \implies \pi_{e}, \pi_{s}, \pi_{t} \DASH[\emptyset_{tv}, \emptyset_{sn}]{t} \theta_i
 $}
-\AxiomC
+\UnaryInfC
 {$
-\theta_i \neq \T{pointer} \; tn \implies \pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_i
-$}
-\BinaryInfC
-{$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_{td} \T{tuple} \; tn = fn_1: \theta_1, \ldots, fn_m: \theta_m : \pi_{e}, \pi_{s}, \pi'_{t}
+\pi_{e}, \pi_{s}, \pi_{t} \DASH{td} \T{tuple} \; tn = fn_1: \theta_1, \ldots, fn_m: \theta_m : \pi_{e}, \pi_{s}, \pi'_{t}
 $}
 \end{prooftree}
-\PR{donde $\pi'_{t} = (tn, \emptyset, \{ fn_1: \theta_1, \ldots, fn_m: \theta_m \}) \triangleright \pi_{t}$.}
+donde $\pi'_{t} = (tn, \emptyset, \{ fn_1: \theta_1, \ldots, fn_m: \theta_m \}) \triangleright \pi_{t}$.
+\end{DTRegla}
 
-\ER{Regla DT}{Recursión para Tuplas con Argumentos}
-\begin{adjustbox}{center, minipage = \paperwidth}
+\begin{DTRegla}
+\label{DTRecursionP}
+Recursión para Tuplas con Argumentos
 \begin{prooftree}
 \AxiomC
 {$
-\FTV{\theta_1} \cup \ldots \cup \FTV{\theta_m} = \{ tv_1, \ldots, tv_l \}
+\pi_{tv} \subseteq \FTV{\theta_1} \cup \ldots \cup \FTV{\theta_m}
 $}
 \AxiomC
 {$
-\theta_i \neq \T{pointer} \; tn \; \T{of} \; tv_1, \ldots, tv_l \implies \pi_{e}, \pi_{s}, \pi_{t} \vdash_t \theta_i
+\theta_i \neq \T{pointer} \; tn \; \T{of} \; tv_1, \ldots, tv_l \implies \pi_{e}, \pi_{s}, \pi_{t} \DASH[\pi_{tv}, \emptyset_{sn}]{t} \theta_i
 $}
 \BinaryInfC
 {$
-\pi_{e}, \pi_{s}, \pi_{t} \vdash_{td} \T{tuple} \; tn \; \T{of} \, tv_1, \ldots, tv_l = fn_1: \theta_1, \ldots, fn_m: \theta_m : \pi_{e}, \pi_{s}, \pi'_{t}
+\pi_{e}, \pi_{s}, \pi_{t} \DASH{td} \T{tuple} \; tn \; \T{of} \, tv_1, \ldots, tv_l = fn_1: \theta_1, \ldots, fn_m: \theta_m : \pi_{e}, \pi_{s}, \pi'_{t}
 $}
 \end{prooftree}
-\end{adjustbox}
-\PR{donde $\pi'_{t} = (tn, \{ tv_1, \ldots, tv_l \}, \{ fn_1: \theta_1, \ldots, fn_m: \theta_m \}) \triangleright \pi_{t}$.}
+donde $\pi'_{t} = (tn, \{ tv_1, \ldots, tv_l \}, \{ fn_1: \theta_1, \ldots, fn_m: \theta_m \}) \triangleright \pi_{t}$, y $\pi_{tv} = \{ tv_1, \ldots, tv_l \}$.
+\end{DTRegla}
 
-Siguiendo con el ejemplo especificado previamente, a continuación presentamos la prueba de corrección de una declaración de tipo del lenguaje.
-Primero verificaremos una estructura de tipo tupla, y luego haremos lo mismo para un sinónimo de tipo.
+\subsubsection{Ejemplo de Prueba}
+
+Siguiendo con el ejemplo especificado previamente, presentaremos la prueba de corrección para dos declaraciones de tipo particulares.
+Primero verificaremos una estructura de tipo tupla, y luego realizaremos lo apropiado para un sinónimo de tipo.
 Supongamos los siguientes contextos, los cuales serán los resultados obtenidos luego de realizados los respectivos análisis.
 \begin{gather*}
 \pi_{s} = \{ (list, \{ A \}, \T{pointer} \; node \; \T{of} \; A) \}
@@ -465,63 +601,71 @@ Supongamos los siguientes contextos, los cuales serán los resultados obtenidos 
 \pi_{t} = \{ (node, \{ Z \}, \{ elem: Z, next: \T{pointer} \; node \; \T{of} \; Z \} ) \}
 \end{gather*}
 
-Comenzando con los contextos de tipos vacíos, se puede realizar la prueba para un tipo recursivo de la siguiente forma.
-Como se preciso anteriormente, debido que el campo \textit{next} realiza una llamada recursiva al tipo que estamos definiendo, no se debe verificar su tipo.
+Comenzando con los contextos de tipos vacíos, se puede realizar la prueba para la estructura de tipo tupla \textit{nodo}.
+Como se preciso anteriormente, debido que el campo \textit{next} realiza una llamada recursiva al tipo que estamos definiendo, se omite la verificación de su tipo.
 Notar el uso de las reglas para las variables de tipo, y la recursión en declaración de tuplas.
 
 \begin{Prueba}
-\label{Node}
+\label{PDTNode}
 Demostración de corrección para la declaración de tipo \emph{nodo}.
 \begin{prooftree}
 \AxiomC
 {$
-\FTV{Z} \cup \FTV{\T{pointer} \; node \; \T{of} \; Z} = \{ Z \}
+\{ Z \} \subseteq \FTV{Z} \cup \FTV{\T{pointer} \; node \; \T{of} \; Z}
 $}
-\AxiomC{}
+\AxiomC
+{$
+Z \in \{ Z \}_{tv}
+$}
+\RightLabel{\RULE{\ref{TVariable}}}
 \UnaryInfC
 {$
-\emptyset_{e}, \emptyset_{s}, \emptyset_{t} \vdash_t Z
+\emptyset_{e}, \emptyset_{s}, \emptyset_{t} \DASH[\{ Z \}_{tv}, \emptyset_{sn}]{t} Z
 $}
+\RightLabel{\RULE{\ref{DTRecursionP}}}
 \BinaryInfC
 {$
-\emptyset_{e}, \emptyset_{s}, \emptyset_{t} \vdash_{td} \T{tuple} \; node \; \T{of} \; Z = elem : Z, next : \T{pointer} \; node \; \T{of} \; Z : \emptyset_{e}, \emptyset_{s}, \pi_{t}
+\emptyset_{e}, \emptyset_{s}, \emptyset_{t} \DASH{td} \T{tuple} \; node \; \T{of} \; Z = elem : Z, next : \T{pointer} \; node \; \T{of} \; Z : \emptyset_{e}, \emptyset_{s}, \pi_{t}
 $}
 \end{prooftree}
 \end{Prueba}
 
-Utilizando el contexto obtenido en la derivación anterior, se puede realizar la siguiente prueba.
-En la misma, hacemos uso de una verificación previa donde se demostraba la corrección de un tipo puntero.
-Notar que empleando las distintas herramientas introducidas a lo largo del capítulo, podemos probar la validez de la \textit{lista abstracta} en nuestro lenguaje.
+Utilizando el contexto de tuplas obtenido en la derivación anterior, se puede realizar la prueba del sinónimo de tipo \textit{lista}.
+La demostración de corrección del tipo que define al sinónimo ya fue precisada en la sección previa.
+Por lo tanto, aplicando la regla para sinónimos con parámetros, junto con la demostración mencionada, podemos construir la derivación del \textit{juicio de tipado} correspondiente a la declaración.
 
 \begin{Prueba}
-\label{List}
+\label{PDTList}
 Demostración de corrección para la declaración de tipo \emph{lista}.
 \begin{prooftree}
 \AxiomC
 {$
-\FTV{\T{pointer} \; node \; \T{of} \; A} = \{ A \}
+\{ A \} \subseteq \FTV{\T{pointer} \; node \; \T{of} \; A}
 $}
-\AxiomC{Prueba \ref{PointerNode}}
+\AxiomC{Prueba~\ref{PTPointerNode}}
+\RightLabel{\RULE{\ref{TPuntero}}}
 \UnaryInfC
 {$
-\emptyset_{e}, \emptyset_{s}, \pi_{t} \vdash_t \T{pointer} \; node \; \T{of} \; A
+\emptyset_{e}, \emptyset_{s}, \pi_{t} \DASH[\{ A \}_{tv}, \emptyset_{sn}]{t} \T{pointer} \; node \; \T{of} \; A
 $}
+\RightLabel{\RULE{\ref{DTSinonimoP}}}
 \BinaryInfC
 {$
-\emptyset_{e}, \emptyset_{s}, \pi_{t} \vdash_{td} \T{syn} \; list \; \T{of} \; A = \T{pointer} \; node \; \T{of} \; A : \emptyset_{e}, \pi_{s}, \pi_{t}
+\emptyset_{e}, \emptyset_{s}, \pi_{t} \DASH{td} \T{syn} \; list \; \T{of} \; A = \T{pointer} \; node \; \T{of} \; A : \emptyset_{e}, \pi_{s}, \pi_{t}
 $}
 \end{prooftree}
 \end{Prueba}
 
-% TAREAS
-% Seguir con los Trabajos Futuros.
-% Referencias más precisas / prolijas.
+Notar que empleando las distintas reglas introducidas a lo largo del capítulo, somos capaces de probar la validez de la declaración para la \textit{lista abstracta} en el lenguaje.
+El fragmento de código especificado~(\ref{listaAbstracta}) comprende la implementación, utilizando la sintaxis concreta de \Lenguaje{}, para las definiciones de tipo recientemente analizadas.
 
-% - Definir Entornos y Estilos para las reglas (Agregar Subíndices en Pruebas).
-% - Si se decide separar las reglas de tipo en su propia sección, queda prolijo.
+\begin{lstlisting}[ style = lang, caption = Implementación de Lista Abstracta, label = listaAbstracta ]
+type node of (Z) = tuple
+                     elem : Z,
+                     next : pointer of node of (Z)
+                   end tuple
 
-% * Agregar los $...$ a las reglas (Menos Notación).
-% * Solo se pueden usar $...$ con fCenter.
+type list of (A) = pointer of node of (A)
+\end{lstlisting}
 
-% * Pensar como achicar las reglas para que entren en bordes de texto.
-% * Las pruebas también se pueden extender. Puntos suspensivos no es lo ideal.
+% \begin{adjustbox}{center, minipage = {\paperwidth}, margin = 0ex 1.5ex}

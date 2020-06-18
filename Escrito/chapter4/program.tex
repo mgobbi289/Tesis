@@ -1,0 +1,28 @@
+% Chequeos para Programas
+\subsection{Chequeos para Programas}
+
+Para finalizar con este capítulo, solo resta dar la regla para analizar un programa.
+En resumen, para asegurar que un programa es válido (estáticamente), se deben realizar dos etapas de análisis.
+En la primera se tienen que verificar progresivamente todas las declaraciones de tipo en el mismo, acumulando la información obtenida en el contexto de tipos definidos.
+Luego como segunda etapa, se deben chequear una por una, todas las funciones y procedimientos del programa, almacenando la información conseguida en estos en los contextos adecuados.
+Inicialmente, se debe comenzar con ambos contextos generales vacíos, y a medida que progrese el análisis, los mismos se irán expandiendo.
+
+\begin{PRegla}
+\label{PPrograma}
+Programas
+\begin{prooftree}
+\AxiomC
+{$
+\PI{T}^{i-1} \DASH{td} td_{i} : \PI{T}^{i}
+$}
+\AxiomC
+{$
+\PI{T}^{n}, \PI{FP}^{j-1} \DASH{fp} fpd_{j} : \PI{FP}^{j}
+$}
+\BinaryInfC
+{$
+\PI{T}^{0}, \PI{FP}^{0} \DASH{p} td_{1} \ldots td_{n} \quad fpd_{1} \ldots fpd_{m}
+$}
+\end{prooftree}
+donde los contextos iniciales son vacíos  $\PI{T}^{0} = \PI{FP}^{0} = \emptyset$.
+\end{PRegla}

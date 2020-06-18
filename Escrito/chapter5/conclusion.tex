@@ -80,7 +80,7 @@ De esta forma, al fallar el parser se podrían consumir \textit{tokens} hasta en
 
 \subsubsection{Análisis Semántico}
 
-Una posibilidad para la generación de múltiples errores en esta etapa, está descripta en el artículo que se empleó como guía para el diseño de los chequeos estáticos del intérprete \cite{MonadicTC}.
+Una posibilidad para la generación de múltiples errores en esta etapa, está descripta en el artículo que se empleó como guía para el diseño de los chequeos estáticos del intérprete~\cite{MonadicTC}.
 Esta opción consiste en la implementación de un combinador, que es invocado cada vez que se deben verificar una serie de elementos sintácticos.
 La idea es que se puedan combinar la lista de chequeos a realizar y, si todos tienen éxito, se devuelven sus resultados correspondientes.
 En caso contrario, se deberán acumular la totalidad de los errores producidos, y luego generar los mensajes informativos adecuados.
@@ -124,7 +124,7 @@ Una restricción de la implementación actual, es que ambos tipos son percibidos
 Esto significa, por ejemplo, que la operación de sumar enteros con reales es detectada como un error de tipos.
 Al mismo tiempo, la constante \textbf{inf} es interpretada como un valor entero, al igual como sucede con los tamaños polimórficos.
 Esto imposibilita especificar ciertos algoritmos donde deseamos realizar operaciones donde se combinan ambos tipos de valores numéricos, como es el caso de querer calcular el promedio de un arreglo de números reales, el cual posee tamaño variable.
-El código presentado en (\ref{promedioReal}) ilustra esta situación mencionada.
+El código presentado~(\ref{promedioReal}) ilustra esta situación mencionada.
 Notar que al analizar la última instrucción de la función, el intérprete fallará debido a un error de tipos producido por la división de un número real por uno de tipo entero.
 
 Para flexibilizar el intérprete, podríamos implementar una \textit{coersión} implícita que convierta un número de tipo entero, a otro equivalente de tipo real, si fuese necesario.
@@ -151,8 +151,8 @@ Durante el desarrollo del intérprete, se analizó la posibilidad de incluir la 
 Ejemplos de la misma, podrían ser los arreglos y las listas.
 El primero formaría parte de esta clase de manera predefinida, mientras que el segundo necesita de su respectiva implementación.
 Estas estructuras representan una serie de elementos con algún orden determinado.
-Una vez que el usuario define la instancia correspondiente a esta clase, para un tipo en particular, se podrán utilizar valores del mismo dentro de la instrucción $\T{for} \; x \; \T{in} \; e \; \T{do} \; ss$, lo cual permitiría recorrer estas construcciones, e ir obteniendo uno por uno todos los elementos que las conforman.
-Un ejemplo posible se ilustra en (\ref{sumatoriaIter}), donde se calcula la sumatoria de elementos de un arreglo.
+Una vez que el usuario define la instancia correspondiente a esta clase, para un tipo en particular, se podrán utilizar valores del mismo dentro de la instrucción $\T{for} \; x \; \T{in} \; e \; \T{do} \; s_{1} \ldots s_{m}$, lo cual permitiría recorrer estas construcciones, e ir obteniendo uno por uno todos los elementos que las conforman.
+Un ejemplo posible se ilustra en el fragmento~(\ref{sumatoriaIter}), donde se calcula la sumatoria de elementos de un arreglo.
 
 \begin{lstlisting}[ style = lang, caption = Sumatoria de Arreglo Iterable, label = sumatoriaIter ]
 fun sumatoriaIter ( a : array [n] of int ) ret sumatoria : int
@@ -196,7 +196,7 @@ end type
 \end{lstlisting}
 
 Sobre como declarar una instancia para una clase determinada, en el lenguaje solo se ha definido una sintaxis provisoria en este aspecto.
-En el fragmento (\ref{instanciaNodo}) se ilustra un ejemplo particular, en el cual se especifica la operación de igualdad para el tipo \textit{nodo}.
+En el fragmento~(\ref{instanciaNodo}) se ilustra un ejemplo particular, en el cual se especifica la operación de igualdad para el tipo \textit{nodo}.
 Inicialmente al limitarnos a solo dos clases, que caracterizan propiedades similares, la verificación de sus instancias se simplifica.
 A continuación, describimos informalmente las validaciones que se deberían efectuar para asegurar que una definición de instancia es correcta.
 
@@ -222,7 +222,7 @@ Si en un futuro se adoptará otro juicio, la modificación de la implementación
 El sistema de tipos que se encuentra actualmente implementado en el intérprete, puede resultar básico a la hora de resolver ciertas cuestiones.
 Debido a esto, se presentan algunas limitaciones cuando se utiliza el mismo.
 Un ejemplo particular, es la llamada de funciones y procedimientos con la constante \textbf{null}, la cual simboliza un puntero vacío.
-Supongamos que hemos declarado una función como en el código de (\ref{inferenciaNull}); la cual obtiene el elemento señalado por un puntero si el mismo no es nulo, o devuelve su segundo argumento en caso contrario.
+Supongamos que hemos declarado una función como en el código~(\ref{inferenciaNull}); la cual obtiene el elemento señalado por un puntero si el mismo no es nulo, o devuelve su segundo argumento en caso contrario.
 Si quisiéramos invocar a la misma con la llamada \lstinline[style = lang]{accesoPuntero(null, 5)}, entonces se generaría un error en la etapa de \textit{análisis semántico} del intérprete, debido a la imposibilidad de chequear los tipos involucrados.
 Esto es debido que la constante \textbf{null} tiene tipo polimórfico, lo que significa que puede ser utilizada como un puntero a un entero, como también un puntero a un arreglo, o alguna otra estructura diferente.
 Esta característica permite un sistema de tipos más flexible, lo que facilita el uso del intérprete; pero al mismo tiempo, imposibilita el chequeo de tipos cuando el \textit{algoritmo de unificación} necesita de información adicional para inferir un tipo particular en la llamada de una función o procedimiento.
@@ -248,10 +248,10 @@ Como consecuencia de esta alternativa, el sistema de tipos se simplifica a costa
 Volviendo al ejemplo, si se efectuara la llamada \lstinline[style = lang]{accesoPuntero(null[int], 5)}, el \textit{algoritmo de unificación} sería capaz de verificar todas las propiedades necesarias de forma exitosa, y se continuaría con el análisis del programa.
 
 La segunda opción, orientada al tipado implícito, supone la implementación de un algoritmo de \textit{inferencia de tipos}.
-Extrayendo ideas del \textit{algoritmo Hindley-Milner} \cite{Inferencia}, se podría adecuar nuestro sistema de tipos para lograr que el mismo sea capaz de inferir los \textit{juicios de tipado} apropiados, sin necesidad de anotar el tipo de nuestra constante.
+Extrayendo ideas del \textit{algoritmo Hindley-Milner}~\cite{Inferencia}, se podría adecuar nuestro sistema de tipos para lograr que el mismo sea capaz de inferir los \textit{juicios de tipado} apropiados, sin necesidad de anotar el tipo de nuestra constante.
 El ejemplo previo permanecería sin cambios, sin embargo se necesitaría de una modificación estructural del algoritmo de \textit{type check} implementado.
 De manera opuesta a la alternativa anterior, la sintaxis no se debería ajustar pero el sistema de tipos resultaría más complejo.
-Una propiedad que se ganaría al elegir esta opción, es que se permitirían declarar otras clases de funciones como la del fragmento (\ref{inferenciaLista}).
+Una propiedad que se ganaría al elegir esta opción, es que se permitirían declarar otras clases de funciones como la del fragmento~(\ref{inferenciaLista}).
 En la misma, se inicializa una lista de forma genérica, sin conocer el tipo de sus elementos.
 
 \begin{lstlisting}[ style = lang, caption = Inicialización de Lista con Inferencia de Tipos, label = inferenciaLista ]

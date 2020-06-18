@@ -6,9 +6,9 @@ Haremos mención de las decisiones más relevantes tomadas durante la implementa
 
 \subsection{Librerías}
 
-Inicialmente, se comenzó utilizando la librería \Parsec{} \cite{Parsec}.
+Inicialmente, se comenzó utilizando la librería \Parsec{}~\cite{Parsec}.
 Esta decisión se tomó debido que algunos de nosotros ya estábamos familiarizados con su uso por proyectos anteriores.
-Más adelante, en las etapas finales del desarrollo del parser, se decidió migrar el código a \Megaparsec{} \cite{Megaparsec}.
+Más adelante, en las etapas finales del desarrollo del parser, se decidió migrar el código a \Megaparsec{}~\cite{Megaparsec}.
 Esta transición fue justificada por las limitaciones que presentaba la primera opción frente a la segunda, que además de solucionar algunas de las dificultades de la implementación de forma sencilla, ofrece un rango de funcionalidades más diverso que puede beneficiar al desarrollo futuro del intérprete.
 
 \subsubsection{Parsec}
@@ -62,9 +62,9 @@ Para la primer etapa, cuando se produce un error durante el parsing de algún el
 Haciendo uso de la misma, conseguimos tener una generación de mensajes de error claros para la fase de \textit{análisis sintáctico}.
 Cuando avanzamos a etapas posteriores en el intérprete, necesitamos alguna forma de poder vincular las fallas detectadas durante las mismas con la ubicación en el archivo involucrado en el error.
 
-Para solucionar este problema, se adaptó la sintaxis de una forma similar a como lo hace el compilador de \Haskell{}, \texttt{GHC} \cite{GHC}.
+Para solucionar este problema, se adaptó la sintaxis de una forma similar a como lo hace el compilador de \Haskell{}, \texttt{GHC}~\cite{GHC}.
 Con esto nos referimos a que todo elemento sintáctico del lenguaje que puede ser relevante en la generación de errores, es envuelto con la información de posición correspondiente a su ocurrencia en el código.
-De esta forma, se definió en el módulo \lstinline[style = module]{Syntax.Located}, el siguiente \textit{datatype} (\ref{Located}).
+De esta forma, se definió en el módulo \lstinline[style = module]{Syntax.Located}, el siguiente \textit{datatype}~(\ref{Located}).
 Recordar que en esta primera versión del intérprete solo trabajamos con programas definidos en un único módulo, por lo que almacenar solamente las líneas y columnas de inicio y fin de un determinado elemento, es suficiente para generar un mensaje de error preciso.
 
 \begin{lstlisting}[ style = haskell, caption = Información de Posición en Parser, label = Located ]
@@ -83,7 +83,7 @@ data Info = I { sLin :: Line
 
 A medida que avanza el parser en el análisis de un archivo, cuando se obtiene un elemento sintáctico (por ejemplo, una expresión), se encapsula el mismo con la información de su posición y se almacena en el \textit{árbol de sintaxis abstracta} que se genera como representación intermedia del código.
 Siendo un poco más puntuales, podemos ver el ejemplo de las expresiones del lenguaje.
-En \lstinline[style = module]{Syntax.Expr} se especifican las mismas de la siguiente forma (\ref{Expr}).
+En \lstinline[style = module]{Syntax.Expr} se especifican las mismas de la siguiente forma~(\ref{Expr}).
 Con esta definición, podemos almacenar tanto la posición de una expresión particular como todas las de sus subexpresiones.
 Esto tiene como ventaja que en el caso de encontrarse una falla (por ejemplo, un error de tipos) en el código, se puede exhibir toda la \textit{traza} de análisis junto con sus posiciones correspondientes. 
 
