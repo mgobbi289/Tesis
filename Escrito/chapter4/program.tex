@@ -1,11 +1,23 @@
 % Chequeos para Programas
 \subsection{Chequeos para Programas}
 
-Para finalizar con este capítulo, solo resta dar la regla para analizar un programa.
-En resumen, para asegurar que un programa es válido (estáticamente), se deben realizar dos etapas de análisis.
-En la primera se tienen que verificar progresivamente todas las declaraciones de tipo en el mismo, acumulando la información obtenida en el contexto de tipos definidos.
-Luego como segunda etapa, se deben chequear una por una, todas las funciones y procedimientos del programa, almacenando la información conseguida en estos en los contextos adecuados.
-Inicialmente, se debe comenzar con ambos contextos generales vacíos, y a medida que progrese el análisis, los mismos se irán expandiendo.
+Finalmente, para concluir con las reglas de derivación para los \textit{juicios de tipado}, solo resta formalizar la regla apropiada para analizar un programa.
+El análisis puede ser separado en dos clases de tareas distintas.
+Una donde se verifican las declaraciones de tipo, y otra donde se examinan las funciones y los procedimientos.
+En el caso hipotético donde se quiera probar la corrección de un programa cerrado, claramente se deberá realizar el análisis sin ninguna clase de información contextual inicial.
+
+\subsubsection{Regla para Programas}
+
+El \textit{juicio de tipado} determina que un programa particular es válido estáticamente, de acuerdo a los contextos comprendidos por $\PI{T}$ y $\PI{FP}$.
+La información contenida en estos contextos no necesariamente debe ser nula.
+Asumiendo que sus definiciones son correctas, los contextos pueden ser inicializados de manera arbitraria.
+Donde la noción de corrección estará sujeta a la satisfacción de las propiedades especificadas a lo largo del informe.
+\begin{gather*}
+\PI{T}, \PI{FP} \DASH{p} td_{1} \ldots td_{n} \quad fpd_{1} \ldots fpd_{m}
+\end{gather*}
+
+La regla correspondiente al \textit{juicio} para programas necesita verificar todas las definiciones de tipo, y las declaraciones de funciones y procedimientos, que lo conforman.
+Notar que los contextos involucrados en el análisis se construyen de manera incremental, lo cual manifiesta la relevancia del orden de especificación para las estructuras que constituyen al programa.
 
 \begin{PRegla}
 \label{PPrograma}
@@ -24,5 +36,518 @@ $}
 \PI{T}^{0}, \PI{FP}^{0} \DASH{p} td_{1} \ldots td_{n} \quad fpd_{1} \ldots fpd_{m}
 $}
 \end{prooftree}
-donde los contextos iniciales son vacíos  $\PI{T}^{0} = \PI{FP}^{0} = \emptyset$.
+donde en un programa cerrado, los contextos iniciales son vacíos  $\PI{T}^{0} = \PI{FP}^{0} = \emptyset$.
 \end{PRegla}
+
+\section{Predicados}
+
+Durante el análisis estático, se verifica una colección de propiedades con la intención de garantizar cierto grado de corrección sobre el programa analizado.
+Claramente, existen ciertas propiedades deseables que no pueden ser verificadas solo con la aplicación de las reglas para \textit{juicios de tipado}.
+En la sección actual nos concentraremos en la formalización de las propiedades estáticas que aún restan por definir en el análisis.
+
+Cuando se declara una función o un procedimiento, se definen una serie de parámetros apropiados que cumplirán distintos roles en el correspondiente cuerpo.
+En el caso de una función, un parámetro podrá ser un argumento o un retorno.
+En el caso de un procedimiento, un parámetro podrá ser una entrada, una salida, o incluso ambas.
+Adicionalmente el prototipo también introduce elementos polimórficos, como los tamaños dinámicos, que presentan sus características propias.
+De acuerdo a los elementos mencionados, será necesario asegurar la correcta lectura y/o escritura de cada uno en base a su naturaleza específica.
+
+En la definición de las propiedades que se pretenden verificar, realizaremos la suposición que el lenguaje utiliza \textit{pasaje por referencia}.
+En una función, el valor de sus argumentos no debe ser modificado, mientras que es necesario asignar su valor de retorno.
+En un procedimiento, las entradas de lectura no deben ser escritas, y de manera opuesta, las salidas de escritura no podrán ser leídas.
+En ambos casos, los tamaños dinámicos deben ser empleados como constantes, y no será posible modificar sus respectivos valores.
+
+\subsection{Funciones para Variables}
+
+Para formalizar de manera precisa las propiedades a verificar mencionadas, es necesario definir una serie de funciones auxiliares adicionales.
+Su utilidad radicará en que permiten distinguir el uso que se hace de los identificadores de variables en el cuerpo de las funciones, y los procedimientos, analizados.
+Recordar que las variables, los parámetros, y los tamaños dinámicos, emplean la misma categoría de identificadores en la sintaxis concreta del lenguaje.
+De manera informal, haremos referencia a todos estos identificadores de la misma forma sin hacer distinciones.
+
+\subsubsection{Variables Libres}
+
+% Referencia al Calculo Lambda
+En el cálculo lambda, se denomina \textit{libre} a toda variable que no se encuentra cuantificada.
+En nuestro caso, el lenguaje no provee ninguna especie de cuantificación a nivel de expresiones, por lo que toda variable en una expresión es una \textit{variable libre}.
+En un estudio posterior, para dar semántica a estas construcciones del lenguaje se utilizará el concepto de \textit{estado}; entendido como una función que asigna valores a las variables.
+La siguiente función calculará el conjunto de \textit{variables libres} que ocurren en una expresión determinada.
+Notar que es posible aplicar un razonamiento análogo para calcular las ocurrencias \textit{libres} en las sentencias del lenguaje, pero no es necesario para el desarrollo del actual análisis planteado.
+\begin{gather*}
+FV^{\NT{expression}}: \NT{expression} \rightarrow \{ \NT{id} \}
+\end{gather*}
+
+El comportamiento de la función es trivial.
+Toda ocurrencia de una variable, es una ocurrencia \textit{libre}.
+Se debe propagar la aplicación para las expresiones internas, reuniendo los identificadores de variables encontrados.
+Notar que ciertos identificadores, como los nombres de funciones y procedimientos, no son considerados por la función.
+El valor asociado a los identificadores de estas construcciones no depende del \textit{estado} del programa, lo cual implica que no cambia de manera dinámica.
+Siendo más precisos, su toma de valor es estática de acuerdo a la declaración asociada en el código del programa.
+El concepto de \textit{entorno} es utilizado en este contexto.
+Por lo tanto no corresponde considerar estos identificados como ocurrencias \textit{libres}.
+
+% Espacio de Formato
+
+\begin{alignat*}{2}
+&\FV{ct}
+&&\;=\;
+\emptyset
+\\
+&\FV{f(e_1, \ldots, e_n)}
+&&\;=\;
+\FV{e_1} \cup \ldots \cup \FV{e_n}
+\\
+&\FV{e_1 \oplus e_2}
+&&\;=\;
+\FV{e_1} \cup \FV{e_2}
+\\
+&\FV{\ominus e}
+&&\;=\;
+\FV{e}
+\\
+&\FV{x}
+&&\;=\;
+\{ x \}
+\\
+&\FV{v [e_1, \ldots, e_n]}
+&&\;=\;
+\FV{v} \cup \FV{e_1} \cup \ldots \cup \FV{e_n}
+\\
+&\FV{v.fn}
+&&\;=\;
+\FV{v}
+\\
+&\FV{\star v}
+&&\;=\;
+\FV{v}
+\end{alignat*}
+
+\subsubsection{Variables de Escritura}
+
+Una variable es considerada de \textit{escritura}, cuando su valor será potencialmente modificado durante la ejecución de una sentencia.
+La siguiente función calculará el conjunto de \textit{variables de escritura} que ocurren en una expresión o sentencia determinada.
+Debido que la información sobre las etiquetas de los procedimientos declarados es necesaria para el cómputo de la función, en el último caso se indexa con el contexto correspondiente.
+\begin{gather*}
+WV^{\NT{expression}}: \NT{expression} \rightarrow \{ \NT{id} \}
+\qquad
+WV^{\NT{sentence}}_{\pi_{p}}: \NT{sentence} \rightarrow \{ \NT{id} \}
+\end{gather*}
+
+Iniciaremos con la formalización de la función para el caso de las sentencias, ya que resulta ser el más intuitivo.
+Existen varias sentencias que pueden modificar el estado de una variable.
+Las cuales comprenden la asignación, los procedimientos \textit{alloc} y \textit{free}, y la llamada de procedimientos declarados por el usuario.
+Claramente no todas las ocurrencias de una variable serán de \textit{escritura}, por lo que es necesario propagar la aplicación de la función sobre las expresiones especificadas dentro de las sentencias mencionadas.
+El razonamiento detrás de la definición para la función de expresiones, estará condicionado por esta particularidad.
+Notar el abuso de notación al aplicar la función a un bloque de sentencias $ss$, en esta situación el conjunto de \textit{variables de escritura} se obtiene al acumular la aplicación sobre cada una de las sentencias que lo conforman.
+Supongamos que la condición $(p, \{ io_1 \; a_1: \theta_1, \ldots, io_n \; a_n: \theta_n \}, cs) \in \pi_{p}$ es válida.
+\begin{alignat*}{2}
+&\WVs{\T{skip}}
+&&\;=\;
+\emptyset
+\\
+&\WVs{v := e}
+&&\;=\;
+\WV{v}
+\\
+&\WVs{\T{alloc} \; v}
+&&\;=\;
+\WV{v}
+\\
+&\WVs{\T{free} \; v}
+&&\;=\;
+\WV{v}
+\\
+&\WVs{\T{if} \; e \; \T{then} \; ss \; \T{else} \; ss'}
+&&\;=\;
+\WVs{ss} \cup \WVs{ss'}
+\\
+&\WVs{\T{while} \; e \; \T{do} \; ss}
+&&\;=\;
+\WVs{ss}
+\\
+&\WVs{\T{for} \; x := \, e_1 \; \T{to} \; e_2 \; \T{do} \; ss}
+&&\;=\;
+\WVs{ss} - \{ x \}
+\\
+&\WVs{\T{for} \; x := \, e_1 \; \T{downto} \; e_2 \; \T{do} \; ss}
+&&\;=\;
+\WVs{ss} - \{ x \}
+\\
+&\WVs{p(e_1, \ldots, e_n)}
+&&\;=\;
+\{ \WV{e_i} \mid io_i = \T{out} \vee io_i = \T{in/out} \}
+\end{alignat*}
+
+Existe una particularidad en la definición de la función para la sentencia \textit{for}.
+La variable $x$ es declarada, inicializada, y modificada, de acuerdo al rango especificado en la sentencia.
+Puesto que el alcance de la variable solo comprende al cuerpo, carecería de sentido considerar una ocurrencia de \textit{escritura} dentro del cuerpo, como una ocurrencia de \textit{escritura} en la sentencia general.
+
+Debido que la llamada a un procedimiento toma una serie de expresiones como argumentos, es necesario realizar un análisis detallado para el cálculo de las \textit{variables de escritura}.
+Las etiquetas de \textit{entrada/salida} cumplen un rol fundamental en este aspecto.
+Las expresiones que correspondan a un parámetro de salida en la definición del procedimiento, serán potencialmente modificadas.
+En cambio, el resto de los argumentos que correspondan a un parámetro de entrada no serán modificados por la llamada.
+% Idealmente, las mismas deberían ser variables.
+
+Técnicamente ninguna ocurrencia de una variable en una expresión es de \textit{escritura}, ya que su evaluación nunca debería producir efectos secundarios.
+En virtud que una expresión puede suceder dentro de una sentencia, la cual tiene el potencial de modificar el estado de las variables que ocurren en ella, la función tendrá el siguiente comportamiento.
+Notar que en soledad la definición no tiene utilidad, solo posee sentido al complementar la función para sentencias.
+\begin{alignat*}{3}
+&\WV{e}
+&&\;=\;
+\emptyset
+&&\;e \notin \NT{variable}
+\\
+&\WV{x}
+&&\;=\;
+\{ x \}
+\\
+&\WV{v [e_1, \ldots, e_n]}
+&&\;=\;
+\WV{v}
+\\
+&\WV{v.fn}
+&&\;=\;
+\WV{v}
+\\
+&\WV{\star v}
+&&\;=\;
+\emptyset
+\end{alignat*}
+
+Es claro que no es posible modificar el valor de una expresión, la cual no representa a una variable, por lo que el comportamiento de la función resulta trivial en este aspecto.
+Para los operadores de variables, en el acceso de arreglos o tuplas, se debe propagar la función hasta obtener el identificador de la variable inicial.
+En el caso de los punteros, hay un detalle particular que es importante aclarar sobre el \textit{aliasing}.
+
+El \textit{aliasing} es una situación que ocurre cuando la misma posición de memoria se puede acceder utilizando distintos identificadores.
+En nuestro caso, se da cuando hay más de un puntero diferente que referencia a la misma estructura en memoria.
+Debido a esta situación, resulta complejo poder analizar estáticamente cuando el elemento referido por un puntero es modificado.
+En consecuencia, la tarea de asegurar la correcta modificación de posiciones de memoria reservadas por el usuario, es relegada al análisis dinámico.
+Por lo tanto, es posible que de acuerdo a las verificaciones estáticas especificadas en la sección, sea necesario diseñar chequeos análogos para efectuar durante la ejecución del programa.
+Puntualmente, evitar la modificación de la memoria reservada para punteros, pasados como argumentos de funciones o entradas de procedimientos.
+
+\subsubsection{Variables de Lectura}
+
+Una variable es considerada de \textit{lectura}, cuando su valor posiblemente sea utilizado en la evaluación de una expresión durante la ejecución de una sentencia.
+La siguiente función calculará el conjunto de \textit{variables de lectura} que ocurren en una expresión o sentencia determinada.
+Debido que la información sobre las etiquetas de los procedimientos declarados es necesaria para el cómputo de la función, en el último caso se indexa con el contexto correspondiente.
+\begin{gather*}
+RV^{\NT{expression}}: \NT{expression} \rightarrow \{ \NT{id} \}
+\qquad
+RV^{\NT{sentence}}_{\pi_{p}}: \NT{sentence} \rightarrow \{ \NT{id} \}
+\end{gather*}
+
+Es conveniente aclarar que el conjunto de \textit{variables de lectura} de una sentencia, no necesariamente será disjunto al correspondiente conjunto de \textit{variables de escritura}.
+Un ejemplo concreto podría ser la asignación de una variable $x := x$, donde la primer ocurrencia es de \textit{escritura} y la segunda ocurrencia es de \textit{lectura}.
+Incluso puede suceder que en una expresión, distintas ocurrencias de una misma variable cumplan diferentes roles.
+De todas maneras, es posible reconocer fácilmente que existe una analogía entre ambas funciones.
+
+Comenzaremos con la formalización de la función para el caso de las sentencias, ya que resulta ser el más intuitivo.
+Recordar que las sentencias que pueden modificar el estado de una variable comprenden la asignación, los procedimientos \textit{alloc} y \textit{free}, y los procedimientos declarados por el usuario.
+Resulta claro que incluso en estas situaciones, ciertas ocurrencias de variables podrán ser de \textit{lectura}.
+El razonamiento detrás de la definición para la función de expresiones, estará condicionado por esta particularidad.
+En cambio para el resto de las sentencias, las ocurrencias de variables solo serán de \textit{lectura}; donde la función para \textit{variables libres} de expresiones es fundamental en este contexto.
+Nuevamente notar el abuso de notación cuando se aplica la función a un bloque de sentencias $ss$, en esta situación se procede de manera análoga al caso anterior.
+Supongamos que la condición $(p, \{ io_1 \; a_1: \theta_1, \ldots, io_n \; a_n: \theta_n \}, cs) \in \pi_{p}$ es válida.
+\begin{alignat*}{2}
+&\RVs{\T{skip}}
+&&\;=\;
+\emptyset
+\\
+&\RVs{v := e}
+&&\;=\;
+\RV{v} \cup \FV{e}
+\\
+&\RVs{\T{alloc} \; v}
+&&\;=\;
+\RV{v}
+\\
+&\RVs{\T{free} \; v}
+&&\;=\;
+\RV{v}
+\\
+&\RVs{\T{if} \; e \; \T{then} \; ss \; \T{else} \; ss'}
+&&\;=\;
+\FV{e} \cup \RVs{ss} \cup \RVs{ss'}
+\\
+&\RVs{\T{while} \; e \; \T{do} \; ss}
+&&\;=\;
+\FV{e} \cup \RVs{ss}
+\\
+&\RVs{\T{for} \; x := \, e_1 \; \T{to} \; e_2 \; \T{do} \; ss}
+&&\;=\;
+\FV{e_1} \cup \FV{e_2} \cup (\RVs{ss} - \{ x \})
+\\
+&\RVs{\T{for} \; x := \, e_1 \; \T{downto} \; e_2 \; \T{do} \; ss}
+&&\;=\;
+\FV{e_1} \cup \FV{e_2} \cup (\RVs{ss} - \{ x \})
+\\
+&\RVs{p(e_1, \ldots, e_n)}
+&&\;=\;
+\{ \FV{e_i} \mid io_i = \T{in} \vee io_i = \T{in/out} \}
+\cup \ldots
+\\&&&\qquad
+\ldots \cup
+\{ \RV{e_i} \mid io_i = \T{out} \}
+\end{alignat*}
+
+Nuevamente, la definición de la función para la sentencia \textit{for} presenta una particularidad.
+Recordar que la variable $x$ introducida por la sentencia, es fresca en el alcance actual.
+Además su alcance efectivo solo comprende al bloque de sentencias $ss$.
+La derivación de los \textit{juicios de tipado} sobre la sentencia garantizan estas propiedades.
+Por lo tanto, resulta razonable que las ocurrencias de \textit{lectura} dentro del cuerpo, no sean consideradas en la sentencia general.
+
+De forma similar a la función anterior, la llamada a un procedimiento requiere de un análisis detallado para efectuar el cálculo de las \textit{variables de lectura}.
+Si una expresión corresponde a un parámetro de entrada, entonces todas las ocurrencias de variables serán de \textit{lectura}.
+En cambio, cuando una expresión coincide con un parámetro de salida, será necesario realizar un análisis meticuloso para determinar cual es el uso que se hace de las distintas ocurrencias de variables dentro de la expresión.
+% Etiqueta resultan Fundamentales
+
+Claramente toda ocurrencia de variable en una expresión es de \textit{lectura}, ya que su valor será potencialmente utilizado en la evaluación de la misma.
+A causa que una expresión puede suceder dentro de una sentencia, la cual posee el potencial de modificar el estado de las variables que ocurren en ella, la función presenta ciertas particularidades que pueden resultar contra intuitivas.
+Notar que en soledad la definición carece de sentido, y solo tomará significado al completar la función para sentencias.
+Es posible pensar a la función para \textit{variables de lectura}, como opuesta a la función para \textit{variables de escritura}.
+\begin{alignat*}{3}
+&\RV{e}
+&&\;=\;
+\FV{e}
+&&\;e \notin \NT{variable}
+\\
+&\RV{x}
+&&\;=\;
+\emptyset
+\\
+&\RV{v [e_1, \ldots, e_n]}
+&&\;=\;
+\RV{v} \cup \FV{e_1} \cup \ldots \cup \FV{e_n}
+\\
+&\RV{v.fn}
+&&\;=\;
+\RV{v}
+\\
+&\RV{\star v}
+&&\;=\;
+\FV{v}
+\end{alignat*}
+
+Cuando no representa a una variable, una expresión solo podrá ser evaluada lo cual implica que todas sus ocurrencias de variables serán de \textit{lectura}.
+Para los operadores de variables, solamente se consideran a las expresiones empleadas para acceder a los diferentes elementos que componen a la estructura de la variable.
+En el caso de los punteros, todas las variables que intervienen en el acceso a memoria son consideradas de \textit{lectura}.
+Recordar que a causa del problema del \textit{aliasing}, la verificación del uso apropiado de la memoria es delegada al análisis dinámico.
+
+\subsection{Predicados sobre Funciones y Procedimientos}
+
+Se determina que un programa es válido estáticamente cuando existe una derivación para su \textit{juicio de tipado}, y se satisfacen los predicados sobre lectura/escritura de variables para todas las declaraciones de funciones y procedimientos que lo conforman.
+En la formalización, haremos uso de los últimos conceptos definidos.
+Notar que los contextos que intervienen en los predicados son construidos durante la derivación del \textit{juicio de tipado} correspondiente a la construcción analizada.
+
+Vamos a extender las funciones previamente definidas para que puedan ser aplicadas al cuerpo de una función o de un procedimiento.
+De esta manera se logra flexibilizar la notación, lo cual facilitará la lectura de los predicados.
+La aplicación de las funciones debe ser propagada solamente a las sentencias que conforman al cuerpo, acumulando los resultados obtenidos.
+\begin{align*}
+\WVs{vd_1 \ldots vd_n \; s_1 \ldots s_m} &= \WVs{s_1} \cup \ldots \cup \WVs{s_m}
+\\
+\RVs{vd_1 \ldots vd_n \; s_1 \ldots s_m} &= \RVs{s_1} \cup \ldots \cup \RV{s_m}
+\end{align*}
+
+\subsubsection{Predicados para Funciones}
+
+Supongamos que nos encontramos analizando una función con la siguiente forma.
+\begin{gather*}
+\T{fun} \; f \; (a_1: \theta_1, \ldots, a_l: \theta_l) \; \T{ret} \; a_r: \theta_r \; \T{where} \; cs \; \T{in} \; body
+\end{gather*}
+
+Puesto que una función devuelve un valor, no sería posible retornar algún resultado luego de la ejecución, si el mismo no fuese asignado.
+La variable de retorno $a_r$ debe ser modificada por las sentencias de la función.
+Hay que tener en cuenta que estáticamente no es posible verificar si todas las posiciones de memoria alcanzables por la variable fueron debidamente inicializadas en el cuerpo.
+Lo cual implica que la verificación no es completa, en el sentido que podría ser satisfecha y de todas maneras el retorno no ser asignado.
+Durante la ejecución del programa, una verificación dinámica podría encargarse de garantizar la completa asignación de la variable.
+
+\begin{Predicado}
+\label{PFRetorno}
+Retorno de Función
+\begin{gather*}
+a_r \in \WVs{body}
+\end{gather*}
+\end{Predicado}
+
+Una función no debería producir efectos secundarios en el contexto donde fue invocada.
+Siendo más precisos, es necesario verificar que ninguno de los argumentos $a_i$ sea modificado por las sentencias que conforman su cuerpo.
+Si el lenguaje utilizara \textit{pasaje por valor}, el predicado podría ser omitido debido que la función solo recibiría una copia del valor de sus argumentos.
+% Pasaje por Referencia
+
+\begin{Predicado}
+\label{PFArgumento}
+Argumento de Función
+\begin{gather*}
+\{ a_1, \ldots, a_l \} \cap \WVs{body} = \emptyset
+\end{gather*}
+\end{Predicado}
+
+\subsubsection{Predicados para Procedimientos}
+
+Supongamos que nos encontramos analizando un procedimiento con la siguiente forma.
+\begin{gather*}
+\T{proc} \; p \; (io_1 \; a_1: \theta_1, \ldots, io_l \; a_l: \theta_l) \; \T{where} \; cs \; \T{in} \; body
+\end{gather*}
+
+Es necesario asegurar el correcto uso de los parámetros del procedimiento, de acuerdo a la etiqueta de \textit{entrada/salida} con la que fueron especificados.
+Un parámetro definido como \textbf{in}, solo podrá ser utilizado como una variable de lectura.
+Un parámetro definido como \textbf{out}, solo podrá ser utilizado como una variable de escritura.
+En ambos casos, para evitar comportamientos inesperados durante la ejecución del programa, es preciso prevenir cualquier uso contrario al contemplado por la respectiva etiqueta.
+Del otro lado, un parámetro declarado como \textbf{in/out}, podrá ser utilizado como una variable que cumple ambos roles; donde en esta última situación, no es necesario realizar ninguna verificación al respecto.
+
+\begin{Predicado}
+\label{PPEntrada}
+Entrada de Procedimiento
+\begin{gather*}
+\{ a_i \mid io_i = \T{in} \} \cap \WVs{body} = \emptyset
+\end{gather*}
+\end{Predicado}
+
+\begin{Predicado}
+\label{PPSalida}
+Salida de Procedimiento
+\begin{gather*}
+\{ a_i \mid io_i = \T{out} \} \cap \RVs{body} = \emptyset
+\end{gather*}
+\end{Predicado}
+
+\subsubsection{Predicados para Tamaños Dinámicos}
+
+Supongamos que nos encontramos analizando una función o un procedimiento con alguna de las formas previas; donde el conjunto de tamaños dinámicos introducidos en el respectivo prototipo se define de la manera habitual.
+\begin{gather*}
+\pi_{sn} = \DAS{\theta_1} \cup \ldots \cup \DAS{\theta_l}
+\end{gather*}
+
+El tamaño de un arreglo es constante, lo cual implica que su valor no cambiará durante la ejecución de un programa.
+En el caso particular de un tamaño dinámico, su valor es desconocido hasta que comienza la ejecución, momento donde queda determinado de manera única y definitiva.
+Recordar que las variables, los parámetros de funciones y procedimientos, y los tamaños dinámicos, emplean la misma clase de identificadores; por lo cual, en cualquier sitio donde se espera alguno de estos elementos sintácticos, es posible especificar a cualquier otro.
+En consecuencia, es necesario evitar la modificación de los tamaños dinámicos de arreglos durante la ejecución de la función o el procedimiento.
+
+\begin{Predicado}
+\label{PTDinamico}
+Tamaño Dinámico
+\begin{gather*}
+\pi_{sn} \cap \WVs{body} = \emptyset
+\end{gather*}
+\end{Predicado}
+
+\subsubsection{Ejemplo de Predicado}
+
+Los predicados formalizados pueden ser aplicados a las funciones y los procedimientos que fueron especificados a lo largo del capítulo.
+Claramente todas estas construcciones satisfacen las propiedades requeridas, por lo que para ilustrar los conceptos introducidos, nos limitaremos a calcular los conjuntos de \textit{variables de lectura} y \textit{variables de escritura} de cada una.
+La demostración formal sobre la satisfacción de los predicados, es dejada como ejercicio al lector.
+Para facilitar la comprensión de los ejemplos, utilizaremos la notación $body_{fp}$ para representar al cuerpo de la función o el procedimiento en cuestión.
+
+% Notar que variables también son consideradas por funciones!
+Comenzando con el algoritmo de ordenación, observar que el arreglo a ordenar $a$ es empleado como una variable de \textit{lectura} y \textit{escritura} por ambos procedimientos.
+En el fragmento~(\ref{swap}), se emplean los parámetros de entrada $i$ y $j$ de manera apropiada, y el tamaño dinámico $m$ no es utilizado en el respectivo cuerpo.
+En el código~(\ref{selectionSort}), ninguna de las variables declaradas por las sentencias \textit{for} es considerada en los conjuntos obtenidos, y el tamaño dinámico $n$ es utilizado como constante.
+\begin{align*}
+\WVs{body_{swap}} &= \{ temp, a \}
+&
+\WVs{body_{selectionSort}} &= \{ minP, a \}
+\\
+\RVs{body_{swap}} &= \{ temp, a, i, j \}
+&
+\RVs{body_{selectionSort}} &= \{ minP, a, n \}
+\end{align*}
+% Predicado - Entrada Procedimiento
+% Predicado - Tamaños Dinámicos
+
+Pasando a las operaciones sobre \textit{listas abstractas}, el análisis es directo.
+En el fragmento~(\ref{isEmpty}), el retorno $b$ es una variable de \textit{escritura}, mientras que el argumento $l$ es una variable de \textit{lectura}.
+En el código~(\ref{tail}), el parámetro $l$ cumple ambos roles, y se puede notar que la variable $p$ declarada en el cuerpo solo es utilizada para su inicialización y subsiguiente liberación.
+\begin{align*}
+\WVs{body_{isEmpy}} &= \{ b \}
+&
+\WVs{body_{tail}} &= \{ l, p \}
+\\
+\RVs{body_{isEmpty}} &= \{ l \}
+&
+\RVs{body_{tail}} &= \{ l \}
+\end{align*}
+% Predicado - Argumentos/Retorno Función
+% Predicado - ... Procedimiento (NO Lectura de Variable)
+
+% WARNING
+% Todas las variables, tamaños dinámicos, y parámetros, deben ser empleados.
+% (Tamaños Dinámicos pueden NO ser empleados)
+% WARNING
+% Asegurar la lectura y escritura de todas las variables del programa.
+% (Variables pueden NO ser de lectura)
+
+% DINÁMICO
+% Asignar valor en variables, antes de acceder a la misma.
+% DINÁMICO
+% Asignación completa al retorno de una función.
+% DINÁMICO
+% Evitar modificación punteros, ya sea argumento o entrada.
+
+% WARNING
+% Argumentos deben ser efectivamente leídos.
+
+% PROPIEDAD
+% Se permiten modificar memoria a través de punteros | Argumentos.
+
+% WARNING
+% Entradas IN deben ser efectivamente leídas.
+% WARNING
+% Entradas OUT deben ser efectivamente escritas.
+% WARNING
+% Entradas IN / OUT deben ser efectivamente leídas y escritas.
+
+% PROPIEDAD
+% Se permiten modificar memoria a través de punteros | IN.
+% PROPIEDAD
+% Solo puedo realizar free, alloc, y asignación a punteros | OUT.
+% PROPIEDAD
+% Se puede modificar libremente punteros | IN/OUT.
+
+\iffalse
+% Definición para Parámetros de Procedimiento
+\begin{align*}
+Inputs_{\pi_{p}} &: \NT{id} \rightarrow \{ \NT{id} \}
+\\
+Inputs_{\pi_{p}}(p) &= \{ a \mid \exists \theta. (\T{in} \; a: \theta) \in PA \}
+\\
+Outputs_{\pi_{p}} &: \NT{id} \rightarrow \{ \NT{id} \}
+\\
+Outputs_{\pi_{p}}(p) &= \{ a \mid \exists \theta. (\T{out} \; a: \theta) \in PA \}
+\\
+InOuts_{\pi_{p}} &: \NT{id} \rightarrow \{ \NT{id} \}
+\\
+InOuts_{\pi_{p}}(p) &= \{ a \mid \exists \theta. (\T{in/out} \; a: \theta) \in PA \}
+\end{align*}
+% Condición en Conjunto de Variables
+$a_i \in IO(p, \T{out}) \cup IO(p, \T{in/out})$
+% Redacción Corregida
+Cuando se declara una función o un procedimiento, se definen una serie de parámetros apropiados que cumplirán distintos roles en el correspondiente cuerpo.
+En el caso de una función, un parámetro podrá ser un argumento o un retorno.
+En el caso de un procedimiento, un parámetro podrá ser una entrada, una salida, o incluso ambas.
+Adicionalmente el prototipo también introduce elementos polimórficos, como los tamaños dinámicos, que presentan sus características propias.
+De acuerdo a los elementos mencionados, será necesario verificar propiedades correspondientes a la naturaleza respectiva de cada uno.
+
+Asumiendo que el lenguaje utiliza pasaje por referencia, es posible definir de manera informal las propiedades que se pretenden verificar durante el análisis estático.
+En una función, el valor de sus argumentos no debe ser modificado, mientras que es necesario asignar su valor de retorno.
+En un procedimiento, las entradas de lectura no deben ser escritas, y de manera opuesta, las salidas de escritura no podrán ser leídas.
+En ambos casos, los tamaños dinámicos deben ser empleados como constantes, y no será posible modificar sus respectivos valores.
+% Parámetros de Procedimiento
+\subsubsection{Parámetros de Procedimiento}
+
+Durante el análisis de un procedimiento, es fundamental poder clasificar sus parámetros de acuerdo a la etiqueta de \textit{entrada/salida} con la que fueron especificados.
+Cuando un parámetro es definido como \textbf{in}, solo podrá ser utilizado como una variable de lectura.
+Cuando un parámetro es definido como \textbf{out}, solo podrá ser utilizado como una variable de escritura.
+En cambio cuando un parámetro es declarado como \textbf{in/out}, podrá ser utilizado como una variable que cumple ambos roles.
+Se define una función que dado el identificador de un procedimiento declarado $p$, y una etiqueta determinada $io$, calcula el conjunto de parámetros asociados a la etiqueta en el prototipo.
+Supongamos que la condición $(p, \{ io_1 \; a_1: \theta_1, \ldots, io_n \; a_n: \theta_n \}, cs) \in \pi_{p}$ es válida.
+\begin{gather*}
+IO_{\pi_{p}} : \NT{id} \times \NT{io} \rightarrow \{ \NT{id} \}
+\\
+IO_{\pi_{p}}(p, io) = \{ a_i \mid io = io_i \}
+\end{gather*}
+% Análisis Dinámico
+Para finalizar, ya que nos encontramos analizando el uso de variables dentro de funciones y procedimientos, es prudente hacer mención de algunos chequeos dinámicos que puede ser conveniente implementar en el intérprete.
+Al no poder detectar todos los errores de un programa de forma estática, necesitamos hacer uso de este análisis para poder identificar posibles fallas durante la ejecución de las diversas rutinas.
+
+El primer chequeo se realiza previo a la lectura de una variable.
+Antes de acceder a la posición de memoria propia de la misma, se debe verificar que un valor haya sido asignado anteriormente en esta.
+Caso contrario, la operación de acceso podría tener un comportamiento inesperado.
+\fi
