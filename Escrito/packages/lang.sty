@@ -16,14 +16,21 @@
 \lstdefinelanguage{Haskell}
 {
   % Operadores
-  otherkeywords = { :, =, |, \{, \}, \[, \], \, },
-  morekeywords  = [1]{ :, =, |, \{, \}, \[, \], \, },
+  otherkeywords = { :, =, |, (, ), ., ->, \{, \}, \[, \], \, },
+  morekeywords  = [1]{ :, =, |, (, ), ., ->, \{, \}, \[, \], \, },
   % Constructores
-  keywords      = [2]{ L, I, Const, Loc, UOp, BOp, FCall},
+  keywords      = [2]{ L, I, Const, Loc, UOp, BOp, FCall
+                     , RWS, RWST, Except, InFun, InProc, Out, C, CM, CT, CB, SCE, SCW, BT
+                     },
   % Funciones
-  keywords      = [3]{ info, item, sLin, sCol, eLin, eCol, makeExprParser, getSourcePos, withRecovery },
+  keywords      = [3]{ info, item, sLin, sCol, eLin, eCol, makeExprParser, getSourcePos, withRecovery
+                     , getID, bTrace, cFunProc, cType, cBlock, errorMsg, errorBT, warningMsg, warningBT, emptyBT, push, pop, tail
+                     , errorSC, warningSC, withBT, unification
+                     },
   % Tipos
-  keywords      = [4]{ Located, Info, Line, Column, Id, LExpr, Expr, LConstant, LLocation, BinOp, UnOp, File },
+  keywords      = [4]{ Located, Info, Line, Column, Id, LExpr, Expr, LConstant, LLocation, BinOp, UnOp, File
+                     , Check, SCError, SCWarning, SCWarnings, Scope, Context, Backtrace, CFunProc, CType, CBlock, Error, Warning, BTNode
+                     },
   % Palabras Claves
   keywords      = [5]{ data, type, newtype },
   % Colores

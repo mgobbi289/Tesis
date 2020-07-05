@@ -1,5 +1,5 @@
 % Parser
-\section{Parser}
+\section{Implementación del Parser}
 
 Ya nos encontramos en condiciones para describir los detalles principales sobre el desarrollo del parser para \Lenguaje{}.
 Haremos mención de las decisiones más relevantes tomadas durante la implementación del mismo, las dificultades encontradas en el camino, y algunas limitaciones que debimos resolver.
@@ -63,7 +63,7 @@ Haciendo uso de la misma, conseguimos tener una generación de mensajes de error
 Cuando avanzamos a etapas posteriores en el intérprete, necesitamos alguna forma de poder vincular las fallas detectadas durante las mismas con la ubicación en el archivo involucrado en el error.
 
 Para solucionar este problema, se adaptó la sintaxis de una forma similar a como lo hace el compilador de \Haskell{}, \texttt{GHC}~\cite{GHC}.
-Con esto nos referimos a que todo elemento sintáctico del lenguaje que puede ser relevante en la generación de errores, es envuelto con la información de posición correspondiente a su ocurrencia en el código.
+Con esto nos referimos a que todo elemento sintáctico del lenguaje el cual puede ser relevante en la generación de errores, es envuelto con la información de posición correspondiente a su ocurrencia en el código.
 De esta forma, se definió en el módulo \lstinline[style = module]{Syntax.Located}, el siguiente \textit{datatype}~(\ref{Located}).
 Recordar que en esta primera versión del intérprete solo trabajamos con programas definidos en un único módulo, por lo que almacenar solamente las líneas y columnas de inicio y fin de un determinado elemento, es suficiente para generar un mensaje de error preciso.
 
