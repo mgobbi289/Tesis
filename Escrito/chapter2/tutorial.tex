@@ -1,0 +1,689 @@
+% Tutorial
+
+Comenzando con la presentación del lenguaje, nos concentraremos en exponer sus fundamentos principales mediante una suerte de tutorial.
+A través de una serie de descripciones informales junto con ejemplos ilustrativos, se pretende transmitir al lector con experiencia en programación imperativa los conceptos elementales que caracterizan a nuestro lenguaje.
+Recordar que al encontrarse aún en etapa de desarrollo, ciertos aspectos del lenguaje se encuentran sujetos a posibles modificaciones en iteraciones futuras.
+% Experiencia en Programación Imperativa
+
+\section{Introducción}
+
+\Lenguaje{} es un lenguaje de programación estructurado fuertemente tipado, con polimorfismo paramétrico, y una versión básica de polimorfismo \textit{ad hoc}.
+Resulta ser el producto de la formalización del pseudocódigo empleado en la materia \Materia{}, por lo que su diseño se orienta a la enseñanza de conceptos elementales de forma clara y natural.
+Su inspiración proviene del lenguaje imperativo \Pascal{}.
+% Imperativo
+% Pascal
+% Continuar...?
+
+\section{Tipos Nativos}
+
+Un tipo provee un conjunto de valores los cuales pueden ser obtenidos al evaluar una expresión determinada.
+El lenguaje ofrece una serie de tipos nativos, los cuales pueden ser separados en básicos y estructurados.
+A causa del tipado fuerte, una expresión de cierto tipo no podrá ser utilizada como si fuese de un tipo distinto, a menos que se aplique alguna conversión apropiada.
+
+\subsection{Tipos Básicos}
+
+Un tipo básico comprende un conjunto de valores individuales, donde existe un constructor específico para cada uno de ellos.
+Poseen operaciones propias que los manipulan.
+En el lenguaje, se definen los siguientes tipos básicos tradicionales.
+\begin{itemize}
+\item
+Para los valores numéricos, se define \lstinline[style = lang]{int} para representar a los números enteros y \lstinline[style = lang]{real} para representar a los números reales.
+Son especificados en notación decimal.
+En el lenguaje se define la cota \lstinline[style = lang]{inf}, como el límite superior de ambos conjuntos.
+Adicionalmente se encuentran declarados los operadores aritméticos clásicos, para operar con los valores numéricos.
+Notar que los operadores se encuentran sobrecargados.
+\begin{lstlisting}[ style = lang ]
+var i : int
+var r : real
+i := 10 / 2
+r := 5.0 + 4.5
+\end{lstlisting}
+\item
+Se define \lstinline[style = lang]{bool} para representar a los valores booleanos.
+Las constantes que constituyen al conjunto de valores de verdad \lstinline[style = lang]{true} y \lstinline[style = lang]{false}, se encuentran declaradas en el lenguaje.
+Adicionalmente los operadores lógicos clásicos también son definidos.
+\begin{lstlisting}[ style = lang ]
+var b : bool
+b := true && false
+\end{lstlisting}
+\item
+Se define \lstinline[style = lang]{char} para representar a los caracteres.
+Los valores que conforman al conjunto se representan encerrados entre comillas simples, de la forma \lstinline[style = lang]{'a'}.
+Inicialmente, no se encuentra definida ninguna operación propia para este tipo de datos.
+\begin{lstlisting}[ style = lang ]
+var c : char
+c := 'z'
+\end{lstlisting}
+\end{itemize}
+
+Notar que en los ejemplos previos, se ilustran los conceptos de declaración y asignación de variables.
+Para el primero, se utiliza la palabra clave \lstinline[style = lang]{var} seguida del identificador de la variable junto con su respectivo tipo.
+Para el segundo, se emplea el operador \lstinline[style = lang]{:=} para asignar el valor de una expresión particular a una variable determinada.
+Es relevante mencionar que las variables no son inicializadas luego de su declaración, por lo que es responsabilidad del programador asignarles un valor inicial adecuado.
+
+\subsubsection{Subtipado}
+
+Observar que una expresión de tipo entero puede ser utilizada en situaciones donde se espera una expresión de tipo real.
+Para estas circunstancias se introduce el concepto de \textit{subtipado}.
+De esta manera, es posible especificar expresiones donde se emplean valores numéricos de ambos tipos.
+Recordar que los operadores aritméticos se encuentran sobrecargados, por lo que pueden ser aplicados a valores de cualquiera de los conjuntos mencionados.
+En el siguiente ejemplo, se suma una variable entera \lstinline[style = lang]{i} y una constante real \lstinline[style = lang]{0.5} para asignar un valor a la variable real \lstinline[style = lang]{r}.
+
+\begin{lstlisting}[ style = lang ]
+var i : int
+var r : real
+i := 2
+r := i + 0.5
+\end{lstlisting}
+
+Es importante destacar que esta noción es bastante limitada.
+El propósito de la definición es flexibilizar el sistema de tipos del lenguaje lo suficiente, como para permitir manipular expresiones de ambos tipos numéricos, debido a la semejanza entre ambos conjuntos de valores.
+En particular un ejemplo opuesto al anterior no sería válido, donde se producirá un error de tipos.
+Notar el uso de llaves para especificar un bloque de comentario.
+
+\begin{lstlisting}[ style = lang ]
+var i : int
+var r : real
+r := 2.0
+i := r + 1 { Error de Tipos }
+\end{lstlisting}
+
+\subsection{Tipos Estructurados}
+
+Un tipo estructurado se caracteriza por el tipo de sus componentes y por el método de estructuración que utiliza.
+De manera similar a los tipos básicos, se definen operaciones específicas para acceder a los elementos que conforman al tipo.
+En el lenguaje, se encuentran declarados los siguientes tipos estructurados.
+\begin{itemize}
+\item
+Un tipo arreglo \lstinline[style = lang]{array}, es una estructura que consiste de una cantidad fija de componentes del mismo tipo.
+Los elementos de un arreglo son designados por índices, los cuales serán valores enteros.
+Para definir un arreglo se necesitan especificar la cantidad y el tipo de sus componentes.
+En el lenguaje, no es posible declarar un arreglo con tamaño nulo.
+\begin{lstlisting}[ style = lang ]
+var a : array [3] of real
+a[0] := 10.75
+a[1] := 5.5
+a[2] := 20.25
+\end{lstlisting}
+\item
+Un tipo puntero \lstinline[style = lang]{pointer}, es un elemento que direcciona a una estructura en memoria.
+Son utilizados para reservar, alojar, y liberar memoria a lo largo de la ejecución del programa.
+Debido a su relevancia en el manejo dinámico de memoria, relegaremos su estudio hasta la sección correspondiente.
+\begin{lstlisting}[ style = lang ]
+var p : pointer of int
+alloc(p)
+#p := 5
+free(p)
+\end{lstlisting}
+\end{itemize}
+
+Concentrando nuestra atención en los arreglos, continuaremos su estudio con más detalle.
+En el ejemplo especificado, se declara un arreglo de reales \lstinline[style = lang]{a} con tres elementos.
+Para acceder a una posición determinada del arreglo, se utilizan las llaves \lstinline[style = lang]{[]} junto con el índice correspondiente.
+Los índices válidos comienzan desde el \lstinline[style = lang]{0}, y continúan hasta el tamaño del arreglo con excepción \lstinline[style = lang]{2}.
+Notar que en el ejemplo, se inicializan todas las posiciones del arreglo.
+
+La declaración de arreglos no está limitada a una única dimensión.
+En particular, es posible crear arreglos multidimensionales simplemente especificando el tamaño de cada una de las dimensiones necesarias al momento de declarar uno.
+En el ejemplo, se define un arreglo bidimensional \lstinline[style = lang]{a} con ambas dimensiones de tamaño tres.
+Para acceder a una posición determinada del arreglo, simplemente se separan con comas \lstinline[style = lang]{,} las correspondientes coordenadas.
+
+\begin{lstlisting}[ style = lang ]
+var a : array [3, 3] of real
+a[0, 0] := 1.0
+a[0, 1] := 2.1
+a[0, 2] := 3.2
+a[1, 0] := 4.3
+a[1, 1] := 5.4
+a[1, 2] := 6.5
+a[2, 0] := 7.6
+a[2, 1] := 8.7
+a[2, 2] := 9.8
+\end{lstlisting}
+
+% Variables / Asignación
+% Básicos: Numéricos / Booleanos / Caracteres
+% Subtipado (Operadores Sobrecargados)
+% Estructurados: Arreglos (Múltiples Dimensiones, Operadores) / Punteros
+
+% Expresiones
+% Operadores (Relevantes)
+
+% Short - Circuit
+
+\section{Definición de Tipos}
+
+Uno de los conceptos fundamentales en el desarrollo de la materia, comprende la implementación de tipos de datos particulares de acuerdo a su especificación.
+Por lo que una de las características esenciales del lenguaje, es la posibilidad de crear nuevos tipos de datos.
+Al querer resolver problemas complejos, es necesario extender los tipos nativos del lenguaje con otros más sofisticados y robustos que puedan adecuarse a la situación planteada.
+El lenguaje ofrece ciertas construcciones para atender estos fines.
+
+Para la declaración de un tipo, se utiliza la palabra clave \lstinline[style = lang]{type} seguida del identificador del tipo y el cuerpo de su definición.
+De acuerdo a la naturaleza del tipo a definir, existen tres posibilidades diferentes para el respectivo cuerpo.
+Se pueden declarar tipos enumerados, sinónimos de tipo, y estructuras de tipo tupla en el lenguaje.
+
+\subsection{Enumeración}
+
+En la declaración de un tipo enumerado, es necesario enumerar todos los constructores del conjunto definido entre paréntesis \lstinline[style = lang]{()}, y separados por comas \lstinline[style = lang]{,}.
+Los valores son especificados empleando identificadores, los cuales deben comenzar con mayúscula.
+En el código, los nombres utilizados para representar esta categoría de construcciones deben ser únicos.
+Es relevante mencionar que el lenguaje no define ninguna operación propia para los tipos enumerados.
+
+\begin{lstlisting}[ style = lang ]
+type dia = ( Dom, Lun, Mar, Mie, Jue, Vie, Sab )
+\end{lstlisting}
+
+En el ejemplo previo, se declara un tipo enumerado \lstinline[style = lang]{dia}.
+Los valores que puede adoptar son representados por los siete identificadores entre paréntesis, los cuales simbolizan los días de la semana.
+Una vez declarado, es posible definir variables del tipo y utilizar sus valores como constantes definidas.
+En el ejemplo posterior, se declara e inicializa la variable \lstinline[style = lang]{d} con los elementos recientemente introducidos.
+
+\begin{lstlisting}[ style = lang ]
+var d : dia
+d := Dom
+\end{lstlisting}
+
+\subsection{Sinónimos}
+
+La declaración de un sinónimo de tipo solo requiere de la especificación del tipo asociado.
+En principio, los sinónimos definidos son \textit{transparentes}, en el sentido que pueden ser intercambiados de forma indiferente por los tipos relacionados sin modificar la corrección del programa.
+En particular, un sinónimo adopta todas las propiedades y características del tipo de su definición.
+En el momento de introducir el polimorfismo paramétrico que admite el lenguaje, se detallará la manera de declarar sinónimos paramétricos.
+
+\begin{lstlisting}[ style = lang ]
+type matrizReal = array [3, 3] of real
+\end{lstlisting}
+
+En el ejemplo previo, se declara un sinónimo de tipo \lstinline[style = lang]{matrizReal}.
+Recordar que ya se había presentado un arreglo bidimensional equivalente.
+Una vez definido, es posible sustituir uno de los tipos por el otro conservando las propiedades del programa.
+En el ejemplo posterior se declara una variable \lstinline[style = lang]{mR} del sinónimo, y se opera de manera idéntica como si fuese un arreglo usual.
+
+\begin{lstlisting}[ style = lang ]
+var mR : matrizReal
+mR[0, 0] := 1.0
+{...}
+\end{lstlisting}
+
+\subsection{Tuplas}
+
+Una tupla es una estructura compuesta por una cantidad fija de componentes, posiblemente de distintos tipos.
+Cada componente es denominado \textit{campo}, y el identificador asociado a uno se llama \textit{alias}.
+Las tuplas son utilizadas para empaquetar un conjunto de valores que se relacionan de alguna manera.
+La operación \lstinline[style = lang]{.} para obtener el valor almacenado por un determinado campo en una tupla, requiere de la especificación del alias al que se encuentra asociado.
+En el momento de introducir el polimorfismo paramétrico que admite el lenguaje, se detallará la manera de declarar tuplas paramétricas.
+
+\begin{lstlisting}[ style = lang ]
+type persona = tuple
+               inicial : char,
+               edad : int,
+               peso : real
+               end tuple
+\end{lstlisting}
+
+En el ejemplo anterior, se declara un tipo tupla \lstinline[style = lang]{persona}.
+Los alias consisten de \lstinline[style = lang]{inicial} que comprende un caracter, \lstinline[style = lang]{edad} que almacena un entero, y \lstinline[style = lang]{peso} que representa un real.
+Notar que se emplean las palabras clave \lstinline[style = lang]{tuple} y \lstinline[style = lang]{end tuple}, para delimitar la definición.
+En el ejemplo siguiente se declara una variable \lstinline[style = lang]{p} del tipo introducido, y se inicializan todos los campos de manera adecuada.
+
+\begin{lstlisting}[ style = lang ]
+var p : persona
+p.inicial := 'F'
+p.edad := 30
+p.peso := 70.5
+\end{lstlisting}
+
+% Enumerados
+% Sinónimos
+% Tuplas (Operadores)
+
+% Tipos con Parámetros (NO)
+
+% Limitación para Recursión (Solo Punteros)
+% Orden de Declaración
+
+\section{Funciones}
+
+Una función es un bloque de código organizado, implementado para realizar una tarea específica.
+Se utilizan para favorecer la modularidad del programa, y promover la reutilización de código.
+Durante la ejecución, una función realiza una computación de acuerdo a un conjunto de parámetros, y al finalizar devuelve siempre un resultado.
+Las funciones son independientes del estado del programa, en el sentido que su comportamiento es determinado solamente por los valores de los argumentos que recibe.
+Es importante mencionar que no modifican el estado de las variables que son pasadas como parámetro.
+
+\begin{lstlisting}[ style = lang ]
+{ PRE: n >= 0 }
+fun factorial ( n : int ) ret fact : int
+  fact := 1
+  for i := 2 to n do
+    fact := fact * i
+  od
+end fun
+\end{lstlisting}
+
+En el ejemplo, se especifica una función para calcular el factorial de un número entero positivo.
+Notar que la precondición informa sobre la propiedad que debe satisfacer el argumento \lstinline[style = lang]{n}.
+La sentencia \lstinline[style = lang]{for} declara la variable \lstinline[style = lang]{i}, que tomará en cada iteración los valores del \lstinline[style = lang]{2} hasta el \lstinline[style = lang]{n}.
+Observar que la definición de la variable \lstinline[style = lang]{i} es implícita, su tipo es inferido de acuerdo a las expresiones especificadas como rangos de la iteración, y su alcance comprende la totalidad de la sentencia.
+La variable de retorno \lstinline[style = lang]{fact} almacenará la productoria de estos números, y una vez finalizada la ejecución de la función, se devolverá su valor al contexto donde fue llamada.
+
+En la sintaxis, se utiliza la palabra clave \lstinline[style = lang]{fun} seguida del nombre de la función.
+A continuación, entre paréntesis \lstinline[style = lang]{()} se especifican los parámetros separados por comas \lstinline[style = lang]{,}.
+Se deben detallar los identificadores, y los respectivos tipos para cada uno.
+Con la palabra clave \lstinline[style = lang]{ret} se precisa el nombre y el tipo de la variable de retorno.
+En el cuerpo de la función, es posible declarar una serie de variables cuyo alcance comprenderá la totalidad del cuerpo, seguidas por un bloque de sentencias que realizarán el cálculo deseado.
+Para finalizar la declaración, se utilizan las palabras claves \lstinline[style = lang]{end fun}.
+
+Claramente los identificadores empleados para nombrar a las funciones declaradas en el programa deben ser únicos.
+De lo contrario, no sería posible reconocer que función se intenta invocar durante una llamada.
+Es importante mencionar que el orden de declaración es fundamental.
+Una función debe ser definida antes de ser utilizada en el código, lo cual imposibilita el uso de recursión mutua para su declaración.
+
+A pesar de la limitación mencionada, la declaración de funciones permite definiciones recursivas; lo cual significa que en el respectivo cuerpo, es posible llamar a la función siendo definida para continuar la computación.
+En el siguiente ejemplo, se define la función \lstinline[style = lang]{factorial} de manera recursiva.
+Notar que para la llamada a una función solo se debe especificar el nombre, junto con las expresiones asociadas a cada uno de sus argumentos.
+
+\begin{lstlisting}[ style = lang ]
+{ PRE: n >= 0 }
+fun factorial ( n : int ) ret fact : int
+  if n >= 2 then
+    fact := n * factorial(n - 1)
+  else
+    fact := 1
+  fi
+end fun
+\end{lstlisting}
+
+Observar que la sentencia \lstinline[style = lang]{if} permite verificar el valor de una expresión booleana, y ejecutar distintos bloques de código de acuerdo a su resultado.
+En el lenguaje existen diferentes maneras de especificar la sentencia.
+El ejemplo ilustrado permite optar entre las opciones \lstinline[style = lang]{if} y \lstinline[style = lang]{else} de acuerdo al valor de verdad de la guarda, pero también es posible omitir el fragmento \lstinline[style = lang]{else} si solo nos interesa verificar el cumplimiento de una propiedad determinada, o ante la presencia de múltiples opciones se pueden agregar guardas \lstinline[style = lang]{elif} adicionales.
+Durante el desarrollo del tutorial se presentarán otros varios ejemplos.
+
+Un último comentario sobre las funciones del lenguaje, tiene que ver con el \textit{pasaje por valor} que se emplea en la llamada de las construcciones.
+Una función solo recibe una copia del valor de sus argumentos, por lo que no es posible modificar las variables que ocurren en ellos.
+De todas maneras, es fundamental destacar que no se permiten alterar los valores de los argumentos en su cuerpo a pesar de la propiedad mencionada; lo cual nos abstrae del pasaje de variables utilizado por el lenguaje.
+
+% Orden de Declaración
+% Recursión
+% Llamada de Función
+% Sentencias (IF, FOR TO)
+% Argumentos / Retorno (Pasaje por Valor)
+
+% Polimorfismo (NO)
+% Sentencias (WHILE, FOR DOWNTO)
+
+\section{Procedimientos}
+
+Un procedimiento es un bloque de código estructurado, implementado para realizar una tarea específica.
+Se emplean para favorecer la modularidad del programa, y promover la reutilización de código.
+Durante la ejecución, un procedimiento realiza una computación de acuerdo a un conjunto de parámetros de entrada, para modificar otro conjunto de parámetros de salida.
+El comportamiento de un procedimiento es determinado solamente por los parámetros que recibe.
+Es importante mencionar que no modifica el estado de las variables de entrada, de la misma manera que no consulta el estado de las variables de salida.
+
+\begin{lstlisting}[ style = lang ]
+proc inicializar ( in e : int, out a : array [10] of int )
+  for i := 9 downto 0 do
+    a[i] := e
+  od
+end proc
+\end{lstlisting}
+
+En el ejemplo se especifica un procedimiento para inicializar un arreglo de enteros \lstinline[style = lang]{a}, de acuerdo a un valor determinado \lstinline[style = lang]{e}.
+El parámetro de entrada es señalado con la etiqueta \lstinline[style = lang]{in}, mientras que el parámetro de salida es señalado con la etiqueta \lstinline[style = lang]{out}.
+La sentencia \lstinline[style = lang]{for} declara la variable \lstinline[style = lang]{i}, que tomará en cada iteración los valores del \lstinline[style = lang]{9} hasta el \lstinline[style = lang]{0}.
+Una vez finalizada la ejecución del procedimiento, el arreglo de salida se encontrará inicializado de acuerdo al valor inicial de entrada.
+
+En la sintaxis, se utiliza la palabra clave \lstinline[style = lang]{proc} seguida del nombre del procedimiento.
+A continuación, entre paréntesis \lstinline[style = lang]{()} se especifican los parámetros separados por comas \lstinline[style = lang]{,}.
+Se deben detallar las etiquetas de \textit{entrada/salida}, los identificadores, y los respectivos tipos para cada uno.
+En el cuerpo del procedimiento, es posible declarar una serie de variables cuyo alcance comprenderá la totalidad del cuerpo, seguidas por un bloque de sentencias que realizarán el cálculo deseado.
+Para finalizar la declaración, se utilizan las palabras claves \lstinline[style = lang]{end proc}.
+
+Claramente los identificadores empleados para nombrar a los procedimientos declarados en el programa deben ser únicos.
+De lo contrario, no sería posible reconocer que procedimiento se intenta invocar durante una llamada.
+Es importante mencionar que el orden de declaración es fundamental.
+Un procedimiento debe ser definido antes de ser utilizado en el código, lo cual imposibilita el uso de recursión mutua para su declaración.
+De todas maneras, la declaración de procedimientos permite definiciones recursivas; lo cual significa que en el respectivo cuerpo, es posible llamar al procedimiento siendo definido para continuar la computación.
+
+Un ejemplo adicional que puede resultar interesante, es el procedimiento \lstinline[style = lang]{swap}.
+De acuerdo a los parámetros de entrada \lstinline[style = lang]{i} y \lstinline[style = lang]{j}, los cuales representan índices válidos en el arreglo \lstinline[style = lang]{a}, se intercambian los valores de las respectivas posiciones.
+Una vez introducido el polimorfismo paramétrico que admite el lenguaje, estaremos en condiciones de especificar un procedimiento equivalente con un mayor nivel de abstracción.
+
+\begin{lstlisting}[ style = lang ]
+{ PRE: 0 <= i, j <= 9 }
+proc swap ( in/out a : array [10] of int, in i, j : int )
+  var temp : int
+  temp := a[i]
+  a[i] := a[j]
+  a[j] := temp
+end proc
+\end{lstlisting}
+
+Debemos entrar más en detalle acerca de las etiquetas de \textit{entrada/salida} que se especifican en la declaración de un procedimiento.
+Cuando un parámetro solo es utilizado para lectura, lo cual implica que no será modificado, se utiliza la etiqueta \lstinline[style = lang]{in}.
+Cuando un parámetro solo es utilizado para escritura, lo cual implica que no será consultado, se utiliza la etiqueta \lstinline[style = lang]{out}.
+En cambio, cuando un parámetro es empleado para cumplir ambos roles, se utiliza la etiqueta \lstinline[style = lang]{in/out}.
+
+Un último comentario sobre los procedimientos del lenguaje, tiene que ver con el \textit{pasaje por valor} que se emplea en la llamada de las construcciones.
+Un procedimiento solo recibe una copia del valor de sus parámetros, por lo que no es posible modificar las variables que ocurren en ellos.
+Claramente esto resulta incompatible con la naturaleza de los procedimiento.
+Por lo cual es fundamental destacar que el valor final de los parámetros de salida es copiado a las respectivas variables, al mismo tiempo que no se permiten alterar los valores de los parámetros de entrada; lo cual nos abstrae del pasaje de variables utilizado por el lenguaje.
+
+% Orden de Declaración
+% Sentencias (FOR DOWNTO)
+% IN / OUT / INOUT
+
+% Recursión
+% Polimorfismo (NO)
+
+% Llamada de Procedimiento
+% Sentencias (IF, WHILE, FOR TO)
+
+\section{Polimorfismo Paramétrico}
+
+El lenguaje admite polimorfismo paramétrico en distintas maneras.
+Es posible declarar tipos paramétricos, los cuales deben ser instanciados para su empleo, y también se pueden declarar funciones y procedimiento polimórficos, los cuales introducen variables de tipo y tamaños dinámicos en su prototipo.
+A continuación, con el agregado del polimorfismo, retomaremos los conceptos previamente presentados con un nuevo enfoque.
+
+\subsection{Tipos Paramétricos}
+
+El lenguaje permite la declaración de tipos con parámetros, lo cual es una manera de definir nuevos tipos de datos de forma abstracta.
+Utilizando variables de tipo como argumentos, es posible crear un tipo donde su representación es independiente de las mismas.
+La definición de tipos paramétricos se limita a los sinónimos y las tuplas.
+
+\subsubsection{Sinónimos}
+
+Retomando un ejemplo previo, ahora contamos con las herramientas para declarar un tipo \lstinline[style = lang]{matriz} el cual es independiente del tipo de valores \lstinline[style = lang]{T} que almacenará en su estructura.
+De esta manera, es posible definir tipos de datos con un mayor nivel de abstracción.
+Es importante mencionar algunas limitaciones de las construcciones mencionadas.
+Los parámetros de tipos deben ser empleados en la definición, lo cual imposibilita la definición de \textit{phantom types}; además los tamaños de arreglos deben ser concretos, hecho que será más claro luego de presentar los tamaños dinámicos.
+
+\begin{lstlisting}[ style = lang ]
+type matriz of (T) = array [3, 3] of T
+\end{lstlisting}
+
+Al momento de emplear el tipo, será necesario instanciar todos los parámetros de su definición.
+Un ejemplo puntual, es el caso de querer declarar una variable \lstinline[style = lang]{m} como se hace a continuación.
+Recordar que un sinónimo es \textit{transparente} lo cual implica que una vez instanciado, adquiere las propiedades y características del tipo que representa.
+
+\begin{lstlisting}[ style = lang ]
+var m : matriz of (real)
+m[0, 0] := 1.0
+{...}
+\end{lstlisting}
+
+\subsubsection{Tuplas}
+
+En el caso de las tuplas, se presenta una situación similar.
+Las limitaciones mencionadas para las definiciones de tipo se conservan.
+En el ejemplo se declara el tipo \lstinline[style = lang]{par}, donde sus componentes serán de tipo \lstinline[style = lang]{A} y \lstinline[style = lang]{B}.
+Notar que de esta manera es posible abstraerse del tipo de valores almacenados por la estructura definida.
+
+\begin{lstlisting}[ style = lang ]
+type par of (A, B) = tuple
+                     primero : A
+                     segundo : B
+                     end tuple
+\end{lstlisting}
+
+En el ejemplo se declara una variable \lstinline[style = lang]{p} del tipo definido, donde el componente \lstinline[style = lang]{primero} será un caracter y el componente \lstinline[style = lang]{segundo} será un entero.
+Notar que al instanciar un tipo paramétrico, se deben listar los tipos en paréntesis \lstinline[style = lang]{()}, y separados por comas \lstinline[style = lang]{,}.
+
+\begin{lstlisting}[ style = lang ]
+var p : par of (char, int)
+p.primero := 'a'
+p.segundo := 1
+\end{lstlisting}
+
+\subsection{Polimorfismo en Funciones y Procedimientos}
+
+El polimorfismo que admiten las funciones y los procedimientos del lenguaje, se puede separar en dos clases de elementos: variables de tipo y tamaños dinámicos.
+En el prototipo de las declaraciones, es posible introducir variables o tamaños polimórficos en el tipo de determinados parámetros que luego podrán ser utilizados en el respectivo cuerpo.
+De esta manera se obtiene una implementación que puede ser aplicada a expresiones de distinto tipo, y cuyo comportamiento será independiente de los mismos.
+
+Volviendo a los ejemplos de procedimientos, es posible abstraernos de los detalles que no intervienen en la computación para implementar un procedimiento general.
+Para inicializar un arreglo \lstinline[style = lang]{a} con un valor determinado \lstinline[style = lang]{e}, solo es necesario que los tipos \lstinline[style = lang]{T} de ambas expresiones coincidan, y que el tamaño del arreglo sea un valor cualquiera \lstinline[style = lang]{n}.
+Notar que en el ejemplo, se utiliza el tamaño del arreglo como una constante entera definida.
+
+\begin{lstlisting}[ style = lang ]
+proc inicializar ( in e : T, out a : array [n] of T )
+  for i := n - 1 downto 0 do
+    a[i] := e
+  od
+end proc
+\end{lstlisting}
+
+En el caso de querer intercambiar los valores de dos posiciones determinadas de un arreglo \lstinline[style = lang]{a}, solo es necesario especificar los correspondientes índices enteros válidos \lstinline[style = lang]{i} y \lstinline[style = lang]{j}.
+De esta manera, se pueden abstraer el tipo de los valores almacenados y el tamaño del arreglo involucrado. 
+Notar que en el cuerpo es posible emplear los elementos polimórficos introducidos en el encabezado para definir variables.
+
+\begin{lstlisting}[ style = lang ]
+{ PRE: 0 <= i, j <= n - 1 }
+proc swap ( in/out a : array [n] of T, in i, j : int )
+  var temp : T
+  temp := a[i]
+  a[i] := a[j]
+  a[j] := temp
+end proc
+\end{lstlisting}
+
+Al realizar una llamada a una función o un procedimiento en el que se introducen elementos polimórficos en su respectivo prototipo, es necesario asegurar que los tipos y tamaños de los argumentos coincidan con los correspondientes parámetros para ser adecuados.
+De lo contrario, se produciría un error de tipos durante el análisis del programa.
+En el siguiente ejemplo se puede observar que la variable de tipo \lstinline[style = lang]{T} en la declaración, adoptaría el tipo \lstinline[style = lang]{char}; de forma similar, el tamaño dinámico \lstinline[style = lang]{n} tomaría el tamaño concreto \lstinline[style = lang]{10}.
+Notar que para la llamada a un procedimiento solo se debe especificar su nombre, junto con las expresiones asociadas a cada uno de sus parámetros.
+
+\begin{lstlisting}[ style = lang ]
+var a : array [10] of char
+inicializar('a', a)
+\end{lstlisting}
+
+% Tipos con Parámetros
+% Limitaciones: Forzar Variables, Tamaños Concretos
+% Procedimientos Polimórficos ( Variables de Tipo / Tamaños Dinámicos / Instancia )
+
+% Funciones Polimórficas ( Variables de Tipo / Tamaños Dinámicos / Instancia )
+
+\section{Polimorfismo \textit{Ad Hoc}}
+
+El lenguaje admite un polimorfismo \textit{ad hoc} básico.
+Similar a \Haskell, se definen una serie de clases las cuales pueden ser pensadas como una especie de interfaz que caracteriza algún comportamiento.
+Un tipo es una instancia de una clase, cuando soporta e implementa el comportamiento que la clase describe.
+Inicialmente el lenguaje solo soporta dos clases \lstinline[style = lang]{Eq} y \lstinline[style = lang]{Ord}, las cuales caracterizan el comportamiento esperado.
+
+La clase \lstinline[style = lang]{Eq} representa a los tipos que pueden ser comparados de acuerdo a su igualdad, y las operaciones que soporta comprenden \lstinline[style = lang]{==} y \lstinline[style = lang]{!=}.
+La clase \lstinline[style = lang]{Ord} representa a los tipos que pueden ser comparados de acuerdo a su orden, y las operaciones que soporta comprenden \lstinline[style = lang]{<}, \lstinline[style = lang]{>}, entre otras.
+Notar que las operaciones comparativas presentadas toman expresiones del mismo tipo, y devuelven un valor booleano.
+
+El polimorfismo paramétrico que admite una función, o un procedimiento, puede ser refinado empleando estos conceptos.
+En la declaración de las construcciones mencionadas, es posible especificar una serie de clases que estarán asociadas a una determinada variable de tipo introducida en el correspondiente prototipo.
+En la llamada de la función o el procedimiento, el tipo que adoptará la respectiva variable deberá satisfacer todas las clases a la cual está asociada.
+De esta manera se obtiene una forma restringida de polimorfismo, donde se establece de forma explícita la familia de tipos que admite la implementación actual.
+
+\begin{lstlisting}[ style = lang ]
+fun pertenece ( e : T, a : array [n] of T ) ret b : bool
+where (T : Eq)
+  var i : int
+  i := 0
+  b := false
+  while !b && i < n do
+    b := a[i] == e
+    i := i + 1
+  od
+end fun
+\end{lstlisting}
+
+Mediante la palabra clave \lstinline[style = lang]{where}, es posible precisar todas las clases que una determinada variable de tipo debe satisfacer en el cuerpo.
+La función \lstinline[style = lang]{pertenece} responde si un determinado elemento \lstinline[style = lang]{e} ocurre en una arreglo particular \lstinline[style = lang]{a}.
+Debido que es necesario comparar los valores del arreglo con el valor del elemento, se requiere que el tipo en cuestión sea instancia de la clase \lstinline[style = lang]{Eq}.
+El procedimiento \lstinline[style = lang]{selectionSort} ordena un arreglo determinado \lstinline[style = lang]{a}.
+Debido que se necesitan comparar los valores del arreglo de acuerdo a su orden, se requiere que el tipo en cuestión sea instancia de la clase \lstinline[style = lang]{Ord}.
+
+\begin{lstlisting}[ style = lang ]
+proc selectionSort ( in/out a : array [n] of T )
+where (T : Ord)
+  var minPos : int
+  for i := 0 to n - 1 do
+    minPos := i
+    for j := i + 1 to n - 1 do
+      if a[j] < a[minPos] then minPos := j fi
+    od
+    swap(a, i, minPos)
+  od
+end proc
+\end{lstlisting}
+
+Al realizar una llamada a una función o un procedimiento, donde se especifican restricciones de clases para los tipos de sus parámetros, es necesario asegurar que los correspondientes tipos de los argumentos sean instancias de las clases.
+En el ejemplo, asumiendo cierta inicialización del arreglo \lstinline[style = lang]{a} se invoca al procedimiento \lstinline[style = lang]{selectionSort} para ordenarlo.
+En esta situación, la variable de tipo \lstinline[style = lang]{T} en la declaración, adopta el tipo \lstinline[style = lang]{int} de la llamada.
+Debido que los enteros son instancias de la clase \lstinline[style = lang]{Ord}, es posible aplicar el procedimiento mencionado.
+
+\begin{lstlisting}[ style = lang ]
+var a : array [10] of int
+{ inicializacion del arreglo }
+selectionSort(a)
+\end{lstlisting}
+
+Es fundamental mencionar que los tipos del lenguaje satisfacen determinadas clases de acuerdo a una serie de propiedades particulares.
+Debido que aún no se ha definido un mecanismo concluyente para implementar instancias para los tipos definidos por el usuario, este aspecto del lenguaje resulta incompleto.
+De acuerdo a la naturaleza de un tipo, y al entorno en el que se encuentra situado, a continuación se listan las condiciones para que el mismo pueda satisfacer una determinada clase.
+\begin{itemize}
+\item
+Los tipos básicos satisfacen naturalmente ambas clases, donde las operaciones de orden y de igualdad se definen de la manera habitual.
+\item
+Un tipo puntero solo satisface la clase de equivalencia, de manera independiente del tipo del valor señalado.
+\item
+Un tipo arreglo solo satisface la clase de equivalencia, en base si el tipo de los valores almacenados es instancia de la clase.
+\item
+Un tipo enumerado satisface ambas clases, donde las operaciones se definen de acuerdo al orden de declaración de los constructores en la respectiva definición.
+\item
+Un sinónimo de tipo satisface las mismas clases que el tipo de su definición, donde las operaciones se implementan de manera idéntica al tipo mencionado.
+\item
+Un tipo tupla satisface una clase siempre y cuando se encuentre implementada la instancia apropiada, lo cual implica que momentáneamente no satisfacen ninguna clase.
+\end{itemize}
+
+% En un futuro desarrollo del lenguaje, será posible declarar instancias para los tipos definidos por el usuario.
+
+% Clases / TypeClasses
+% Operadores de Orden e Igualdad
+% Restricciones de Clase
+% Llamada con Restricciones
+% Instancias
+
+\section{Memoria Dinámica}
+
+Uno de los conceptos fundamentales del lenguaje, es el manejo de la memoria dinámica.
+A través de punteros \lstinline[style = lang]{pointer} es posible reservar, manipular, y liberar memoria a lo largo de la ejecución de un programa.
+Se utilizan para representar el lugar en memoria donde se aloja un elemento de cierto tipo.
+Para declarar una variable de tipo puntero, solo se debe precisar el tipo de valores que señalará.
+
+\begin{lstlisting}[ style = lang ]
+var p : pointer of int
+alloc(p)
+#p := 5
+free(p)
+\end{lstlisting}
+
+En el ejemplo se presentan varios conceptos, los cuales pasaremos a describir.
+La variable \lstinline[style = lang]{p} es declarada como un puntero de números enteros, por lo que la clase de valores que almacenará serán direcciones de memoria donde se alojarán enteros.
+El procedimiento especial \lstinline[style = lang]{alloc} toma una variable de tipo puntero, y reserva un nuevo bloque de memoria donde se pueda almacenar un elemento del tipo señalado por la variable, asignando la respectiva dirección al puntero.
+El operador \lstinline[style = lang]{#} permite acceder al valor del bloque de memoria apuntado por el puntero, claramente la dirección señalada debe ser válida para aplicar el operador correctamente.
+En el ejemplo, se almacena el valor entero \lstinline[style = lang]{5} en la memoria reservada.
+El procedimiento especial \lstinline[style = lang]{free} toma una variable de tipo puntero, y libera el bloque de memoria señalado por la variable.
+De esta manera, en el ejemplo se libera la memoria reservada donde se almacenaba la constante \lstinline[style = lang]{5}.
+
+\begin{lstlisting}[ style = lang ]
+var p : pointer of persona
+alloc(p)
+p->inicial := 'F'
+p->edad := 30
+p->peso := 70.5
+p := null { Memoria Perdida }
+\end{lstlisting}
+
+En el ejemplo se presentan otros conceptos relevantes.
+La variable \lstinline[style = lang]{p} es declarada como un puntero a \lstinline[style = lang]{persona}, el cual es un tipo tupla definido previamente.
+El operador \lstinline[style = lang]{->} es una notación conveniente para acceder a los campos de la tupla señalada por el puntero.
+Lo cual permite especificar \lstinline[style = lang]{p->inicial} en lugar de \lstinline[style = lang]{#p.inicial}, evitando tener que utilizar ambos operadores de acceso a \lstinline[style = lang]{#} punteros y \lstinline[style = lang]{.} tuplas.
+La constante polimórfica \lstinline[style = lang]{null} representa un puntero que no apunta a ninguna dirección de memoria.
+Es utilizada para indicar que un puntero no debe ser accedido, ya que no referencia ninguna posición en memoria.
+Es fundamental notar que al realizar la última asignación en el ejemplo, se pierde la referencia de la tupla reservada por lo que ya no es posible liberar el bloque de memoria.
+El lenguaje no posee \textit{garbage collector}, lo cual implica que es responsabilidad del programador liberar toda la memoria dinámicamente reservada.
+
+\begin{lstlisting}[ style = lang ]
+type node of (T) = tuple
+                   elem : T,
+                   next : pointer of node of (T)
+                   end tuple
+                   
+type list of (T) = pointer of node of (T)
+\end{lstlisting}
+
+Una propiedad fundamental de los punteros, es la capacidad de definir tipos recursivos mediante su uso.
+En el lenguaje, la declaración de tipos recursivos es lo suficientemente restrictiva como para solo permitir una posibilidad.
+Al definir una tupla, es posible especificar campos cuyos tipos sean un puntero a la misma estructura siendo definida.
+En el ejemplo se declara una \textit{lista enlazada} denominada \lstinline[style = lang]{list}, la cual se compone de una sucesión de nodos \lstinline[style = lang]{node} que se integran por los campos \lstinline[style = lang]{elem} de cierto tipo \lstinline[style = lang]{T}, y \lstinline[style = lang]{next} el cual referencia al siguiente nodo.
+Notar que el orden de declaración de tipos es importante, donde un tipo debe ser definido antes de su uso.
+
+\begin{lstlisting}[ style = lang ]
+proc empty ( out l : list of (T) )
+  l := null
+end proc
+
+proc addL ( in e : T, in/out l : list of (T) )
+  var p : pointer of node of (T)
+  alloc(p)
+  p->elem := e
+  p->next := l
+  l := p
+end proc
+\end{lstlisting}
+
+En el ejemplo se definen los procedimientos apropiados para construir valores del tipo declarado.
+El procedimiento \lstinline[style = lang]{empty} inicializa una lista vacía.
+Notar que la constante \lstinline[style = lang]{null} representa una lista que no señala ninguna posición de memoria.
+El procedimiento \lstinline[style = lang]{addL} agrega un elemento al principio de la lista.
+Se reserva memoria para un nuevo nodo, se inicializan los valores de sus campos, y se modifica la lista para que señale al nuevo elemento.
+Notar que la variable \lstinline[style = lang]{p} y el parámetro \lstinline[style = lang]{l} poseen tipos equivalentes, por lo que es posible realizar una asignación de sus valores.
+Es importante mencionar que al manipular punteros se presenta el problema del \textit{aliasing}, donde puede existir más de una manera distinta para acceder al mismo objeto en memoria.
+Programar correctamente en presencia de \textit{aliasing} es delicado y requiere gran atención.
+
+% Punteros (Operadores * ->, Procedimientos alloc free)
+% Reservar / Liberar Memoria
+% Garbage Collector (NO)
+% NULL
+% Recursión con Punteros
+% Aliasing
+
+\iffalse
+% Estructura de Capítulo
+* Intro: Delta² es un lenguaje estructurado con tipado fuerte, con polimorfismo paramétrico y una versión básica de polimorfismo adhoc. 
+* Tipos nativos: Numéricos, bool, arrays...
+* Definición de nuevos tipos.
+* Funciones y procedimientos.
+* Polimorfismo paramétrico.
+* Polimorfismo adhoc.
+* Memoria dinámica.
+% Resumen de Telegram
+1. Introducción.
+Fundamentación del trabajo. Conceptos enseñados en Algo2. Ejemplos de pseudocódigo. Características implícitas del lenguaje.
+Organización de la tesis.
+2. DDlang
+Presentación del lenguaje. Debería estar escrito tipo tutorial.
+% Ideas en Telegram
+entonces lo que tendríamos que tratar de tener es como si fuera un tutorial para que una persona que sabe programar en imperativo, pueda aprender este lenguaje
+y acá partimos de la idea ponele de alguien que ya programa en C
+% Ejemplos para Subtipado
+% OK
+a : int
+b : float
+a := 2
+b := a + 0.5
+% KO
+a : int
+b : float
+b := 2.0
+a := b + 1
+% Trabajos Futuros
+- Natural como un Tipo de Dato
+- Indices de Arreglos Enumerados
+\fi
+% Subtipado: No debería ser posible aplicar las reglas de subtipado a una variable que será asignada!
