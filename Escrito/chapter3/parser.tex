@@ -1,23 +1,24 @@
 % Parser
 \section{Implementación del Parser}
 
-Ya nos encontramos en condiciones para describir los detalles principales sobre el desarrollo del parser para \Lenguaje{}.
-Haremos mención de las decisiones más relevantes tomadas durante la implementación del mismo, las dificultades encontradas en el camino, y algunas limitaciones que debimos resolver.
+Habiendo presentado de manera informal la sintaxis concreta y definido de manera formal la sintaxis abstracta, estamos en condiciones para describir los detalles principales sobre el desarrollo del parser para \Lenguaje{}.
+Haremos mención de las decisiones más relevantes tomadas durante su implementación, las dificultades encontradas en el camino, y algunas limitaciones que debieron ser resueltas.
 
 \subsection{Librerías}
 
-Inicialmente, se comenzó utilizando la librería \Parsec{}~\cite{Parsec}.
-Esta decisión se tomó debido que algunos de nosotros ya estábamos familiarizados con su uso por proyectos anteriores.
+Inicialmente se comenzó utilizando la librería \Parsec{}~\cite{Parsec}.
+La decisión se tomó debido que algunos de nosotros ya estábamos familiarizados con su uso por proyectos anteriores.
 Más adelante, en las etapas finales del desarrollo del parser, se decidió migrar el código a \Megaparsec{}~\cite{Megaparsec}.
-Esta transición fue justificada por las limitaciones que presentaba la primera opción frente a la segunda, que además de solucionar algunas de las dificultades de la implementación de forma sencilla, ofrece un rango de funcionalidades más diverso que puede beneficiar al desarrollo futuro del intérprete.
+La transición fue justificada por las limitaciones que presentaba la primera opción frente a la segunda, que además de solucionar algunas de las dificultades de la implementación de forma sencilla, ofrece un rango de funcionalidades más diverso que puede beneficiar al desarrollo futuro del intérprete.
 
 \subsubsection{Parsec}
 
 \Parsec{} es una librería para el diseño de un parser monádico, implementada en \Haskell{}, y escrita por \textit{Daan Leijen}.
 Es simple, segura, rápida, y posee buena documentación.
 Para la etapa inicial de desarrollo, resultó ser una herramienta intuitiva y fácil de manejar.
-A pesar de esto, para este proyecto en particular, la misma no ofrecía la suficiente flexibilidad y funcionalidad que buscábamos.
-La totalidad del parser (al menos en esta primera versión del intérprete) fue implementada usando esta librería.
+A pesar de sus cualidades, para este proyecto en particular, la librería no ofrecía la suficiente flexibilidad y funcionalidad que buscábamos.
+Una primera versión completa del parser fue desarrollada utilizando esta librería.
+%La totalidad del parser (al menos en esta primera versión del intérprete) fue implementada usando la librería mencionada.
 
 \subsubsection{Megaparsec}
 
@@ -26,46 +27,53 @@ Partiendo de las bases definidas por esta última, la librería busca ofrecer ma
 La herramienta resulta familiar para todo el que tenga ciertos conocimientos básicos sobre \Parsec{}.
 La transición de librerías se vio aliviada por esta característica, debido a la semejanza entre ambas.
 
-\subsubsection{Comparación}
+\subsubsection{Breve Comparación}
 
-Como mencionamos previamente, debido que \Parsec{} no resultó ser la herramienta ideal para el desarrollo de nuestro intérprete, se decidió comenzar a utilizar \Megaparsec{}.
+Como mencionamos previamente, debido que \Parsec{} no resultó ser la herramienta ideal para el desarrollo de nuestro parser, se decidió comenzar a utilizar \Megaparsec{}.
 Las razones puntuales que nos llevaron a tomar esta decisión se listan a continuación.
 \begin{itemize}
     \item \underline{Análisis Léxico:}
     Ambas librerías implementan un mecanismo sencillo para definir un \textit{analizador léxico}, dentro del mismo parser.
-    De esta forma, se simplifica el diseño del intérprete al unificar estas dos fases fuertemente acopladas.
+    De esta forma, se simplifica el diseño del parser al unificar estas dos fases fuertemente acopladas.
     La diferencia entre ambas, radica en el hecho que \Parsec{} es demasiado inflexible en este aspecto.
     Para ciertas cuestiones, se tuvo que redefinir gran parte de la implementación de la librería para poder acomodarla a nuestras necesidades.
     En cambio, \Megaparsec{} no impone ninguna estructura sobre el \textit{analizador léxico}, y solo provee funcionalidades básicas elementales para su definición.
     \item \underline{Mensajes de Error:}
-    La generación de mensajes de error en el análisis sintáctico (al igual que en el análisis semántico) es una tarea sumamente importante para el intérprete.
+    La generación de mensajes de error en el análisis sintáctico (al igual que para los chequeos estáticos) es una tarea sumamente importante. % para el intérprete.
     La primera herramienta utilizada, ofrecía una forma simple y concisa para el informe de errores.
     En la misma, se podían especificar cuales eran los \textit{tokens} esperados (o inesperados) por el parser al momento de fallar, junto con el mensaje informativo asociado a esta.
     A pesar de esto, la segunda opción presenta una generación de errores mucho más desarrollada.
-    Además de conservar las funcionalidades previas, se pueden configurar nuevas clases de errores junto con la forma que los mensajes de error son presentados al usuario.
+    Además de conservar las funcionalidades previas, se pueden configurar nuevas clases de errores junto con la forma que los mensajes de error son presentados. % al usuario.
     \item \underline{Desarrollo Futuro:}
-    Una vez que el desarrollo del intérprete se encuentre lo suficientemente avanzado, será necesario volver a esta etapa y adecuarla a las nuevas necesidades que hayan surgido en el camino.
+    Una vez que el desarrollo del parser se encuentre lo suficientemente avanzado, será necesario volver a esta etapa y adecuarla a las nuevas necesidades que hayan surgido en el camino.
     En este aspecto, \Megaparsec{} ofrece una serie de funcionalidades adicionales que no se encuentran en \Parsec{}.
-    Una de ellas es el soporte para múltiples errores, junto con la capacidad de atrapar errores, lo que permite un control mucho más amplio sobre la información que recibe el usuario al analizar su código.
+    Una de ellas es el soporte para múltiples errores, junto con la capacidad de atrapar errores, lo que permite un control mucho más amplio sobre la información que recibe el usuario al analizar su código; las cuales se logran gracias a la recuperación de errores de parseo.
     También existe la posibilidad de agregar casos de test para aumentar la certeza que el funcionamiento del parser implementado es correcto.
     Una última característica que puede resultar útil en un futuro, es el parseo \textit{sensible a la indentación} que ofrece la librería.
 \end{itemize}
 
 \subsection{Información de Posición}
 
-Una tarea fundamental que debe realizar cualquier compilador, o en nuestro caso intérprete, es informar al usuario sobre los errores sintácticos o semánticos que se hayan detectado durante el análisis y procesamiento de su programa.
-Debido a esto, la generación de mensajes de error informativos y precisos es una cualidad deseada en esta clase de herramientas, ya que facilitan la corrección de los mismos por parte del programador.
-Una propiedad que se puede deducir de lo anterior, es que para que un mensaje de error sea adecuado es fundamental que el mismo pueda indicar puntualmente \textit{donde} ocurre este error en el programa.
+Una de las tareas importantes que debe realizar el parser es la generación de mensajes de error informativos y precisos con el fin de facilitar su corrección. Es fundamental entonces poder indicar exactamente  \textit{donde} ocurre el error en el programa.
+Cuando se produce un error durante la etapa de parseo, la librería \Megaparsec{} ya incorpora un buen mecanismo para señalar la posición en donde se ha encontrado la falla.
+De todas maneras la implementación de los chequeos estáticos del lenguaje, que presentaremos en el siguiente capítulo, también debe poder informar de forma precisa los errores producidos ahora en esta etapa.
+Para solucionar esto, se implemento la sintaxis abstracta utilizando un método similar al empleado por el compilador de \Haskell{}~\cite{marlow2010haskell}, \texttt{GHC}~\cite{GHC}.
+Informalmente la estrategia es encapsular a toda construcción sintáctica que consideremos relevante para la generación de errores con la información de su posición correspondiente en el programa.
 
-En este ciclo inicial de desarrollo del intérprete, tanto la fase de \textit{análisis sintáctico} como la de \textit{análisis semántico} podrán encontrar fallas en el código, y deberán informar sobre el problema detectado al usuario.
-Para la primer etapa, cuando se produce un error durante el parsing de algún elemento sintáctico, la librería \Megaparsec{} ya incorpora un mecanismo para señalar la posición en el archivo donde se ha encontrado la falla.
-Haciendo uso de la misma, conseguimos tener una generación de mensajes de error claros para la fase de \textit{análisis sintáctico}.
-Cuando avanzamos a etapas posteriores en el intérprete, necesitamos alguna forma de poder vincular las fallas detectadas durante las mismas con la ubicación en el archivo involucrado en el error.
+%Una tarea fundamental que debe realizar cualquier compilador, o en nuestro caso intérprete, es informar al usuario sobre los errores sintácticos o semánticos que se hayan detectado durante la etapa de parseo o de chequeos del programa
+%Debido a esto, la generación de mensajes de error informativos y precisos es una cualidad deseada en esta clase de herramientas, ya que facilitan la corrección de los mismos por parte del programador.
+%Una propiedad que se puede deducir de lo anterior, es para que un mensaje de error sea adecuado es fundamental que el mismo pueda indicar puntualmente \textit{donde} ocurre este error en el programa.
 
-Para solucionar este problema, se adaptó la sintaxis de una forma similar a como lo hace el compilador de \Haskell{}, \texttt{GHC}~\cite{GHC}.
-Con esto nos referimos a que todo elemento sintáctico del lenguaje el cual puede ser relevante en la generación de errores, es envuelto con la información de posición correspondiente a su ocurrencia en el código.
-De esta forma, se definió en el módulo \lstinline[style = module]{Syntax.Located}, el siguiente \textit{datatype}~(\ref{Located}).
-Recordar que en esta primera versión del intérprete solo trabajamos con programas definidos en un único módulo, por lo que almacenar solamente las líneas y columnas de inicio y fin de un determinado elemento, es suficiente para generar un mensaje de error preciso.
+%En este ciclo inicial de desarrollo del intérprete, tanto la fase de \textit{análisis sintáctico} como la de \textit{análisis semántico} podrán encontrar fallas en el código, y deberán informar sobre el problema detectado al usuario.
+%Para la primer etapa, cuando se produce un error durante el parseo de algún elemento sintáctico, la librería \Megaparsec{} ya incorpora un mecanismo para señalar la posición en el archivo donde se ha encontrado la falla.
+%Haciendo uso de la misma, conseguimos tener una generación de mensajes de error claros para la fase de \textit{análisis sintáctico}.
+%Cuando avanzamos a etapas posteriores en el intérprete, necesitamos alguna forma de poder vincular las fallas detectadas durante las mismas con la ubicación en el archivo involucrado en el error.
+
+%Para solucionar este problema, se adaptó la sintaxis de una forma similar a como lo hace el compilador de \Haskell{}, \texttt{GHC}~\cite{GHC}.
+%Con esto nos referimos a que todo elemento sintáctico del lenguaje el cual puede ser relevante en la generación de errores, es envuelto con la información de posición correspondiente a su ocurrencia en el código.
+El módulo \lstinline[style = module]{Syntax.Located} define el \textit{tipo de dato} \lstinline[style = haskell]{Located} que almacena las líneas y columnas de inicio y fin de un determinado elemento, junto con el elemento; actualmente el lenguaje no posee un sistema de módulos por lo que la información de lineas y columnas basta, ya que nunca se parsea ni chequea estáticamente más de un archivo.
+%De esta forma, se definió en el módulo \lstinline[style = module]{Syntax.Located}, el siguiente \textit{tipo de dato}~(\ref{Located}).
+%Recordar que en esta primera versión del intérprete solo trabajamos con programas definidos en un único módulo, por lo que almacenar solamente las líneas y columnas de inicio y fin de un determinado elemento, es suficiente para generar un mensaje de error preciso.
 
 \begin{lstlisting}[ style = haskell, caption = Información de Posición en Parser, label = Located ]
 -- Parsing Information
@@ -81,11 +89,16 @@ data Info = I { sLin :: Line
               }
 \end{lstlisting}
 
-A medida que avanza el parser en el análisis de un archivo, cuando se obtiene un elemento sintáctico (por ejemplo, una expresión), se encapsula el mismo con la información de su posición y se almacena en el \textit{árbol de sintaxis abstracta} que se genera como representación intermedia del código.
-Siendo un poco más puntuales, podemos ver el ejemplo de las expresiones del lenguaje.
-En \lstinline[style = module]{Syntax.Expr} se especifican las mismas de la siguiente forma~(\ref{Expr}).
-Con esta definición, podemos almacenar tanto la posición de una expresión particular como todas las de sus subexpresiones.
-Esto tiene como ventaja que en el caso de encontrarse una falla (por ejemplo, un error de tipos) en el código, se puede exhibir toda la \textit{traza} de análisis junto con sus posiciones correspondientes. 
+A medida que avanza el parser, inmediatamente después de parsear algún elemento, este se encapsula con la información de su posición.
+Por ejemplo, en la implementación de \lstinline[style = module]{Syntax.Expr} para las expresiones del lenguaje podemos almacenar tanto la posición de una expresión particular como todas las de sus subexpresiones.
+Esto tiene como ventaja que en el caso de encontrarse una falla (por ejemplo, un error de tipos) se puede exhibir toda la \textit{traza} de parseo junto con sus posiciones correspondientes.
+Notar que en la definición del tipo \lstinline[style = haskell]{Expr} no existen subexpresiones con este mismo tipo, sino que en su lugar tienen tipo \lstinline[style = haskell]{LExpr}, es decir expresiones encapsuladas con la información sobre su posición.
+Por lo general todo nombre de tipo prefijado con {\ttfamily \color{Cyan} L} significará que este está encapsulado.
+
+%A medida que avanza el parser en el análisis de un archivo, cuando se obtiene un elemento sintáctico (por ejemplo, una expresión), se encapsula el mismo con la información de su posición y se almacena en el \textit{árbol de sintaxis abstracta} que se genera como representación intermedia del código.
+%Siendo un poco más puntuales, podemos ver el ejemplo de las expresiones del lenguaje.
+%En \lstinline[style = module]{Syntax.Expr} se especifican de la siguiente forma~(\ref{Expr}).
+%Con esta definición, podemos almacenar tanto la posición de una expresión particular como todas las de sus subexpresiones.
 
 \begin{lstlisting} [ style = haskell, caption = Expresiones del Lenguaje, label = Expr ]
 -- Expressions
@@ -104,11 +117,11 @@ A continuación, describiremos brevemente los distintos módulos en los que se d
 Mencionaremos los detalles más relevantes de cada uno de estos elementos, junto con el propósito de los mismos.
 
 En \lstinline[style = module]{Parser.Position} se proveen todas las funcionalidades necesarias para poder calcular la ubicación en el archivo del elemento que se intenta parsear.
-Es utilizado en la mayoría de los módulos para el \textit{análisis sintáctico} del intérprete.
+%Es utilizado en la mayoría de los módulos para el \textit{análisis sintáctico} del intérprete.
 Como mencionamos previamente, esta tarea es fundamental para luego poder dar mensajes de errores precisos e informativos al usuario.
 Haciendo uso de la función \lstinline[style = haskell]{getSourcePos}, provista por la librería, podemos extraer la posición actual del parser y luego, ligarla con el elemento sintáctico correspondiente.
 
-El módulo \lstinline[style = module]{Parser.Lexer} es uno de los más importantes del código.
+El módulo \lstinline[style = module]{Parser.Lexer} es uno de los más importantes. % del código.
 Comprende la totalidad del \textit{analizador léxico} del lenguaje.
 En el mismo, se implementan funciones para parsear todas las clases de identificadores, los valores constantes (como los numéricos, por ejemplo), y las \textit{palabras claves} y operadores de \Lenguaje{}.
 Inicialmente, cuando se utilizaba la librería \Parsec{}, se tuvo que redefinir la mayoría de las funciones que implementaba debido que las mismas consumían automáticamente todos los \textit{whitespaces} (espacios en blanco, comentarios, saltos de línea, etc.) al parsear un elemento.
@@ -119,7 +132,7 @@ En \lstinline[style = module]{Parser.Expr} se parsean las diversas expresiones d
 Una particularidad interesante de este módulo, es el uso de la función \lstinline[style = haskell]{makeExprParser}.
 Dado un parser de términos, que serían los elementos básicos que conforman una expresión, y una tabla de operadores, donde se debe especificar la asociatividad y precedencia de cada uno, la función construye un parser para expresiones basado en los mismos.
 En nuestro caso, se hizo uso de este mecanismo para las expresiones y las variables del lenguaje.
-Para el primero, su implementación es directa debido que es una situación estándar.
+Para el primero, su implementación es directa debido que es una situación usual. %estándar.
 En cambio, para el segundo, se tuvo que interpretar a las distintas operaciones para el acceso de variables como operadores de expresiones para poder aprovechar la función especificada en la librería.
 
 El módulo \lstinline[style = module]{Parser.Statement} se encarga de obtener las sentencias especificadas en el código.
@@ -129,15 +142,15 @@ Otra particularidad, es la forma de obtener la ubicación para la asignación.
 Debido que esta es la única sentencia que no posee un delimitador final, calcular su posición no es una tarea inmediata.
 
 En \lstinline[style = module]{Parser.Decl} se parsean todas las declaraciones del lenguaje.
-Esto involucra diversas construcciones de distinto índole.
-Se obtienen las definiciones de tipo, los cuales abarcan a las tuplas, los sinónimos y las enumeraciones.
-También se especifican las declaraciones de instancias de clases para los mismos.
-Además, se parsean las definiciones de funciones y procedimientos, junto con todos los elementos que las conforman, como sus argumentos y restricciones.
+%Esto involucra diversas construcciones de distinto índole.
+Se tienen las definiciones de tipo, los cuales abarcan a las tuplas, los sinónimos y las enumeraciones.
+%También se especifican las declaraciones de instancias de clases para los mismos.
+Además, se parsean las definiciones de funciones y procedimientos, junto con todos los elementos que las conforman, como sus parámetros y restricciones.
 
-Los últimos archivos no presentan ninguna complejidad adicional.
-El módulo \lstinline[style = module]{Parser.Type} obtiene los distintos tipos admitidos en el lenguaje.
+%Los últimos archivos no presentan ninguna complejidad adicional.
+El módulo \lstinline[style = module]{Parser.Type} implementa los distintos tipos definidos en el lenguaje.
 En \lstinline[style = module]{Parser.Class} se parsean todas las clases predefinidas en el mismo.
-Y finalmente, \lstinline[style = module]{Parser.Program} acepta los programas, sintácticamente válidos, de \Lenguaje{}.
+Y finalmente, \lstinline[style = module]{Parser.Program} se implementa el parser de programas.
 
 %Diferencias entre Librerías
 \iffalse
