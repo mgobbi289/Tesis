@@ -58,7 +58,7 @@
   % Tipos
   keywords      = [2]{ int, real, bool, char, array, pointer, of },
   % Palabras Claves
-  keywords      = [3]{ var, proc, in, out, fun, end, ret, if, then, elif, else, fi, while, for, to, downto, do, od, type, tuple, inst, where },
+  keywords      = [3]{ var, proc, in, out, fun, end, ret, if, then, elif, else, fi, while, for, to, downto, do, od, type, tuple, enumerate, inst, where },
   % Constantes
   keywords      = [4]{ true, false, inf, null },
   % Sentencias
@@ -85,6 +85,39 @@
   numberstyle   = {\tiny \color{Gray}},
 }
 
+% Lenguaje: PseudoLang
+\lstdefinelanguage{Pseudo}
+{
+  % Operadores
+  otherkeywords = { div, mod, :, :=, =, (, ), +, -, *, /, \%, !, &&, ||, ==, !=, <, >, <=, >=, ., \#, \[, \], \, },
+  morekeywords  = [1]{ div, mod, :, :=, =, (, ), +, -, *, /, \%, !, &&, ||, ==, !=, <, >, <=, >=, ., \#, \[, \], \, },
+  % Tipos
+  keywords      = [2]{ nat, int, real, bool, char, array, pointer, of },
+  % Palabras Claves
+  keywords      = [3]{ var, proc, in, out, fun, end, ret, if, then, elif, else, fi, while, for, to, downto, do, od },
+  % Constantes
+  keywords      = [4]{ true, false, inf, null },
+  % Sentencias
+  keywords      = [5]{ alloc, free, skip },
+  % Colores
+  basicstyle    = {\ttfamily \color{Black}},
+  keywordstyle  = [1]{\color{RoyalBlue}},
+  keywordstyle  = [2]{\color{ForestGreen}},
+  keywordstyle  = [3]{\color{BurntOrange}},
+  keywordstyle  = [4]{\color{Maroon}},
+  keywordstyle  = [5]{\color{Purple}},
+  % Comentarios
+  morecomment   = [s]{\{}{\}},
+  commentstyle  = {\itshape \color{OliveGreen}},
+  % Matemática
+  mathescape    = true,
+  escapechar    = \#,
+  % Otros
+  captionpos    = b,
+  numbers       = left,
+  numberstyle   = {\tiny \color{Gray}},
+}
+
 % Estilo: Sintaxis
 \lstdefinestyle{syntax}{language = Syntax}
 
@@ -94,5 +127,11 @@
 % Estilo: DeltaLang
 \lstdefinestyle{lang}{language = Lang}
 
+% Estilo: PseudoLang
+\lstdefinestyle{pseudo}{language = Pseudo}
+
 % Estilo: Módulo
 \lstdefinestyle{module}{ basicstyle = {\ttfamily \color{Orange}} }
+
+% Fix Caption
+\renewcommand \lstlistingname{Código}

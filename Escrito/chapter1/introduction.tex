@@ -1,4 +1,303 @@
 % Introducción
+
+% Estructura
+\iffalse
+* Un párrafo inicial donde contas a grandes rasgos el laburo. No tiene que ser para nada largo, dos oraciones alcanza y si hace falta agregamos otra.
+
+* Motivación: contar que esta tesis es parte de un trabajo más grande que surge a partir de la experiencia en Algoritmos 2, donde se utiliza un lenguaje imperativo poco definido para enseñar los conceptos. Contar un poco de ese lenguaje, que es tipo Pascal, contar qué características tiene, qué partes están poco especificadas en la materia, contar los conceptos que se enseñan, etcétera...
+
+* Sintaxis y chequeos estáticos: esta sección debería ser resumen de bibliografía. Leer Dragón y Reynolds y ver qué ponemos de ahí. La idea sería no mandar fruta y simplemente resumir que vamos a entender en general por sintaxis abstracta y concreta, al igual que chequeos estáticos en esta tesis.
+
+%
+A continuación introduciremos algunos conceptos generales que aparecen en el estudio y definición de cualquier lenguaje de programación, y por lo tanto en esta tesis. Particularmente nos enfocamos en la sintaxis concreta, abstracta y chequeos estáticos (no sé si me olvido algo)
+- Sintaxis concreta, seguro podemos chorear del libro del dragon. La idea sería dar la definición.
+- Sintaxis abstracta, acá la sección 1.1 del Reynolds seguro nos sirve para tener una mejor idea.
+- Chequeos estáticos, acá pareciera que podemos usar alguito del cap15 del Reynolds y 1.2.3 del libro del dragon.
+%
+
+* Organización de la tesis: simplemente contar qué va a haber en cada uno de los capítulos siguientes.
+\fi
+
+En el siguiente proyecto desarrollaremos la semántica estática de un lenguaje de programación inspirado en el pseudocódigo utilizado por la materia \Materia{}.
+A diferencia de la mayoría de los lenguajes de programación conocidos, en el trabajo se presenta un desarrollo formal del lenguaje previo a su implementación.
+Se acompañará el avance del proyecto con el diseño de un intérprete adecuado.
+En el escrito nos concentraremos principalmente en el estudio teórico del lenguaje, donde solo se comentarán algunos detalles sobre su implementación.
+% IDEA: Partiendo de un estudio teórico de sus propiedades, se dará una definición formal del mismo que luego tendrá como resultado su implementación.
+% IDEA: Con el avance del proyecto, se acompañará al desarrollo con el diseño de un intérprete adecuado.
+
+\section{Motivación}
+
+En la materia \Materia{}, de \Facultad{}, se utiliza desde hace años un pseudocódigo para la enseñanza de conceptos tales como análisis de algoritmos, definición de tipos abstractos de datos, o la comprensión de distintas técnicas de programación.
+Este pseudocódigo está inspirado en el lenguaje imperativo \Pascal{}, diseñado por \textit{Niklaus Wirth} cerca de 1970~\cite{Pascal}, al cual se le han ido realizando modificaciones de acuerdo a las necesidades didácticas de la materia.
+Algunas características que se han mantenido comprenden la sintaxis verbosa, el tipado fuerte para expresiones, y el formato estructurado del código.
+% ... lenguaje Pascal [contás más características, por ejemplo como que es imperativo], al cual ...
+Haciendo un análisis exhaustivo de las clases y los ejemplos en los que se utiliza el lenguaje en la materia, observamos que su definición aún no está completamente clara, y que el grado de precisión con el que se presentan los programas varía entre unas presentaciones y otras.
+
+\begin{lstlisting}[ style = pseudo, caption = Permutación de Valores, label = pseudoSwap ]
+{ PRE: 1 <= i, j <= n }
+proc swap ( in / out a : array [1..n] of T, in i, j : nat )
+  var temp : T
+  temp := a[i]
+  a[i] := a[j]
+  a[j] := temp
+end proc
+\end{lstlisting}
+
+Mediante los procedimientos \lstinline[style = pseudo]{swap} y \lstinline[style = pseudo]{selectionSort}, declarados en el pseudocódigo de la materia, se define un algoritmo para ordenar arreglos de menor a mayor.
+Cada uno de los pasos ha efectuar por el algoritmo es detallado con precisión, por lo que es sencillo imaginar una posible ejecución del programa dado con un arreglo \lstinline[style = pseudo]{a} cualquiera.
+La traducción del código a un lenguaje de programación imperativo, como por ejemplo \C{}, resulta ser casi directa.
+% IDEA: No hay ambigüedades, por lo que es intuitivo saber que hacer en cada caso
+
+\begin{lstlisting}[ style = pseudo, caption = Ordenación por Selección, label = pseudoSort ]
+proc selectionSort ( in/out a : array [1..n] of T )
+  var minP : nat
+  for i := 1 to n do
+    minP := i
+    for j := i + 1 to n do
+      if a[j] < a[minP] then
+        minP := j
+      fi
+    od
+    swap(a, i, minP)
+  od
+end proc
+\end{lstlisting}
+
+Con la función \lstinline[style = pseudo]{cambio} se busca resolver el \textit{problema de la moneda}, donde se intenta pagar un monto de dinero \lstinline[style = pseudo]{m} con la menor cantidad de monedas posibles cuyas denominaciones válidas se encuentran en el conjunto \lstinline[style = pseudo]{C}; el cual tiene una cantidad infinita de cada una.
+A diferencia del ejemplo previo ciertos pasos del algoritmo resultan ambiguos, donde en el pseudocódigo se permite escribir una oración en \textit{lenguaje natural} para describir la acción a realizar durante su ejecución.
+Un problema que conlleva esto para un programador no experimentado es responder a la pregunta \textit{¿Cuál es el grado de ambigüedad permitido?}
+% IDEA: Claramente en esta clase de problemas se trabaja con un grado de abstracción elevado.
+
+% FIX de comentarios!
+\begin{lstlisting}[ style = pseudo, caption = Problema de la Moneda, label = pseudoCoin, otherkeywords = { \{, \} } ]
+fun cambio ( m : $monto$, C : $Conjunto \; de \; Monedas$ )
+ret S : $Conjunto \; de \; Monedas$
+  var c, resto : $monto$
+  S := {} #\ttfamily \itshape \color{OliveGreen} \{ Inicializamos S con el conjunto vacío \}#
+  resto := m
+  while resto > 0 do
+    c := $mayor \; elemento \; de$ C
+    C := C - {c}
+    S := S $\color{RoyalBlue} \cup$ { resto div c $monedas \; de \; denominaci \acute{o} n$ c }
+    resto := resto mod c
+  od
+end fun
+\end{lstlisting}
+
+% [Acá pondría ejemplos de eso. Algunos donde el lenguaje sea bien preciso, y otros donde haya un grado de abstracción e imprecisión grande].
+
+En este trabajo nos proponemos definir con precisión un lenguaje como el que se utiliza en la materia, que permita al estudiante poder implementar y correr los algoritmos presentados en el teórico y práctico.
+Además del beneficio desde el punto de vista didáctico, la definición formal y la implementación de un lenguaje con estas características reviste interés propio.
+En el mismo se utilizan algunos conceptos avanzados de lenguajes de programación como el polimorfismo paramétrico, una variante primitiva de polimorfismo \textit{ad hoc}, el manejo de memoria dinámica mediante punteros, pasaje por valor y referencia mediante funciones y procedimientos, entre otros.
+% [Quizás se puede presentar mejor esas características interesantes del lenguaje].
+Para lograr el objetivo propuesto debemos primero definir precisamente la sintaxis del lenguaje, identificar las ambigüedades que naturalmente tiene debido al uso didáctico con el que fue creado, luego definir chequeos estáticos como el tipado, el alcance de variables, atributos sobre parámetros de funciones y procedimientos, entre otros.
+En una segunda etapa, que excede esta tesis, se definirá formalmente la semántica dinámica y un intérprete interactivo que permita ejecutar algoritmos observando el estado paso a paso.
+
+% Motivación
+\iffalse
+En la materia \Materia{}, durante varios años se ha utilizado un pseudocódigo para la enseñanza de conceptos tales como el análisis de algoritmos, la abstracción de tipos de datos, y la aplicación de diversas técnicas de programación.
+Originalmente el pseudocódigo se basó en el lenguaje imperativo \Pascal{}, diseñado por \textit{Niklaus Wirth} cerca de 1970~\cite{Pascal}.
+Algunas características básicas compartidas comprenden la sintaxis verbosa, el tipado fuerte, y el formato estructura del código.
+% IDEA: El lenguaje ha diseñar, basado en el pseudocódigo, tendrá un fin didáctico con el que se busca ofrecer otra fuente de aprendizaje para asistir al dictado de la asignatura.
+% IDEA: Los ejes principales de la materia consisten en el análisis de algoritmos, la definición de tipos abstractos de datos, y la comprensión de diversas técnicas de programación.
+
+El objetivo del pseudocódigo es poder introducir a los estudiantes a nuevos conceptos y fomentar buenas prácticas de programación.
+% Corregir:
+% + La idea era que el nivel de detalle/precisión se ajusta de acuerdo al tema que se quiere explicar
+% + Para mi la parte de pseudocódigo tiene que ver más con el escribir "oraciones en lenguaje natural" o usando matemática medio pesada
+Se utiliza para describir de forma precisa principios operacionales de los algoritmos estudiados en la materia.
+No existe ningún estándar para la sintaxis o semántica del pseudocódigo, por lo que se manifiestan ciertas ambigüedades al declarar programas con el mismo.
+% IDEA: Un programa en este lenguaje no es ejecutable, en el sentido que no puede ser traducido a una serie de instrucciones máquina.
+% IDEA: Se utiliza para describir de forma precisa principios operacionales de los algoritmos estudiados en la materia, donde típicamente se omiten detalles esenciales sobre la implementación de algoritmos para favorecer su entendimiento.
+
+% Corregir:
+% + Lo hacemos porque podemos
+El propósito final del proyecto, es poder tomar los fragmentos de pseudocódigo que se encuentran dispersos en los contenidos de la materia, y transformarlos en un lenguaje formal con una justificación teórica apropiada.
+El principal desafío para cumplir nuestra tarea, será poder resolver las ambigüedades y la falta de especificación que el pseudocódigo presenta.
+% IDEA: Con fundamentos teóricos...
+\fi
+
+% Objetivos y Programa de la Asignatura
+\iffalse
+\subsection{Objetivos de la Asignatura}
+
+Durante el desarrollo de la materia, se pretende que el alumno adquiera diversos conceptos relacionados con los temas estudiados en la asignatura.
+Algunos de los cuales son listados a continuación:
+\begin{itemize}
+    \item Capacidad para comprender y describir el problema que resuelve un algoritmo (el \textit{qué}), y diferenciarlo de la manera en que lo resuelve (el \textit{cómo}).
+    \item Capacidad para analizar algoritmos, compararlos según su eficiencia en tiempo de ejecución y en espacio de almacenamiento.
+    \item Capacidad para identificar abstracciones relevantes al abordar un problema computacional, y separar su especificación de su implementación.
+    \item Familiaridad con técnicas de diseño de algoritmos de uso frecuente, y comprensión de diversos algoritmos conocidos.
+\end{itemize}
+
+\subsection{Programa de la Asignatura}
+
+El contenido de la materia se puede dividir en tres unidades, donde en cada una se introducen conceptos que luego se reflejan en fragmentos de pseudocódigo empleados para facilitar su enseñanza.
+En el diseño del futuro lenguaje, se deberán tener en cuenta estas cuestiones para poder crear una herramienta útil para complementar el dictado de la asignatura.
+\begin{itemize}
+    \item \textbf{Análisis de Algoritmos}:
+    Se estudian distintas maneras de ordenar arreglos utilizando diversas técnicas, como \textit{ordenación por selección}, \textit{ordenación por inserción}, \textit{ordenación por intercalación}, \textit{ordenación rápida}, entra otras.
+    Se enseña al alumno a contar operaciones de un programa, introduciendo de esta manera los conceptos de \textit{orden} y \textit{jerarquía} sobre la complejidad de un algoritmo.
+    Se introducen las recurrencias \textit{divide y vencerás}, y se presentan otros algoritmos como la \textit{búsqueda lineal}, y la \textit{búsqueda binaria}.
+    \item \textbf{Estructura de Datos}:
+    Se describen los \textit{tipos concretos} como un concepto relativo a un lenguaje de programación, donde se estudian elementos como los arreglos, las listas, los registros, y los tipos enumerados; mientras que los \textit{tipos abstractos} se presentan como una idea asociada a un problema que se quiere resolver.
+    Se describe la diferencia entre su \textit{especificación}, y su \textit{implementación}, y se enseña la importancia de su elección adecuada.
+    Se examinan diseños distintos para varios de los diversos \textit{TAD's}, como el \textit{contador}, la \textit{pila}, la \textit{cola}, y el \textit{árbol}, junto con la eficiencia en tiempo y espacio de sus operaciones.
+    Se introduce el concepto de \textit{manejo dinámico de memoria} de un programa mediante el uso de punteros.
+    \item \textbf{Algoritmos Avanzados}:
+    Se presentan distintas estrategias conocidas para la resolución de problemas algorítmicos.
+    Se introduce el esquema general de los \textit{algoritmos voraces}, y se enseñan diversos algoritmos basados en esta idea como los de \textit{Dijkstra}, \textit{Prim}, y \textit{Kruskal}.
+    También se introduce al concepto de \textit{backtracking}, resolviendo los problemas de la \textit{moneda}, y la \textit{mochila}, entre otros.
+    Se estudia \textit{programación dinámica} donde se visitan problemas previos, además de ver nuevos conceptos como el algoritmo de \textit{Floyd}.
+    Un último tema que se enseña en la materia, es la recorrida de grafos, y las distintas variantes para su realización.
+\end{itemize}
+\fi
+
+\section{Conceptos}
+
+% IDEA
+\iffalse
+% Chequeos Estáticos
+son estáticos porque no hace falta tener definida una noción de evaluación para su definición
+% Sintaxis Concreta
+La sintaxis concreta define exactamente que cadenas de caracteres serán consideradas programas del lenguaje y por lo general consiste de un conjunto de reglas, también llamadas producciones, que definen la manera de declarar programas de acuerdo a una gramática libre de contexto del lenguaje.
+% Sintaxis Abstracta
+podes hacer notar que para definir la semántica estática del lenguaje no hace falta tener una "versión" tan pedante y nos alcanza con enfocarnos en lo importante, y acá presentas la sintaxis abstracta
+\fi
+
+A continuación introduciremos algunos conceptos generales que muy probablemente aparecen en el estudio y definición formal de cualquier lenguaje de programación, y por lo tanto también en este trabajo.
+Particularmente nos enfocaremos en la sintaxis, concreta y abstracta, y los chequeos estáticos.
+
+La \textbf{sintaxis concreta} define que cadenas de caracteres serán consideradas programas del lenguaje, es decir los programas que uno finalmente escribe son caracterizados por esta gramática, y por lo general consiste de un conjunto de reglas, también llamadas producciones, que definen la manera de declarar programas de acuerdo a una \textit{gramática libre de contexto} del lenguaje.
+Notar que si esta gramática define como mencionamos qué programas están correctamente escritos, entonces es porque contempla detalles precisos de la escritura de las construcciones del lenguaje como los caracteres válidos para nombrar variables, las llaves para delimitar bloques de código, o las palabras claves correspondientes para denotar determinadas construcciones.
+Por ejemplo, si consideramos el lenguaje de programación \C{} podríamos definir un pequeño fragmento de su sintaxis concreta para la declaración de funciones:
+\begin{gather*}
+\NT{concreteFun} ::= \NT{type} \; \NT{id} \; ( \; [ \; \NT{id} : \NT{type} \; ]^* \; ) \; \{ \; \NT{body} \; \}
+\end{gather*}
+
+Asumiendo tenemos definidas las gramáticas para el resto de las construcciones no terminales $\NT{type}$, $\NT{id}$, y $\NT{body}$, notar que escribir una función en \C{} consiste de escribir el tipo de retorno, su nombre seguido de los parámetros que necesariamente deben estar encerrados entre paréntesis y separados por comas, y finalmente entre llaves escribimos el cuerpo de la función.
+Por ejemplo, un fragmento de la implementación de \texttt{factorial} puede ser:
+\begin{gather*}
+\texttt{int} \; \texttt{factorial} \; ( \texttt{n} : \texttt{int} ) \; \{ \; body_{conc} \; \}
+\end{gather*}
+
+Todos estos detalles burocráticos de escritura son importantes ya que, si bien algunas veces la sobrecargan, ayudan entre otras cosas a la lectura y organización del código.
+Sin embargo, una representación más abstracta de las componentes sintácticas que definen un programa suele resultar más conveniente para el estudio formal de propiedades como el chequeo de tipos, entre otras.
+Así como también una representación interna de un programa en la implementación de un intérprete y/o compilador.
+% IDEA: Se utiliza un \textit{árbol de sintaxis concreta} para representar la derivación de un programa a través de las reglas de la respectiva sintaxis.
+% IDEA: Un intérprete toma un fragmento de texto, el cual debe respetar la definición de las reglas sintácticas, y lo convierte en una representación intermedia del programa.
+% IDEA: El proceso de transformación es llevado a cabo por las etapas de \textit{análisis léxico} y \textit{análisis sintáctico} del intérprete.
+% IDEA: Notar que si se quisiera hacer un estudio del lenguaje, utilizar su sintaxis concreta puede agregar complicaciones innecesarias.
+% IDEA: Los programas del lenguaje no son simplemente cadenas de caracteres, sino entidades abstractas representadas por cadenas de caracteres.
+% IDEA: Donde la gramática declarada solo captura detalles sobre la estructura concreta de las frases del lenguaje.
+
+La \textbf{sintaxis abstracta} define de manera independiente de cualquier representación particular a las \textit{frases abstractas} que conforman a un lenguaje.
+Definiendo una \textit{gramática abstracta} nos enfocamos solo en la información que nos resulta importante de una frase, omitiendo por lo tanto detalles de su representación específica.
+Una posible representación abstracta de las funciones de \C{} es la siguiente, donde la declaración de una función (en su versión abstracta) tendrá que tener un nombre, sus argumentos, un tipo de retorno, y el cuerpo; omitiendo por ejemplo la escritura concreta de llaves, e incluso el orden en que aparecen las componentes puede resultar irrelevante.
+Es importante aclarar que los no terminales que no poseen producciones, son definidos de manera abstracta de forma análoga a los asumidos en la sintaxis concreta.
+\begin{gather*}
+\NT{abstractFun} ::= \texttt{CFun} \; \NT{id} \; ( \NT{id}, \NT{type} )_1 \ldots ( \NT{id}, \NT{type} )_n \; \NT{type} \; \NT{body}
+\end{gather*}
+
+Finalmente dadas ambas sintaxis podemos definir una función de traducción de la sintaxis concreta a la abstracta, comúnmente llamada \textbf{parser}.
+Luego la traducción de la función \texttt{factorial} que escribimos anteriormente nos construye la siguiente versión abstracta.
+\begin{gather*}
+\texttt{CFun} \; \texttt{factorial} \; ( \texttt{n}, \texttt{int} ) \; \texttt{int} \; body_{abs}
+\end{gather*}
+% IDEA: Mediante un \textit{árbol de sintaxis abstracta} se puede derivar cualquier frase del lenguaje, donde cada nodo denota uno de los elementos que la constituyen.
+% IDEA: Los programas de un lenguaje formal no son simplemente cadenas de palabras, sino más bien entidades abstractas representadas por cadenas de palabras.
+% IDEA: La \textit{sintaxis abstracta} de un lenguaje caracteriza el conjunto de frases abstractas que pueden ser especificadas en el, permitiendo ignorar la información irrelevante sobre como representar las frases de manera concreta, y solo capturando su naturaleza.
+% IDEA: Se enfoca la atención en la información sobre la naturaleza de las frases, omitiendo detalles acerca de su representación específica como los caracteres utilizados para denotar variables y constantes, o la precedencia y asociatividad de los operadores.
+% IDEA: Una vez definida la sintaxis, es posible dar semántica al lenguaje de acuerdo a las frases construidas por ella.
+
+\iffalse
+Al estudiar un lenguaje se utiliza la sintaxis abstracta como una notación simple para representar sus frases, ignorando las complicaciones inherentes a sus respectivas estructuras.
+Notar que las gramáticas abstractas, al ser interpretadas como gramáticas libres de contexto, pueden resultar ser ambiguas.
+De todas maneras la principal utilidad de la herramienta radica en que permite abstraer los conceptos fundamentales de las construcciones del lenguaje.
+A continuación se precisa nuevamente la declaración anterior mediante la gramática presentada.
+\fi
+
+\iffalse
+% Versión Previa de Chequeos Estáticos
+Los \textbf{chequeos estáticos} utilizan el \textit{árbol de sintaxis abstracta} para verificar consistencia semántica en el programa de acuerdo a la definición del lenguaje.
+Se emplea un conjunto de \textit{reglas de tipado} para garantizar determinadas propiedades de manera estática, las cuales son independientes de la noción de evaluación del lenguaje.
+Una tarea importante del análisis es el \textit{chequeo de tipos}, donde se verifica que todo operador tenga operandos válidos.
+Además se comprueba que elementos como las variables o las constantes hayan sido declarados previo a su uso en el programa.
+% IDEA: Siendo una de las etapas de la interpretación del código, se emplea un conjunto de \textit{reglas de tipado} para garantizar determinadas propiedades de manera estática, antes de la ejecución del programa.
+\fi
+
+Claramente no cualquier cadena de caracteres conforma un programa \textit{bien escrito}, esto ocurre cuando al aplicar la función de traducción esta nos construye una frase abstracta.
+Sin embargo la construcción exitosa de la frase no significa que no existan errores; solo significa que el programa está correctamente escrito según las cadenas que caracteriza la sintaxis concreta.
+Todavía pueden existir errores como el uso de variables no declaradas, llamadas de funciones con una cantidad incorrecta de argumentos, o para el caso de lenguajes tipados, errores de tipo.
+Para capturar esta clase de errores definimos los \textbf{chequeos estáticos} que serán propiedades que le pediremos a un programa bien escrito y que podemos verificar sin ejecutarlo.
+Estos se definen sobre las frases abstractas aprovechando, como ya mencionamos, que solo cargan la información relevante de un programa concreto.
+Definiendo \textit{juicios de tipado} (enunciados que establecen cuando una frase abstracta tiene un determinado tipo) podemos dar una prueba que establezca cuando un programa no tiene errores de tipo; al poder asignarle uno. De igual manera es posible definir otras clases de enunciados para el resto de los chequeos.
+% IDEA: Los chequeos emplean un conjunto de \textit{reglas de tipado} para garantizar determinadas propiedades de manera estática, las cuales son independientes de la noción de evaluación del lenguaje.
+% IDEA: Los cuales utilizan el \textit{árbol de sintaxis abstracta} obtenido luego de aplicar la traducción sobre la cadena de caracteres.
+% IDEA: Los chequeos estáticos son propiedades que le pediremos a un programa bien escrito y que podemos verificar sin ejecutarlo.
+
+Si chequeamos estáticamente la frase abstracta correspondiente con el ejemplo de la función \texttt{factorial}, deberíamos poder verificar que esta toma un entero y devuelve un entero, es decir que tiene tipo \textit{int en int}.
+Es fundamental notar que al efectuar los chequeos sin ejecutar el programa, es posible que sigan existiendo errores que solo podrán ser capturados durante su ejecución, como la división por cero, o accesos de memoria no válidos, entre otros.
+
+\iffalse
+Supongamos que se analiza la función \texttt{factorial} declarada previamente.
+Mediante una prueba, es posible demostrar la existencia del juicio de tipado que asegura que la función tiene tipo de \textit{enteros en enteros}.
+A lo largo de la verificación del programa, se utilizará esta información para evitar cualquier llamada a la construcción que no respete su tipo.
+\fi
+
+% IDEAS
+\iffalse
+Claramente no cualquier cadena de caracteres es un programa válido, de hecho la tarea que realiza la función de traducción es asegurar que se evitan determinados errores de escritura en la declaración de un programa.
+Si bien se obtienen programas \textit{bien escritos}, la traducción de sintaxis no es suficiente para capturar todos los errores de un programa.
+Los \textbf{chequeos estáticos} utilizan el \textit{árbol de sintaxis abstracta}, obtenido luego de la traducción, para verificar consistencia en el significado de las construcciones de un programa de acuerdo a la definición del lenguaje.
+Se emplea un conjunto de \textit{reglas de tipado} para garantizar determinadas propiedades de manera estática, las cuales son independientes de la noción de evaluación del lenguaje.
+\fi
+
+\iffalse
+% Observaciones sobre Chequeos Estáticos
+Habría que agregar algo más concreto sobre otros chequeos (quizá la última oración lo hace).
+
+Claramente no cualquier cadena de caracteres es un programa válido de hecho el trabajo que hace la función de traducción \textit{parser} es asegurarnos que nos evitamos determinados errores de escritura
+Nos da pie para comentar que si bien ahora tenemos programas \textit{bien escritos} aun así, estos pueden contener errores
+
+Igual habría que mencionar que es solo otra etapa de \textit{captura de errores}, porque también puede haber errores cuando se ejecuta el programa
+
+La mayor parte de los chequeos estáticos van a ser en relación al chequeo de tipos (acá podes contar si quieres, que esto pasa en general para los lenguajes tipados) pero que no necesariamente siempre es así
+\fi
+
+\iffalse
+% Sintaxis Abstracta
+\item
+La \textbf{sintaxis abstracta} representa las entidades abstractas conformadas por las cadenas de caracteres de origen, de manera independiente de sus detalles de representación específicos.
+Lo cual es convertido en un \textit{árbol de sintaxis abstracta}, donde cada nodo denota una construcción en el código fuente.
+% Sintaxis Concreta
+\item
+La \textbf{sintaxis concreta} representa la estructura sintáctica de un programa de acuerdo a la \textit{gramática libre de contexto} del lenguaje.
+Caracterizan las cadenas de caracteres de origen que luego serán convertidas en un programa interpretado.
+\fi
+
+\iffalse
+- Sintaxis concreta, seguro podemos chorear del libro del dragon. La idea sería dar la definición.
+- Sintaxis abstracta, acá la sección 1.1 del Reynolds seguro nos sirve para tener una mejor idea.
+% yo diría que es justamente la posibilidad de abstraer las componentes relevantes de las frases de un lenguaje
+% - La no linealidad de lectura de las expresiones abstractas - La abstracción de los conceptos de manera que sean independientes de su representación concreta
+- Chequeos estáticos, acá pareciera que podemos usar alguito del cap15 del Reynolds y 1.2.3 del libro del dragon.
+\fi
+
+\section{Organización de la Tesis}
+
+El escrito se divide en cinco capítulos.
+En el capítulo 2 se presenta el lenguaje, donde se ilustran sus características más relevantes a través de ejemplos.
+En el capítulo 3 se describe la sintaxis abstracta y se presenta la sintaxis concreta, además se detallan aspectos sobre la implementación del parser del lenguaje.
+En el capítulo 4 se definen formalmente los chequeos estáticos, y se lo acompaña con derivaciones de ejemplos.
+En el capítulo 5 se concluye el trabajo con un breve resumen de las actividades desarrolladas y un listado de trabajos futuros.
+% IDEA: Servirá como una especie de tutorial para el lector con experiencia en programación imperativa.
+% IDEA: Además se detallan las características del parser de nuestro intérprete.
+% IDEA: A través de una serie de reglas de tipado, junto con derivaciones de ejemplos, se fundamentan las propiedades a verificar en un programa.
+% IDEA: Se acompaña con un listado de trabajos futuros con la finalidad de encaminar la evolución a posterior del lenguaje.
+
+\iffalse
+% Versión Previa
 En el siguiente trabajo, desarrollaremos un lenguaje de programación para la materia \Materia{}.
 Antes de comenzar propiamente con la definición formal e implementación del mismo, lo correcto es presentar los objetivos que nos hemos impuesto para la creación del lenguaje, y las motivaciones que nos han impulsado al desarrollo de este proyecto.
 Por lo tanto, la siguiente sección introducirá al lector los distintos aspectos que influyeron la formación del lenguaje, y justificaron la realización de este trabajo.
@@ -247,6 +546,7 @@ En la imagen~\ref{Fases} se puede observar la estructura de nuestro intérprete.
 \caption{Estructura de un intérprete}
 \label{Fases}
 \end{figure}
+\fi
 
 % Ideas!!
 \iffalse
