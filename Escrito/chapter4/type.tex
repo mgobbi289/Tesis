@@ -1,16 +1,16 @@
 % Chequeos para Tipos
 \subsection{Chequeos para Tipos}
 
-Las primeras reglas que precisaremos serán sobre los tipos que ocurren en el programa.
-Con las mismas, buscamos verificar propiedades tales como el uso adecuado de los tipos definidos por el usuario, y limitar la ocurrencia de variables de tipo, y tamaños dinámicos de arreglos, en entornos donde su especificación sea válida.
-Debido a esto, a continuación describiremos los distintos contextos que serán necesarios utilizar para la aplicación de las reglas.
+Las primeras reglas que definiremos serán sobre los tipos que ocurren en el programa, estas buscan verificar propiedades tales como el uso adecuado de los tipos definidos por el usuario, y limitar la ocurrencia de variables de tipo, e identificadores de tamaños dinámicos de arreglos. %, en entornos donde su especificación sea válida.
+%Debido a esto, a continuación describiremos 
+Comenzamos definiendo los distintos contextos que serán necesarios para la definición de los juicios y las reglas.
 
 \subsubsection{Contextos para Declaración de Tipos}
 
 Una definición de tipo \textit{typedecl} consiste en alguna de las siguientes tres construcciones sintácticas; un tipo enumerado, un sinónimo de tipo, o una estructura de tipo tupla.
-Cuando una de estas declaraciones se encuentre \textit{bien formada} su información será almacenada en el contexto adecuado.
+Cuando una de estas declaraciones se encuentre \textit{bien tipada} su información será almacenada en el contexto adecuado.
 Habrá un contexto diferente para cada una de las categorías de tipos que se pueden definir en el lenguaje.
-Además, estos conjuntos tendrán una serie de invariantes que deberán ser respetadas a lo largo del análisis de un programa.
+Además, estos conjuntos tendrán una serie de invariantes que definirán cuando un contexto está correctamente construido. %deberán ser respetadas a lo largo del análisis de un programa.
 
 \begin{itemize}
     \item $\T{enum} \; tn = cn_1, cn_2, \ldots, cn_m$
@@ -59,38 +59,38 @@ fd_j \in \NT{field}
 \}
 \end{gather*}
 
-Estos tres contextos se encargarán de almacenar toda la información relacionada con los tipos declarados por el usuario en un programa.
-A todas las condiciones de consistencia mencionadas anteriormente se le tiene que sumar una última.
-Los nombres de tipos definidos deben ser únicos.
+Estos tres contextos se encargarán de almacenar toda la información relacionada con los tipos declarados.% por el usuario en un programa.
+A todas las condiciones de consistencia mencionadas anteriormente se le tiene que sumar una última, los nombres de tipos definidos deben ser únicos.
 Es decir, que no puede haber más de una definición para el mismo identificador de tipo entre los distintos contextos.
 
 \subsubsection{Contexto para Variables de Tipo}
 
-Cuando se analiza un tipo, es necesario llevar un registro de las variables de tipo introducidas en el alcance actual.
-Ya sea como parámetro de tipo en una declaración de tipo, o como tipo polimórfico para algún argumento de una función o un procedimiento, solo se deben permitir la especificación de esta clase de variables cuando se han introducido previamente en el código.
-De lo contrario, durante la ejecución del programa no se podría obtener el tipo concreto que las mismas representarían.
+%Cuando se analiza un tipo, es necesario llevar un registro de las variables de tipo introducidas en el alcance actual.
+En general, la definición de cualquier regla de tipado para un tipo deberá tener un listado de las variables de tipo introducidas en el alcance actual.
+Ya sea como parámetro de tipo en una declaración de tipo, o como tipo polimórfico para algún parámetro de una función o un procedimiento, solo se deben permitir el uso de estas variables cuando se han introducido previamente en el código.
+%De lo contrario, durante la ejecución del programa no se podría obtener el tipo concreto que las mismas representarían.
 \begin{gather*}
 \pi_{tv} \subseteq \NT{typevariable}
 \end{gather*}
 
-\subsubsection{Contexto para Tamaños Dinámicos}
+\subsubsection{Contexto para Identificadores de Tamaños Dinámicos}
 
-Similar como sucede con las variables de tipo, hay una necesidad de llevar registro de todos los tamaños variables que son introducidos a lo largo del análisis.
+Similar como sucede con las variables de tipo, hay una necesidad de llevar registro de todos los identificadores de tamaños dinámicos que son introducidos. % a lo largo del análisis.
 En el prototipo de funciones y procedimientos, se pueden especificar tamaños dinámicos para las dimensiones de arreglos.
-Esto permite que dentro de sus cuerpos, se puedan utilizar estos identificadores para declarar nuevos arreglos cuyas dimensiones coincidirán con los arreglos correspondientes en el encabezado, independientemente del tamaño concreto de los mismos.
+Esto permite que dentro de sus cuerpos, se puedan utilizar estos identificadores para declarar nuevos arreglos cuyas dimensiones coincidirán con los arreglos correspondientes en el encabezado. %, independientemente del tamaño concreto de los mismos.
 \begin{gather*}
 \pi_{sn} \subseteq \NT{sname}
 \end{gather*}
 
 \subsubsection{Reglas para Tipos}
 
-En un programa, hay tres situaciones diferentes donde se puede precisar un tipo.
-En base a estas, las propiedades que se deben verificar varían levemente.
-Siendo más precisos, un tipo puede ocurrir en una declaración de tipo, en una definición de función o procedimiento, e incluso en la declaración de una variable.
-En todos estos contextos distintos, el uso de una variable de tipo o un tamaño dinámico de arreglo, se debe permitir solo si durante una hipotética ejecución del programa se cuenta con la información suficiente para dar un tipo o valor concreto, respectivamente, a esta construcción.
+En un programa, hay tres situaciones diferentes donde se puede escribir un tipo, y
+en base a esta, las propiedades que se deben verificar varían levemente.
+Un tipo puede ocurrir en una declaración de tipo, en una definición del prototipo de una función o procedimiento, e incluso en la declaración de una variable en algún cuerpo de una función o procedimiento.
+%En todos estos contextos distintos, el uso de una variable de tipo o un tamaño dinámico de arreglo, se debe permitir solo si durante una hipotética ejecución del programa se cuenta con la información suficiente para dar un tipo o valor concreto, respectivamente, a esta construcción.
 
-Cuando nos encontramos analizando un tipo, utilizaremos la siguiente notación para denotar que el tipo representado por $\theta$ es válido en el contexto de los tipos definidos; enumerados $\pi_{e}$, sinónimos $\pi_{s}$, y tuplas $\pi_{t}$.
-Sumados a los mismos, los conjuntos $\pi_{tv}$ de variables de tipo, y $\pi_{sn}$ de tamaños dinámicos, determinarán también cuando la especificación de un tipo polimórfico particular está permitida.
+Cuando nos encontramos analizando un tipo, utilizaremos la siguiente notación para denotar que el tipo $\theta$ es válido en el contexto de los tipos definidos; enumerados $\pi_{e}$, sinónimos $\pi_{s}$, y tuplas $\pi_{t}$.
+Sumados a los mismos, los conjuntos $\pi_{tv}$ de variables de tipo determinará cuando la escritura de un tipo polimórfico particular está permitida, y tenemos además $\pi_{sn}$ para los identificadores de tamaños dinámicos.
 Utilizando una notación más compacta, comúnmente haremos referencia al contexto $\PI{T}$ para representar a la anterior tripla de contextos.
 Mientras que emplearemos $\overline{\pi}$ para simbolizar a los últimos dos conjuntos.
 Esta salvedad la tendremos para facilitar la lectura de las reglas, y poder concentrarnos propiamente en las derivaciones.
@@ -108,8 +108,8 @@ Esta salvedad la tendremos para facilitar la lectura de las reglas, y poder conc
 \theta
 \end{align*}
 
-Para decidir si uno de estos \textit{juicios} es válido, tenemos que proveer una derivación utilizando las reglas que definiremos a continuación.
-Con la aplicación sucesiva de las mismas, se pueden construir pruebas que demuestran las distintas propiedades requeridas para que un tipo en un programa sea considerado estáticamente correcto.
+Para decidir si uno de estos \textit{juicios} es válido, tenemos que proveer una derivación, o prueba, utilizando las reglas que definiremos a continuación.
+%Con la aplicación sucesiva de las mismas, se pueden construir pruebas que demuestran las distintas propiedades requeridas para que un tipo en un programa sea considerado estáticamente correcto.
 
 Comenzaremos con los tipos básicos del lenguaje.
 La prueba de los mismos es inmediata, ya que su regla no presenta ninguna premisa.
@@ -150,7 +150,7 @@ $}
 \end{TRegla}
 
 Para los arreglos, se necesitarán verificar los tamaños de sus dimensiones, junto con el tipo de valores que almacenará.
-Notar que para analizar los primeros, solo se requiere la información de los tamaños dinámicos presentes en el alcance actual.
+Notar que para analizar los primeros, solo se requiere la información de los identificadores de tamaños dinámicos presentes en el contexto local. %alcance actual.
 
 \begin{TRegla}
 \label{TArreglo}
@@ -172,10 +172,10 @@ $}
 \end{TRegla}
 
 Para las dimensiones de un arreglo, se pueden especificar sus tamaños de dos formas.
-Si el mismo es un valor natural, la verificación es inmediata ya que la regla no presenta ninguna premisa.
-En cambio, cuando se utilizan tamaños dinámicos, es necesario comprobar que su empleo sea válido.
-El único lugar de un programa donde se permiten introducir tamaños variables, es en el prototipo de funciones y procedimientos.
-Luego, estos elementos podrán ser utilizados en sus respectivos cuerpos para declarar nuevos arreglos.
+Si el mismo es un valor natural, la verificación es inmediata ya que cualquier natural representa un tamaño de arreglo válido.
+En cambio, cuando se utilizan identificadores de tamaños dinámicos, es necesario comprobar que haya sido previamente introducido, %que su empleo sea válido.
+el único lugar de un programa donde se permiten introducir esta clase de identificadores es en el prototipo de funciones y procedimientos.
+%Luego, estos elementos podrán ser utilizados en sus respectivos cuerpos para declarar nuevos arreglos.
 
 \begin{TRegla}
 \label{TConcreto}
@@ -206,7 +206,7 @@ $}
 \end{TRegla}
 
 Al utilizar una variable de tipo, es necesario verificar que su uso sea válido en el alcance actual.
-Similar a los tamaños dinámicos de arreglos, se permiten introducir esta clase de variables en el encabezado de funciones y procedimientos, lo que luego posibilitará emplearlas en sus respectivos cuerpos.
+Similar a los identificadores de tamaños dinámicos, se permiten introducir esta clase de variables en el encabezado de funciones y procedimientos, lo que luego posibilitará emplearlas en sus respectivos cuerpos.
 Adicionalmente, existe la posibilidad de declarar un tipo de forma paramétrica, lo que concede la capacidad de usar las variables de tipo, especificadas como argumento, en la definición del nuevo tipo.
 
 \begin{TRegla}
@@ -316,7 +316,7 @@ $}
 
 \subsubsection{Ejemplo de Prueba}
 
-A continuación, presentamos como es la derivación para una prueba de corrección de un tipo determinado del lenguaje.
+%A continuación, presentamos como es la derivación para una prueba de corrección de un tipo determinado del lenguaje.
 Supongamos los siguientes contextos donde no hay declarados tipos enumerados, ni sinónimos de tipo, y solo tenemos definido el tipo tupla \textit{node} parametrizado en \textit{Z}.
 Notar que el campo \textit{elem} es de tipo variable \textit{Z}, y \textit{next} es un puntero al mismo tipo.
 \begin{gather*}
@@ -371,20 +371,20 @@ $}
 
 \subsection{Variables de Tipo Libres}
 
-Una variable de tipo solo puede ser utilizada en determinados contextos.
-Es fundamental que durante la ejecución de un programa, se cuente con la suficiente cantidad de información para poder deducir el tipo concreto que esta clase de construcciones representarán.
-Debido a esto, la especificación de variables de tipo se permite bajo ciertas condiciones particulares.
+%Una variable de tipo solo puede ser utilizada en determinados contextos.
+%Es fundamental que durante la ejecución de un programa, se cuente con la suficiente cantidad de información para poder deducir el tipo concreto que esta clase de construcciones representarán.
+%Debido a esto, la especificación de variables de tipo se permite bajo ciertas condiciones particulares.
 
-En una declaración de tipo, las únicas variables que se pueden utilizar son las que fueron previamente especificadas como parámetros del mismo.
-En cambio, para el argumento de una función o procedimiento, se permite introducir cualquier variable de tipo para su definición.
-Luego, cuando se declara una variable en el cuerpo, existe la posibilidad de utilizar las variables de tipo introducidas en el prototipo de la función o procedimiento correspondiente.
+En una declaración de tipo, las únicas variables que se pueden, y deben, utilizar son las que fueron previamente introducidas como parámetros de la declaración. Es importante remarcar que no existe la posibilidad de introducir una variable de tipo que luego no ocurre en la declaración de tipo. Lo cual es una diferencia con los prototipos de funciones y procedimientos en donde se permite introducir variables de tipo que luego pueden no ocurrir nunca en su respectivo cuerpo.
+%En cambio, para el argumento de una función o procedimiento, se permite introducir cualquier variable de tipo para su definición.
+%Luego, cuando se declara una variable en el cuerpo, existe la posibilidad de utilizar las variables de tipo introducidas en el prototipo de la función o procedimiento correspondiente.
 \begin{gather*}
 FTV: \NT{type} \rightarrow \{ \; \NT{typevariable} \; \}
 \end{gather*}
 
 Debido a todo esto, necesitamos definir cuando una variable de tipo es considerada \textit{libre}.
 En el lenguaje no hay ninguna clase de cuantificación, a nivel de tipos, para estos elementos; pero nos referiremos de esta manera informal a todas las variables que ocurran dentro de uno.
-El propósito de esta definición, es poder facilitar el chequeo de las condiciones previas.
+El propósito de esta definición es simplificar la escritura de algunas reglas. %es poder facilitar el chequeo de las condiciones previas.
 \begin{align*}
 &\FTV{\T{int}}
 &=&\;
@@ -425,29 +425,29 @@ El propósito de esta definición, es poder facilitar el chequeo de las condicio
 
 \subsection{Chequeos para Declaración de Tipos}
 
-A continuación, precisaremos las reglas para analizar las declaraciones de tipo en un programa.
+%A continuación, precisaremos las reglas para analizar las declaraciones de tipo en un programa.
 Con las mismas, buscamos verificar una serie de propiedades necesarias para asegurar la corrección de las construcciones aludidas.
-Se debe garantizar la unicidad de los identificadores empleados para representar determinadas componentes, como los nombres de constantes enumeradas, campos de tupla, y parámetros de tipo.
+En el chequeo de declaraciones de tipo se debe garantizar la unicidad de los identificadores empleados para representar determinadas componentes, como los nombres de constantes enumeradas, campos de tupla, y parámetros de tipo.
 Adicionalmente, debemos probar la validez de los tipos especificados dentro de las declaraciones.
 Incluso, hay que asegurar el uso adecuado de las variables de tipo introducidas como parámetros de las definiciones.
 
 \subsubsection{Reglas para Declaración de Tipos}
 
-Definidas las reglas para chequear cuando un tipo es válido, y la función que calcula las variables de tipo que ocurren en el mismo, comenzaremos con la especificación de las reglas empleadas en la prueba de corrección para declaraciones de tipo.
-Cuando se determina que una definición esta \textit{bien formada}, su información es añadida al contexto apropiado y se continua con el análisis del programa.
-Notar que la prueba de una serie de declaraciones de tipo responde al orden en que las mismas se encuentran especificadas, y aún más importante, que las reglas no permiten la definición mutua entre estas declaraciones.
+%Definidas las reglas para chequear cuando un tipo es válido, y la función que calcula las variables de tipo que ocurren en el mismo, comenzaremos con la especificación de las reglas empleadas en la prueba de corrección para declaraciones de tipo.
+%Cuando se determina que una definición esta \textit{bien formada}, su información es añadida al contexto apropiado y se continua con el análisis del programa.
+%Notar que l
+La prueba de una serie de declaraciones de tipo responde al orden en que las mismas se encuentran especificadas, esto implica, que las reglas no permiten la definición mutua entre estas declaraciones.
 De esta forma, un tipo definido solo será accesible para las declaraciones posteriores al mismo.
 
-El \textit{juicio de tipado} que prueba la validez de una declaración de tipo es el siguiente.
-Luego del análisis, se producirá un nuevo contexto donde se agrega la información de la definición recientemente verificada al contexto inicial.
+El \textit{juicio de tipado} que prueba la validez de una declaración de tipo será aquel que tiene una derivación que prueba la correcta extensión del contexto original con la nueva declaración.
+%Luego del análisis, se producirá un nuevo contexto donde se agrega la información de la definición recientemente verificada al contexto inicial.
 Recordar que al realizarse estas extensiones, se deben seguir respetando las invariantes de consistencia para los conjuntos involucrados.
 \begin{gather*}
 \PI{T} \DASH{td} typedecl : \PI{T}'
 \end{gather*}
 
-La regla para la definición de tipos enumerados es simple.
-Debido a las invariantes de los contextos de tipos, la deducción es inmediata.
-Con la construcción del nuevo conjunto, uno puede asegurar la unicidad del nombre de tipo respecto a las otras definiciones, y que los constructores empleados en la declaración no son utilizados en otras definiciones de tipo.
+La regla para la definición de tipos enumerados es simple, debido a las invariantes de los contextos de tipos. Notar que una extensión válida del contexto original ya nos asegura la unicidad del nombre de tipo respecto a las otras definiciones, y que los constructores empleados en la declaración no son utilizados en otras definiciones de tipo.
+%Con la construcción del nuevo conjunto, uno puede asegurar la unicidad del nombre de tipo respecto a las otras definiciones, y que los constructores empleados en la declaración no son utilizados en otras definiciones de tipo.
 
 \begin{DTRegla}
 \label{DTEnumerado}
@@ -462,12 +462,12 @@ $}
 donde $\pi'_{e} = (tn, \{ cn_1, \ldots, cn_m \}) \triangleright \pi_{e}$.
 \end{DTRegla}
 
-Para los sinónimos, hay que realizar un par de verificaciones.
-Primero, se tiene que asegurar que el conjunto de parámetros de la declaración coincida con el conjunto de variables de tipo utilizadas en la definición del mismo.
+Para los sinónimos se tiene que asegurar que el conjunto de parámetros de la declaración coincida con el conjunto de variables de tipo utilizadas en la definición del mismo.
 Esta condición evita la ocurrencia de variables \textit{libres} en el cuerpo de la declaración, y también obliga el uso de todos los argumentos de la misma.
-Segundo, el tipo que propiamente define al sinónimo tiene que ser válido.
-Notar que no se permite la especificación de tamaños dinámicos en esta instancia.
-La invariante del contexto garantiza la unicidad de los identificadores empleados como parámetros de la declaración.
+Además, el tipo que propiamente define al sinónimo tiene que ser válido.
+Notar que no se permite la utilización de identificadores de tamaños dinámicos.
+
+%La invariante del contexto garantiza la unicidad de los identificadores empleados como parámetros de la declaración.
 
 \begin{DTRegla}
 \label{DTSinonimo}
@@ -546,13 +546,12 @@ $}
 donde $\pi'_{t} = (tn, \{ tv_1, \ldots, tv_l \}, \{ fn_1: \theta_1, \ldots, fn_m: \theta_m \}) \triangleright \pi_{t}$, y $\pi_{tv} = \{ tv_1, \ldots, tv_l \}$.
 \end{DTRegla}
 
-La última regla es la que permite la definición de tipos recursivos.
-La única posibilidad de declarar un tipo que se define en términos de si mismo es mediante el uso de punteros dentro de tuplas.
-Por lo tanto, tiene sentido que esta regla sea una variante de las reglas previas.
-Notar que la definición de tipos recursivos es bastante restrictiva.
+Las siguientes reglas son las que permite la definición de tipos recursivos, notar que esta es 
+bastante restrictiva. La única posibilidad de declarar un tipo que se define en términos de si mismo es mediante el uso de punteros dentro de tuplas.
+%Por lo tanto, tiene sentido que esta regla sea una variante de las reglas previas.
 Solo se permiten utilizar las mismas variables de tipo paramétricas que en la definición, e incluso se las debe especificar en el mismo orden.
-En particular, si un tipo representa una llamada recursiva al tipo declarado, entonces el mismo quedará exceptuado del chequeo de validez para tipos.
-Las invariantes de consistencia para los contextos se deben respetar al igual que en las reglas anteriores.
+%En particular, si un tipo representa una llamada recursiva al tipo declarado, entonces el mismo quedará exceptuado del chequeo de validez para tipos.
+%Las invariantes de consistencia para los contextos se deben respetar al igual que en las reglas anteriores.
 
 \begin{DTRegla}
 \label{DTRecursion}
@@ -607,7 +606,7 @@ Notar el uso de las reglas para las variables de tipo, y la recursión en declar
 
 \begin{Prueba}
 \label{PDTNode}
-Demostración de corrección para la declaración de tipo \emph{nodo}.
+Derivación de corrección para la declaración de tipo \emph{node}.
 \begin{prooftree}
 \AxiomC
 {$
@@ -636,7 +635,7 @@ Por lo tanto, aplicando la regla para sinónimos con parámetros, junto con la d
 
 \begin{Prueba}
 \label{PDTList}
-Demostración de corrección para la declaración de tipo \emph{lista}.
+Derivación de corrección para la declaración de tipo \emph{lista}.
 \begin{prooftree}
 \AxiomC
 {$

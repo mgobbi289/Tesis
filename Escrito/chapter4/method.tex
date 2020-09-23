@@ -1,24 +1,24 @@
 % Chequeos para Funciones y Procedimientos
-\subsection{Tamaños Dinámicos de Arreglos}
+\subsection{Identificadores de Tamaños Dinámicos de Arreglos}
 
-Al igual que para las variables de tipo, solo se pueden utilizar tamaños dinámicos en determinadas secciones de un programa.
+Al igual que para las variables de tipo, solo se pueden utilizar identificadores de tamaños dinámicos en determinados lugares de un programa.
 El tamaño de un arreglo es siempre constante, pero en el lenguaje existe la posibilidad de trabajar con arreglos abstrayéndonos de sus tamaños concretos, al menos de forma estática.
-De todas maneras, es importante que durante la ejecución del programa se cuente con la información suficiente para poder resolver el tamaño concreto de estas estructuras.
-Por lo tanto, la especificación de tamaños dinámicos se permite solo bajo ciertas condiciones particulares.
+%De todas maneras, es importante que durante la ejecución del programa se cuente con la información suficiente para poder resolver el tamaño concreto de estas estructuras.
+%Por lo tanto, la especificación de tamaños dinámicos se permite solo bajo ciertas condiciones particulares.
 
-En el prototipo de una función o procedimiento, es posible introducir tamaños variables de arreglos cuando se especifican los tipos para sus argumentos.
-Esto permite que luego, en el respectivo cuerpo de la función o procedimiento, se utilicen los mismos tamaños dinámicos para declarar nuevos arreglos.
-Incluso, también se podrán emplear estos identificadores como valores constantes previamente definidos.
-En cambio, como notamos anteriormente, se prohíbe el uso de estos elementos para la declaración de tipos.
-En un principio, un tipo solo se puede instanciar con otros tipos.
-Esto significa que si se utilizaran tamaños dinámicos en su definición, durante la ejecución del programa no habría manera para deducir el tamaño concreto que tendría un arreglo definido de esta forma.
+En el prototipo de una función o procedimiento, es posible introducir identificadores de tamaños dinámicos de arreglos cuando se definen los tipos para sus argumentos.
+Esto permite que luego, en el respectivo cuerpo de la función o procedimiento, se utilicen estos identificadores para declarar nuevos arreglos.
+Incluso, se podrán emplear estos identificadores como valores constantes. %previamente definidos.
+%En cambio, como notamos anteriormente, se prohíbe el uso de estos elementos para la declaración de tipos.
+%En un principio, un tipo solo se puede instanciar con otros tipos.
+%Esto significa que si se utilizaran tamaños dinámicos en su definición, durante la ejecución del programa no habría manera para deducir el tamaño concreto que tendría un arreglo definido de esta forma.
 \begin{gather*}
 DAS: \NT{type} \rightarrow \{ \; \NT{sname} \; \}
 \end{gather*}
 
-Debido a todo esto, necesitamos definir una función que calcule todos los tamaños dinámicos que ocurren en un tipo particular.
-De esta manera, podremos registrar todos los tamaños variables que se introducen en el prototipo de una función o procedimiento.
-Con esta información, se procederá al análisis del respectivo cuerpo de la construcción.
+Debido a todo esto, necesitamos definir una función que calcule todos los identificadores de tamaños dinámicos que ocurren en un tipo particular.
+De esta manera, podremos listar todos los tamaños variables que se introducen en el prototipo de una función o procedimiento.
+%Con esta información, se procederá al análisis del respectivo cuerpo de la construcción.
 \begin{align*}
 &\DAS{\T{int}}
 &=&\;
@@ -59,16 +59,17 @@ Con esta información, se procederá al análisis del respectivo cuerpo de la co
 
 \subsection{Chequeos para Funciones y Procedimientos}
 
-En esta sección definiremos las reglas para las declaraciones de funciones y procedimientos de un programa.
-Se deberán verificar propiedades como la unicidad de los nombres utilizados para identificar a sus parámetros, como también analizar la validez de sus respectivos tipos.
-Adicionalmente, las restricciones para las variables de tipo deben ser examinadas para asegurar ciertas condiciones necesarias.
-El análisis del cuerpo de una función o un procedimiento será formalizado en la siguiente sección; una vez que se haya precisado la información contextual necesaria para efectuar su verificación, junto con las reglas apropiadas para chequear las declaraciones de variables y sentencias que lo conforman.
+%En esta sección definiremos las reglas para las declaraciones de funciones y procedimientos de un programa.
+Las reglas para chequear funciones y procedimientos deberán verificar propiedades como la unicidad de los nombres utilizados para identificar a sus parámetros, como también analizar la validez de sus respectivos tipos.
+%Adicionalmente, las restricciones para las variables de tipo deben ser examinadas para asegurar ciertas condiciones necesarias.
+Además, con respecto cuerpo de una función o un procedimiento adelantamos que será formalizado en la siguiente sección, una vez que se haya precisado la información contextual necesaria para efectuar su verificación, junto con las reglas apropiadas para chequear las declaraciones de variables y sentencias que lo conforman.
+%Empezaremos introduciendo las reglas para chequear las declaraciones de variables y sentencias que conforman el cuerpo de una función o procedimiento. Luego esto nos permitirá definir de manera directa las reglas de chequeo de estas últimas construcciones.
 
 \subsubsection{Contextos para Funciones y Procedimientos}
 
 Una declaración de función o procedimiento $funprocdecl$, puede tener alguna de las dos siguientes formas en base a cual de las construcciones mencionadas define.
-Similar a la declaración de tipos, cuando uno de estos elementos se encuentra \textit{bien formado} su información es almacenada en el contexto adecuado.
-Ambos contextos, de funciones y de procedimientos, tendrán una serie de invariantes que deben ser preservadas a lo largo del análisis de un programa. 
+Similar a la declaración de tipos, cuando uno de estos elementos se encuentra \textit{bien tipado} su información es almacenada en el contexto adecuado.
+%Ambos contextos, de funciones y de procedimientos, tendrán una serie de invariantes que deben ser preservadas a lo largo del análisis de un programa. 
 
 \begin{itemize}
     \item
@@ -89,10 +90,10 @@ Ambos contextos, de funciones y de procedimientos, tendrán una serie de invaria
     $
 \end{itemize}
 
-En el caso de las funciones, se tiene que almacenar su identificador $f$, junto con todos los elementos de su prototipo.
+En el caso de las funciones, el contexto contendrá su identificador $f$, junto con todos los elementos de su prototipo.
 Estos comprenden sus argumentos $a_1: \theta_1, \ldots, a_l: \theta_l$, su retorno $a_r: \theta_r$, y las restricciones para las variables de tipo especificadas en su encabezado $cs$.
 Por construcción, el contexto de funciones solo es válido si se cumple que el nombre utilizado para referirse a una función determinada es único.
-Adicionalmente, los identificadores empleados para sus parámetros no deben repetirse dentro del prototipo de la definición.
+Además, los identificadores empleados para sus parámetros no deben repetirse dentro del prototipo de la definición.
 \begin{multline*}
 \pi_{f} =
 \{
@@ -114,7 +115,7 @@ cs \in \NT{constraints}
 El contexto para procedimientos cumple un rol análogo que el empleado para funciones.
 Debe almacenar el identificador $p$ definido, junto con los argumentos $io_1 \; a_1: \theta_1, \ldots, io_l \; a_l: \theta_l$, y restricciones $cs$ asociados al mismo.
 Las invariantes son idénticas al contexto anterior.
-Un identificador de procedimiento no puede ser utilizado en más de una declaración, y tampoco se permiten repetir los nombres para los parámetros en una misma definición.
+%Un identificador de procedimiento no puede ser utilizado en más de una declaración, y tampoco se permiten repetir los nombres para los parámetros en una misma definición.
 \begin{multline*}
 \pi_{p} =
 \{
@@ -127,42 +128,42 @@ cs \in \NT{constraints}
 \}
 \end{multline*}
 
-\subsubsection{Restricciones para Funciones y Procedimientos}
+%\subsubsection{Restricciones para Funciones y Procedimientos}
 
-El polimorfismo paramétrico que admite una función, o un procedimiento, puede ser refinado de alguna manera.
-Basado en los conceptos sobre \textit{qualified types} presentados en la bibliografía de Jones~\cite{Jones}, el lenguaje provee un nivel intermedio entre el \textit{monomorfismo}, que solo admite un único tipo para una determinada construcción, y el \textit{polimorfismo}, que acepta cualquier tipo.
-Al implementar una función o procedimiento, es posible especificar un predicado, o más precisamente una serie de clases, que estará asociado a una determinada variable de tipo introducida en el correspondiente prototipo.
-De esta manera se obtiene una forma restringida de polimorfismo, donde se establece de forma explícita la familia de tipos que admite la implementación actual.
-En la llamada a una función o procedimiento, el tipo que adoptará una variable de tipo determinada deberá satisfacer todas las clases a la cual está asociada.
+%El polimorfismo paramétrico que admite una función, o un procedimiento, puede ser refinado de alguna manera.
+%Basado en los conceptos sobre \textit{qualified types} presentados en la bibliografía de Jones~\cite{Jones}, el lenguaje provee un nivel intermedio entre el \textit{monomorfismo}, que solo admite un único tipo para una determinada construcción, y el \textit{polimorfismo}, que acepta cualquier tipo.
+%Al implementar una función o procedimiento, es posible especificar un predicado, o más precisamente una serie de clases, que estará asociado a una determinada variable de tipo introducida en el correspondiente prototipo.
+%De esta manera se obtiene una forma restringida de polimorfismo, donde se establece de forma explícita la familia de tipos que admite la implementación actual.
+%n la llamada a una función o procedimiento, el tipo que adoptará una variable de tipo determinada deberá satisfacer todas las clases a la cual está asociada.
 
-Las construcciones sintácticas empleadas para representar estos predicados tendrán la siguiente forma, donde deberán cumplir ciertas propiedades para garantizar su corrección.
-Desde este punto en adelante, asumiremos que las restricciones de funciones y procedimientos satisfacen todas las condiciones necesarias para ser válidas.
-Lo cual simplificará la especificación de las sucesivas reglas para la derivación de los \textit{juicios de tipado}.
+%Las construcciones sintácticas empleadas para representar estos predicados serán de la forma $tv_{1} : cl_{1_1}, \ldots, cl_{l_1} \; \ldots \; tv_{m} : cl_{1_m}, \ldots, cl_{l_m}$ donde deberán cumplir ciertas propiedades para garantizar su corrección.
+%Desde este punto en adelante, asumiremos que las restricciones de funciones y procedimientos satisfacen todas las condiciones necesarias para ser válidas.
+%Lo cual simplificará la especificación de las sucesivas reglas para la derivación de los \textit{juicios de tipado}.
 
 % Espacio de Formato
 
-\begin{gather*}
-tv_{1} : cl_{1_1}, \ldots, cl_{l_1} \; \ldots \; tv_{m} : cl_{1_m}, \ldots, cl_{l_m}
-\end{gather*}
+%\begin{gather*}
+%tv_{1} : cl_{1_1}, \ldots, cl_{l_1} \; \ldots \; tv_{m} : cl_{1_m}, \ldots, cl_{l_m}
+%\end{gather*}
 
-Sea $\pi_{tv}$ el conjunto de variables de tipo introducido en el encabezado de una función o procedimiento, entonces todas las variables $tv_{i}$ presentes en la restricción, deberán pertenecer al contexto.
-Carecería de sentido permitir la aplicación de restricciones de clase a variables de tipo que no han sido declaradas en el alcance actual.
-Adicionalmente, todas las variables deben ser distintas entre sí.
-De lo contrario, existiría una ambigüedad sobre cual conjunto de clases debe ser impuesto sobre la variable repetida.
-Por último, todas las clases que pertenecen al listado $cl_{1_j}, \ldots, cl_{l_j}$ de restricciones para una determinada variable de tipo $tv_{j}$, deben ser únicas entre sí.
-La exigencia reiterada de una misma clase para una variable particular, no modifica la familia de tipos que acepta la función y/o procedimiento.
+%Sea $\pi_{tv}$ el conjunto de variables de tipo introducido en el encabezado de una función o procedimiento, entonces todas las variables $tv_{i}$ presentes en la restricción, deberán pertenecer al contexto.
+%Carecería de sentido permitir la aplicación de restricciones de clase a variables de tipo que no han sido declaradas en el alcance actual.
+%Adicionalmente, todas las variables deben ser distintas entre sí.
+%De lo contrario, existiría una ambigüedad sobre cual conjunto de clases debe ser impuesto sobre la variable repetida.
+%Por último, todas las clases que pertenecen al listado $cl_{1_j}, \ldots, cl_{l_j}$ de restricciones para una determinada variable de tipo $tv_{j}$, deben ser únicas entre sí.
+%La exigencia reiterada de una misma clase para una variable particular, no modifica la familia de tipos que acepta la función y/o procedimiento.
 
 \subsubsection{Reglas para Funciones y Procedimientos}
 
-Detalladas las reglas para chequear un tipo, junto con las funciones que calculan las variables de tipo y tamaños dinámicos que ocurren en el mismo, estamos en condiciones para definir de manera directa las reglas para la verificación de funciones y procedimientos del programa.
-Cuando se determina que una declaración esta \textit{bien formada}, su información es añadida al contexto apropiado, y se continua con el análisis.
-Notar que la definición de funciones y procedimientos responde al orden entre ellas, donde la declaración de una solo está en el alcance de las declaraciones posteriores; esto por ejemplo, implica que no podemos declarar funciones o procedimientos utilizando recursión mutua.
+%Detalladas las reglas para chequear un tipo, junto con las funciones que calculan las variables de tipo y tamaños dinámicos que ocurren en el mismo, estamos en condiciones para definir de manera directa las reglas para la verificación de funciones y procedimientos del programa.
+%Cuando se determina que una declaración esta \textit{bien formada}, su información es añadida al contexto apropiado, y se continua con el análisis.
+%La definición de funciones y procedimientos responde al orden entre ellas, donde la declaración de una solo está en el alcance de las declaraciones posteriores; esto por ejemplo, implica que no podemos declarar funciones o procedimientos utilizando recursión mutua.
 
-El análisis del cuerpo de estas estructuras será precisado en la siguiente sección, una vez que se haya explicado cómo se obtiene la información contextual necesaria para el estudio del mismo.
-De forma coloquial, verificar el cuerpo de una función o procedimiento consiste en analizar las declaraciones de variables, junto con la serie de sentencias que lo conforman.
-Por lo tanto, es necesario disponer de la información de tipos definidos $\PI{T}$, la de funciones y procedimientos $\PI{FP}$, y los elementos introducidos en el prototipo correspondiente, como las variables de tipo $\pi_{tv}$ y los tamaños dinámicos de arreglos $\pi_{sn}$, para realizar la verificación adecuada.
+%El análisis del cuerpo de estas construcciones sintácticas será precisado en la siguiente sección.
+%De forma informal, verificar el cuerpo de una función o procedimiento consiste en analizar las declaraciones de variables, junto con la serie de sentencias que lo conforman.
+%Por lo tanto, es necesario disponer de la información de tipos definidos $\PI{T}$, la de funciones y procedimientos $\PI{FP}$, y los elementos introducidos en el prototipo correspondiente, como las variables de tipo $\pi_{tv}$ y los tamaños dinámicos de arreglos $\pi_{sn}$, para realizar la verificación adecuada.
 
-A la hora de chequear una función o procedimiento, utilizaremos la siguiente notación para denotar que la construcción sintáctica analizada extiende correctamente un determinado contexto válido, donde además contamos con los tipos definidos en el programa $\PI{T}$ a nuestro alcance.
+A la hora de chequear una función o procedimiento, utilizaremos la siguiente notación para denotar que la construcción sintáctica extiende correctamente un determinado contexto, cuando además contamos con los tipos definidos en el programa $\PI{T}$.
 Las funciones válidas extenderán el contexto $\pi_{f}$, mientras que los procedimientos harán lo propio con $\pi_{p}$.
 Utilizando una abreviatura para la notación, nos referiremos al contexto $\PI{FP}$ para representar a los correspondientes conjuntos anteriores.
 \begin{gather*}
@@ -171,13 +172,11 @@ Utilizando una abreviatura para la notación, nos referiremos al contexto $\PI{F
 \PI{T}, \PI{FP} \DASH{fp} funprocdecl : \PI{FP}'
 \end{gather*}
 
-La verificación de una declaración de función es compleja.
-Es necesario validar todos los tipos de sus respectivos parámetros.
-Notar que en esta instancia se permite la introducción de variables, de tipo y de tamaño, las cuales serán almacenados en los contextos apropiados.
-En cambio, para analizar el tipo del retorno, solo se permitirán utilizar los elementos que hayan sido especificados previamente en los argumentos.
-Asumiremos que las restricciones cumplen un formato determinado válido, por lo que no se presenta ninguna premisa al respecto.
-Finalmente, con toda la información contextual necesaria, y extendiendo el contexto correspondiente a funciones para permitir llamadas recursivas, se deberá verificar el cuerpo de la función.
-Observar que para su análisis se indexa al \textit{juicio de tipado} con el identificador de la función.
+La verificación de una declaración de función es compleja, es necesario validar todos los tipos de sus respectivos parámetros.
+Notar que en esta instancia se permite la introducción de variables de tipo y de identificadores de tamaño dinámico, las cuales
+conformaran los contextos $\pi_{tv}$ y $\pi_{sn}$ que se utilizaran para, entre otras cosas, chequear el tipo del retorno en el cual no se puede introducir variables tipo ni identificadores de tamaño dinámico.
+Asumiremos que las restricciones están siempre bien tipadas dado que el lenguaje solo tiene definidas algunas clases nativas y no existe un mecanismo para definir nuevas, por lo tanto no se presenta ninguna premisa al respecto.
+Finalmente, con toda la información contextual necesaria, y extendiendo el contexto correspondiente a funciones para permitir llamadas recursivas, se deberá verificar el cuerpo de la función. Notar que para su análisis se indexa al \textit{juicio de tipado} con el identificador de la función.
 
 \begin{FPRegla}
 \label{FPFuncion}
@@ -204,23 +203,21 @@ donde $\pi_{tv} = \FTV{\theta_1} \cup \ldots \cup \FTV{\theta_l}$, y $\pi_{sn} =
 Adicionalmente, se extiende el contexto de funciones con el prototipo en cuestión, para permitir llamadas recursivas $\overline{\pi}_{f} = (f, \{ a_1: \theta_1, \ldots, a_l: \theta_l \}, a_r: \theta_r, cs) \triangleright \pi_{f}$.
 \end{FPRegla}
 
-Recordemos que se deben respetar las invariantes para la construcción del contexto de funciones.
-No puede haber más de una definición para el mismo identificador de función, y tampoco pueden existir múltiples argumentos, incluyendo al retorno, con los mismos nombres en una definición particular.
-A todo esto, se debe sumar una condición adicional para resolver una limitación de la sintaxis concreta del lenguaje.
-Los identificadores para tamaños dinámicos de arreglos, introducidos en el prototipo de la función, deben ser distintos a los utilizados para los nombres de parámetros, incluyendo al retorno.
-\begin{gather*}
-\pi_{sn} \cap \{ a_1, \ldots, a_l, a_r \} = \emptyset
-\end{gather*}
+%Recordemos que se deben respetar las invariantes para la construcción del contexto de funciones.
+%No puede haber más de una definición para el mismo identificador de función, y tampoco pueden existir múltiples argumentos, incluyendo al retorno, con los mismos nombres en una definición particular.
+%A todo esto, se debe sumar una condición adicional para resolver una limitación de la sintaxis concreta del lenguaje.
+%Los identificadores para tamaños dinámicos de arreglos, introducidos en el prototipo de la función, deben ser distintos a los utilizados para los nombres de parámetros, incluyendo al retorno.
+%\begin{gather*}
+%\pi_{sn} \cap \{ a_1, \ldots, a_l, a_r \} = %\emptyset
+%\end{gather*}
 
-Para el análisis del tipo de la variable de retorno, realizamos una salvedad que es conveniente clarificar.
-No se permiten introducir nuevas variables de tipo, o tamaños dinámicos para dimensiones de arreglos, en esta instancia de la función.
-Debido a la imposibilidad de inferir el tipo concreto de un tipo polimórfico \textit{A}, el cual nunca fue declarado previamente en el alcance actual, se decidió limitar el conjunto de variables, de tipo y de tamaño, que pueden ser especificadas en este lugar.
-Solo pueden ser empleadas las variables que fueron introducidas anteriormente en los argumentos de la respectiva función.
+%Como ya adelantamos el chequeo de la variable de retorno de una función no permite introducir nuevas variables de tipo, o identificadores de tamaños dinámicos para dimensiones de arreglos.
+%Debido a la imposibilidad de inferir el tipo concreto de un tipo polimórfico \textit{A}, el cual nunca fue declarado previamente en el alcance actual, se decidió limitar el conjunto de variables, de tipo y de tamaño, que pueden ser especificadas en este lugar.
+%Solo pueden ser empleadas las variables que fueron introducidas anteriormente en los argumentos de la respectiva función.
 
 La verificación de una declaración de procedimiento, al igual que para funciones, es compleja.
 Se deben analizar individualmente todos los tipos de sus respectivos parámetros.
-De la misma manera que en la regla previa, se almacenarán los tamaños dinámicos, y las variables de tipo que se hayan especificado en estos.
-Las restricciones poseerán un formato determinado apropiado, lo que permitirá omitir su análisis.
+De la misma manera que en la regla previa, definiremos contextos con los identificadores de tamaños dinámicos, y las variables de tipo que se hayan especificado en estos.
 Por último, una vez obtenida toda la información contextual necesaria, y extendiendo el contexto correspondiente a procedimientos para permitir llamadas recursivas, se deberá verificar el cuerpo del procedimiento.
 Notar que el \textit{juicio de tipado} es indexado con el identificador del procedimiento.
 
@@ -245,19 +242,19 @@ donde $\pi_{tv} = \FTV{\theta_1} \cup \ldots \cup \FTV{\theta_l}$, y $\pi_{sn} =
 Adicionalmente, se extiende el contexto de procedimientos con el prototipo en cuestión, para permitir llamadas recursivas $\overline{\pi}_{p} = (p, \{ io_1 \; a_1: \theta_1, \ldots, io_l \; a_l: \theta_l \}, cs) \triangleright \pi_{p}$.
 \end{FPRegla}
 
-De forma análoga a las funciones, en esta ocasión se deben respetar las invariantes para la construcción del contexto de procedimientos.
-Los identificadores de procedimientos pueden ser empleados sólo en una definición, mientras que los nombres para sus parámetros no pueden ser repetidos en una misma declaración.
-Adicionalmente, se debe satisfacer la condición previa sobre la sintaxis concreta del lenguaje.
-Los nombres utilizados para denotar tamaños dinámicos de arreglos, que ocurren en el prototipo del procedimiento, deben ser diferentes a los empleados para referirse a sus parámetros.
-\begin{gather*}
-\pi_{sn} \cap \{ a_1, \ldots, a_l \} = \emptyset
-\end{gather*}
+%De forma análoga a las funciones, en esta ocasión se deben respetar las invariantes para la construcción del contexto de procedimientos.
+%Los identificadores de procedimientos pueden ser empleados sólo en una definición, mientras que los nombres para sus parámetros no pueden ser repetidos en una misma declaración.
+%Adicionalmente, se debe satisfacer la condición previa sobre la sintaxis concreta del lenguaje.
+%Los nombres utilizados para denotar tamaños dinámicos de arreglos, que ocurren en el prototipo del procedimiento, deben ser diferentes a los empleados para referirse a sus parámetros.
+%\begin{gather*}
+%\pi_{sn} \cap \{ a_1, \ldots, a_l \} = %\emptyset
+%\end{gather*}
 
 \subsubsection{Ejemplo de Prueba}
 
-Continuando con los ejemplos, presentaremos la prueba de corrección para una declaración de función, y otra de procedimiento.
-La primera se utiliza para consultar si una lista se encuentra vacía, mientras que el segundo es empleado para eliminar el primer elemento de la lista.
-Ambas operaciones trabajan sobre la \textit{lista abstracta} definida anteriormente.
+Tomando como base las derivaciones de ejemplos pasadas, presentaremos la prueba de corrección para una declaración de función, y otra de procedimiento.
+La primera se utiliza para decidir si una lista es vacía, mientras que el segundo elimina el primer elemento de la lista.
+%Ambas operaciones trabajan sobre la \textit{lista abstracta} definida anteriormente.
 Supongamos que los contextos para funciones y procedimientos son los descriptos a continuación, mientras que los de tipos definidos son idénticos a los especificados en ejemplos previos.
 \begin{gather*}
 \pi_{f} = \{ (isEmpty, \{ l : list \; \T{of} \; T \}, b : bool, \emptyset) \}
@@ -267,11 +264,12 @@ Supongamos que los contextos para funciones y procedimientos son los descriptos 
 
 Debido que tanto la función como el procedimiento poseen un argumento del mismo tipo, a continuación realizaremos su derivación aislada correspondiente.
 De esta manera, en las posteriores demostraciones solo tendremos que referirnos a la siguiente prueba para evitar su repetición.
-Notar que en esta instancia del programa, como se mencionó a lo largo de la sección, se permite la introducción de variables de tipo, y tamaños dinámicos de arreglos.
+Notar que en esta instancia del programa, como se mencionó a lo largo de la sección, se permite la introducción de variables de tipo, e
+identificadores de tamaños dinámicos de arreglos.
 
 \begin{Prueba}
 \label{PTList}
-Demostración de corrección para el tipo \emph{lista}.
+Derivación de corrección para el tipo \emph{lista}.
 \begin{prooftree}
 \AxiomC
 {$
@@ -294,13 +292,13 @@ $}
 \end{prooftree}
 \end{Prueba}
 
-Como la demostración de corrección de una función puede ser extensa, asumiremos que su cuerpo \textit{body} está especificado correctamente, y omitiremos su prueba en esta sección.
-Más adelante, una vez que se hayan detallado las reglas apropiadas, se podrá efectuar la parte restante de la prueba.
+Como la derivación de corrección de una función puede ser extensa, asumiremos existe una derivación $D$ del juicio de tipado para el cuerpo de la función dado que todavía no hemos introducido reglas de tipado para estas construcciones sintácticas; las cuales como ya adelantamos serán presentadas en la siguiente sección.
+Más adelante, una vez que se hayan detallado las reglas apropiadas presentaremos la derivación del juicio.
 Utilizando la derivación anterior, solo es necesario verificar el tipo del retorno de la función, lo cual es inmediato.
 
 \begin{Prueba}
 \label{PFPEmpty}
-Demostración de corrección para la función \emph{isEmpty}.
+Derivación de corrección para la función \emph{isEmpty}.
 \begin{prooftree}
 \AxiomC{Prueba~\ref{PTList}}
 \RightLabel{\RULE{\ref{TSinonimoP}}}
@@ -314,7 +312,7 @@ $}
 {$
 \PI{T} \DASH[\{ T \}_{tv}, \emptyset_{sn}]{t} \T{bool}
 $}
-\AxiomC{\ldots}
+\AxiomC{$D$}
 % Agregar Prueba?
 \RightLabel{\RULE{\ref{FPCuerpo}}}
 \UnaryInfC
@@ -331,7 +329,8 @@ donde $\pi_{tv} = \NT{typevariable}_{tv}$, y $\pi_{sn} = \NT{sname}_{sn}$.
 \end{Prueba}
 
 El fragmento de código~(\ref{isEmpty}) comprende la implementación, en la sintaxis concreta del lenguaje, de la función verificada.
-Un puntero nulo, el cual no apunta a nada, es interpretado como una lista vacía.
+La representación de la lista vacía la hacemos mediante el puntero null.
+%Un puntero nulo, el cual no apunta a nada, es interpretado como una lista vacía.
 Notar que en la prueba se utilizó una metavariable para representar al cuerpo de la construcción.
 Con esta abstracción, logramos concentramos en los aspectos relevantes para el análisis del prototipo de la función.
 
@@ -341,10 +340,10 @@ fun isEmpty (l : list of (T)) ret b : bool
 end fun
 \end{lstlisting}
 
-De forma análoga al caso anterior, para evitar una derivación extensa omitiremos la prueba para el cuerpo \textit{body} del procedimiento.
+De forma análoga al caso anterior, asumiremos existe una derivación $D$ del juicio de tipado para el cuerpo.
 Notar que hemos acumulado la información obtenida en el \textit{juicio de tipado} previo, a pesar que la misma no es utilizada durante la aplicación de las reglas.
 Esto pone de manifiesto la importancia en el orden de declaración para las funciones y los procedimientos de un programa.
-En esta prueba particular, solo se debe verificar el tipo del único argumento del procedimiento.
+En esta derivación particular, solo se debe verificar el tipo del único argumento del procedimiento.
 
 \begin{Prueba}
 \label{PFPTail}
@@ -356,7 +355,7 @@ Demostración de corrección para el procedimiento \emph{tail}.
 {$
 \PI{T} \DASH[\pi_{tv}, \pi_{sn}]{t} list \; \T{of} \; T
 $}
-\AxiomC{\ldots}
+\AxiomC{$D$}
 % Agregar Prueba?
 \RightLabel{\RULE{\ref{FPCuerpo}}}
 \UnaryInfC
@@ -373,7 +372,7 @@ donde $\pi_{tv} = \NT{typevariable}_{tv}$, y $\pi_{sn} = \NT{sname}_{sn}$.
 \end{Prueba}
 
 La implementación del procedimiento verificado, se ilustra en el código~(\ref{tail}).
-Nuevamente, se empleó una metavariable para representar al cuerpo de la construcción.
+%Nuevamente, se empleó una metavariable para representar al cuerpo de la construcción.
 El comentario en el fragmento de código indica la precondición del procedimiento.
 No puede ser invocado con una lista vacía, ya que se asume que la lista tiene al menos un elemento.
 Para eliminar el primer elemento de una lista es necesario liberar la memoria reservada para su respectivo nodo, donde previamente se modificó la lista para que señale al sucesor del elemento.
@@ -390,11 +389,11 @@ end proc
 
 \subsection{Chequeos para Cuerpos de Funciones y Procedimientos}
 
-Una parte importante en la derivación del \textit{juicio de tipado} para la declaración de una función, o procedimiento, es dar la prueba que su respectivo cuerpo es válido.
-Por lo cual, es necesario verificar las declaraciones de variables junto con las sentencias que lo conforman.
+Una parte importante en la derivación del \textit{juicio de tipado} para la declaración de una función, o procedimiento, es dar la derivación que su respectivo cuerpo es válido.
+Esto implica verificar las declaraciones de variables junto con las sentencias que lo conforman.
 Para las primeras, se deberá garantizar la unicidad de los identificadores empleados para nombrar variables, además de comprobar la validez de los tipos que las definen.
-Adicionalmente, las segundas tendrán su propio conjunto de reglas para efectuar su análisis.
-Según la sintaxis del lenguaje, el cuerpo \textit{body} de alguna de las construcciones anteriores, posee la siguiente forma donde $n \geq 0$ y $m > 0$.
+Adicionalmente, las sentencias tendrán su propio conjunto de reglas para efectuar su análisis.
+Según la sintaxis del lenguaje, el cuerpo \textit{body} de alguna de las construcciones anteriores, posee la siguiente forma donde $n \geq 0$ y $m > 0$, notar el cuerpo de una función o procedimiento tiene al menos una sentencia.
 \begin{gather*}
 variabledecl_1
 \\
@@ -409,7 +408,7 @@ sentence_1
 sentence_m
 \end{gather*}
 
-En esta etapa del análisis, se puede observar que contamos con una gran cantidad de información contextual, en nuestro alcance, para el chequeo del cuerpo.
+En esta etapa del análisis, se puede observar que contamos con una gran cantidad de información contextual, en nuestro alcance, para el chequeo del cuerpo de determinada función o procedimiento.
 Disponemos de los tipos definidos, las funciones y procedimientos declarados, e incluso las variables, de tipo y de tamaño, introducidas en el prototipo de la actual función, o procedimiento, siendo verificada.
 Por lo tanto, para facilitar la lectura de las siguientes reglas, flexibilizaremos un poco la notación para permitir el uso de determinados contextos como si fuesen funciones.
 \begin{align*}
@@ -425,9 +424,10 @@ si $(fp, \{ pa_1, \ldots, pa_l \}, cs ) \in \pi_{p}$
 \end{cases*}
 \end{align*}
 
-Asumiendo que el conjunto de identificadores utilizados para representar funciones en un programa, es disjunto al empleado para los procedimientos, entonces se puede usar la notación previa para obtener toda la información asociada a una declaración particular.
-De manera informal, diremos que $x \in \PI{FP}(fp)$ cuando en el prototipo de la función, o el procedimiento, se haya especificado algún parámetro con el mismo identificador.
-A la hora de construir la derivación para el \textit{juicio de tipado} de una declaración de variable, resultará conveniente poder determinar cuales identificadores fueron introducidas en el encabezado, para así verificar que una variable declarada en el cuerpo es fresca.
+%Asumiendo que el conjunto de identificadores utilizados para representar funciones en un programa, es disjunto al empleado para los procedimientos, entonces se puede usar la notación previa para obtener toda la información asociada a una declaración particular.
+Haciendo un abuso de notación diremos que vale $x \in \PI{FP}(fp)$ cuando este haya sido introducido como parámetro en el prototipo de $fp$
+%De manera informal, diremos que $x \in \PI{FP}(fp)$ cuando en el prototipo de la función, o el procedimiento, se haya especificado algún parámetro con el mismo identificador.
+%A la hora de construir la derivación para el \textit{juicio de tipado} de una declaración de variable, resultará conveniente poder determinar cuales identificadores fueron introducidas en el encabezado, para así verificar que una variable declarada en el cuerpo es fresca.
 
 \subsubsection{Contexto para Variables}
 
@@ -438,19 +438,23 @@ Abusando la notación, diremos que $x \in \pi_{v}$ cuando una variable ya se enc
 \pi_{v} \subseteq \{ (x, \theta) \mid x \in \NT{id} \wedge \theta \in \NT{type} \}
 \end{gather*}
 
-Verificar que una variable no pertenece al conjunto $x \notin \pi_{v}$, previa su incorporación, no es suficiente para garantizar la validez de la extensión del contexto.
-Una variable nueva debe ser fresca en el alcance actual, esto significa que tampoco puede haber sido declarada como parámetro de la función o procedimiento que la encapsula, $x \notin \PI{FP}(fp)$.
-Incluso, debido a la limitación que presenta la sintaxis concreta sobre los identificadores de tamaños dinámicos, tampoco puede ocurrir que se haya declarado un tamaño con el mismo nombre, $x \notin \pi_{sn}$.
-Todas estas condiciones deben ser satisfechas cada vez que se quiera expandir el contexto de variables, para evitar cualquier ambigüedad sobre el uso de los identificadores involucrados.
-Por lo tanto, permitiendo el abuso de notación, especificaremos lo siguiente para afirmar que un identificador es fresco en el alcance actual.
-\begin{gather*}
-x \notin \PI{FP}(fp) \cup \pi_{sn} \cup \pi_{v}
-\end{gather*}
+Para la declaración de una nueva variable $x$ en una función o procedimiento $fp$, es importante asegurar que no existe una declaración con igual nombre, es decir  $x \notin \pi_{v}$. Además tenemos que tener la precaución de su nombre tampoco aparezca en el prototipo de la función o procedimiento donde ocurre la declaración, es decir $x \notin \PI{FP}(fp)$.
+%Verificar que una variable no pertenece al conjunto $x \notin \pi_{v}$, previa su incorporación, no es suficiente para garantizar la validez de la extensión del contexto.
+%Una variable nueva debe ser fresca en el alcance actual, esto significa que tampoco puede haber sido declarada como parámetro de la función o procedimiento que la encapsula, $x \notin \PI{FP}(fp)$.
+%Incluso, debido a la limitación que presenta la sintaxis concreta sobre los identificadores de tamaños dinámicos, tampoco puede ocurrir que se haya declarado un tamaño con el mismo nombre, $x \notin \pi_{sn}$.
+%Todas estas condiciones deben ser satisfechas cada vez que se quiera expandir el contexto de variables, para evitar cualquier ambigüedad sobre el uso de los identificadores involucrados.
+Por lo tanto, escribiremos $x \notin \PI{FP}(fp) \cup
+\pi_{v}$ para decir que el identificador $x$ es fresco.
+
+%lo siguiente para afirmar que un identificador es fresco en el alcance actual.
+%\begin{gather*}
+%x \notin \PI{FP}(fp) \cup \pi_{sn} \cup \pi_{v}
+%\end{gather*}
 
 \subsubsection{Regla para Declaración de Variables}
 
-El siguiente \textit{juicio de tipado} denota que es válido extender al contexto de variables $\pi_{v}$ con la declaración verificada, bajo todos los contextos introducidos hasta el momento en el análisis.
-Notar el uso del índice $fp$ para representar al identificador de la función, o el procedimiento, que encapsula a la construcción.
+El siguiente \textit{juicio de tipado} denota que es válido extender al contexto de variables $\pi_{v}$ con una nueva variable, bajo todos los contextos ya mencionados.
+Notar el uso del índice $fp$ para representar al identificador de la función, o el procedimiento, que encapsula a la declaración.
 \begin{gather*}
 \PI{T}, \PI{FP}, \pi_{tv}, \pi_{sn}, \pi_{v} \DASHFP{fp}{vd} variabledecl : \pi'_{v}
 \end{gather*}
@@ -460,7 +464,7 @@ En primer lugar, todas las variables que se intentan declarar deben ser frescas.
 Como se mencionó recientemente, hay que garantizar que ningún identificador haya sido introducido aún en el alcance actual.
 En segundo lugar, el tipo asociado a las variables debe ser válido.
 Solo se permite el uso de los tamaños dinámicos, y las variables de tipo, que hayan sido especificados previamente en el prototipo.
-Recordar que la invariante de construcción del contexto de variables imponía, como restricción, la unicidad de los identificadores que lo conforman.
+Recordar que la invariante de construcción del contexto de variables imponía la unicidad de los identificadores que lo conforman.
 Por lo que de forma implícita, nos aseguramos que todas las variables definidas son distintas entre sí.
 
 \begin{FPRegla}
@@ -469,7 +473,7 @@ Declaración de Variables
 \begin{prooftree}
 \AxiomC
 {$
-x_i \notin \PI{FP}(fp) \cup \pi_{sn} \cup \pi_{v}
+x_i \notin \PI{FP}(fp) \cup \pi_{v}
 $}
 \AxiomC
 {$
@@ -485,10 +489,13 @@ donde $\pi'_{v} = (x_1, \theta) \triangleright \ldots \triangleright (x_l, \thet
 
 \subsubsection{Ejemplo de Prueba}
 
-Siguiendo con la prueba del fragmento~(\ref{tail}), a continuación demostraremos la corrección de la declaración de variable presente en el código.
-Recordar que al encontrarnos en el cuerpo del procedimiento $tail$, contamos con toda la información reunida hasta ese punto.
-En particular, disponemos de la definición de la \textit{lista abstracta}, es decir, de los tipos declarados junto con el encabezado de los operadores verificados.
-Notar que el único identificador introducido en el alcance actual, es el del parámetro de entrada/salida $l$.
+Tomando la derivación del fragmento~(\ref{tail}), a continuación demostraremos la corrección de la declaración de variable presente en el procedimiento.
+Recordar que para chequear el cuerpo del procedimiento tail, contamos con los contextos previamente definidos.
+%al encontrarnos en el cuerpo del procedimiento $tail$, contamos con toda la información reunida hasta ese punto.
+En particular con la declaración del tipo list y node.
+%disponemos de la definición de la \textit{lista abstracta}, es decir, de los tipos declarados junto con el encabezado de los operadores verificados.
+Notar que el único identificador introducido en el alcance actual, es el del parámetro de entrada/salida $l$, luego 
+$\PI{FP}(fp) (tail) \cup \emptyset = \{l\}$.
 
 \begin{Prueba}
 \label{PFPVariable}
@@ -532,22 +539,25 @@ donde $\pi_{v} = \{ (p, \T{pointer} \; node \; \T{of} \; T) \}$.
 
 \subsubsection{Regla para Cuerpos de Funciones y Procedimientos}
 
-Detallada la regla para chequear una declaración de variables, junto con la composición de todos los contextos necesarios para el análisis, ya estamos en condiciones de definir la regla para la verificación del cuerpo de una función o un procedimiento.
-La validación de las sentencias será formalizada más adelante, una vez que se haya precisado la manera de resolver el polimorfismo paramétrico que admiten las funciones y los procedimientos del programa.
-En este aspecto, será necesaria la definición de una función de sustitución que permita unificar los tipos de los parámetros esperados, contra los tipos de las expresiones recibidas durante la llamada de un procedimiento, o una función, determinado.
+%Detallada la regla para chequear una declaración de variables, junto con la composición de todos los contextos necesarios para el análisis, ya estamos en condiciones de definir la regla para la verificación del cuerpo de una función o un procedimiento.
+%La validación de las sentencias será formalizada más adelante, una vez que se haya precisado la manera de resolver el polimorfismo paramétrico que admiten las funciones y los procedimientos del programa.
+%En este aspecto, será necesaria la definición de una función de sustitución que permita unificar los tipos de los parámetros esperados, contra los tipos de las expresiones recibidas durante la llamada de un procedimiento, o una función, determinado.
 
-El \textit{juicio de tipado} para el cuerpo de una función o procedimiento $fp$, denota la validez de la construcción bajo los contextos reunidos.
+El \textit{juicio de tipado} correspondiente con el cuerpo de una función o procedimiento $fp$, define su corrección bajo las declaraciones de tipo y funciones o procedimientos contenidas en los contextos $\PI{T}$ y $\PI{FP}$, y las declaraciones introducidas por en el prototipo de $fp$.
 En esta verificación no será necesaria la extensión de ningún contexto, ya que toda la información dentro del cuerpo es local al prototipo que lo encapsula.
-La única tarea que se debe realizar en esta etapa, es garantizar la corrección de la estructura mencionada.
+%La única tarea que se debe realizar en esta etapa, es garantizar la corrección de la estructura mencionada.
 \begin{gather*}
 \PI{T}, \PI{FP}, \pi_{tv}, \pi_{sn} \DASHFP{fp}{b} body
 \end{gather*}
 
-Para probar el \textit{juicio de tipado} previo, es necesario verificar todos los elementos constituyentes de la estructura.
-Las declaraciones de variables que conforman al cuerpo, deberán ser validadas de forma secuencial.
-El contexto de variables será construido de manera incremental, a medida que se analizan cada una de las declaraciones.
-Con la información obtenida, el listado de sentencias será verificado para probar su corrección.
-Notar que el contexto de variables de tipo es omitido en el último \textit{juicio}, ya que no será necesario en el posterior análisis.
+Dar una derivación para este juicio de tipado será dar derivaciones para las declaraciones de variables donde cada contexto inicial del chequeo de una declaración será el contexto extendido producto de una declaración previa. Además, utilizando el contexto extendido con todas las declaraciones de variable tenemos que dar derivaciones para cada sentencia. El juicio de tipado para las sentencias y sus respectivas reglas será formalizado más adelante, una vez que se haya precisado la manera de resolver el polimorfismo paramétrico que admiten las funciones y los procedimientos del programa.
+%En este aspecto, será necesaria la definición de una función de sustitución que permita unificar los tipos de los parámetros esperados, contra los tipos de las expresiones recibidas durante la llamada de un procedimiento, o una función, determinado.
+
+%Para probar el \textit{juicio de tipado} previo, es necesario verificar todos los elementos constituyentes de la estructura.
+%Las declaraciones de variables que conforman al cuerpo, deberán ser validadas de forma secuencial.
+%El contexto de variables será construido de manera incremental, a medida que se analizan cada una de las declaraciones.
+%Con la información obtenida, las sentencias serán verificadas para probar su corrección.
+%Notar que el contexto de variables de tipo es omitido en el último \textit{juicio}, ya que no será necesario en el posterior análisis.
 
 \begin{FPRegla}
 \label{FPCuerpo}
@@ -571,9 +581,9 @@ donde el contexto inicial de variables es vacío $\pi^{0}_{v} = \emptyset$.
 
 \subsection{Operación de Sustitución}
 
-Los tipos que contienen ocurrencias de variables de tipo, o tamaños dinámicos de arreglos, pueden ser instanciados mediante la sustitución de sus elementos polimórficos por otros componentes cuyas categorías sintácticas sean adecuadas.
-La operación de sustitución opera sobre los tipos del lenguaje, y su comportamiento es determinado por el conjunto de sustituciones que se desea aplicar.
-Intuitivamente podemos pensar que una sustitución se propaga por toda la estructura de un tipo $\theta$, salvo cuando se encuentra con una variable, de tipo o de tamaño, en cuyo caso la reemplaza según lo indicado por la sustitución $\delta$.
+Los tipos que contienen ocurrencias de variables de tipo, o identificadores de tamaños dinámicos de arreglos, pueden ser instanciados mediante alguna sustitución. % de sus elementos polimórficos por otros componentes cuyas categorías sintácticas sean adecuadas.
+%La operación de sustitución opera sobre los tipos del lenguaje, y su comportamiento es determinado por el conjunto de sustituciones que se desea aplicar.
+Intuitivamente la aplicación de una sustitución a un tipo $\theta$ se propaga por toda la estructura del mismo, salvo cuando se encuentra con una variable, de tipo o de tamaño, en cuyo caso la substituye según lo indicado por la sustitución $\delta \in \Delta$.
 \begin{alignat*}{2}
 \_ &\mid \_
 &&\in
@@ -586,21 +596,25 @@ Intuitivamente podemos pensar que una sustitución se propaga por toda la estruc
 
 \subsubsection{Sustitución de Variables de Tipo}
 
-Un tipo que contiene variables de tipo, puede ser instanciado sustituyendo sus variables por otros tipos particulares.
-Esta situación puede suceder por dos causas distintas.
-En las declaraciones de tipo, es posible definir tipos paramétricos.
-Cuando se emplea un tipo paramétrico, será necesario reemplazar las variables de tipo que ocurren en su definición por los correspondientes parámetros de tipo que recibe.
-En una declaración de función o procedimiento, ciertos parámetros podrán ser de tipo polimórfico.
-Esto implica que a la hora de realizar una llamada a las construcciones mencionadas, será necesario intentar igualar los tipos de los parámetros esperados contra los tipos de los argumentos recibidos mediante una sustitución.
-A continuación, se define al conjunto $\Delta_{tv}$ de todas las sustituciones de variables de tipo en tipos, junto con la notación utilizada para representar una sustitución finita.
+Un tipo puede ser instanciado sustituyendo sus variables por otros tipos particulares.
+Esto puede ocurrir cuando tenemos: o bien, una declaración de tipo parametrizada que permite definir tipos más precisos instanciando algunas (o todas) sus variables de tipo;
+o una definición de función o procedimiento polimórfica.
+%Esta situación puede suceder por dos causas distintas.
+%En las declaraciones de tipo, es posible definir tipos paramétricos.
+%Cuando se emplea un tipo paramétrico, será necesario reemplazar las variables de tipo que ocurren en su definición por los correspondientes parámetros de tipo que recibe.
+%En una declaración de función o procedimiento, ciertos parámetros podrán ser de tipo polimórfico.
+Esto implica que al aplicar la función o procedimiento será necesario igualar los tipos de los parámetros esperados contra los tipos de los argumentos recibidos mediante una sustitución.
+Definimos al conjunto $\Delta_{tv}$ de todas las sustituciones de variables de tipo en tipos, junto con la notación utilizada para representar una sustitución finita.
 \begin{gather*}
 \Delta_{tv} = \NT{typevariable} \rightarrow \NT{type}
 \\
 [tv_1 : \theta_1, \ldots, tv_l : \theta_l]_{tv} \in \Delta_{tv}
 \end{gather*}
 
-La operación de sustitución para variables de tipo, debe reemplazar todas las variables que ocurren en un tipo $\theta$ particular, según lo dictado por la función de sustitución $\delta_{tv}$ provista.
-Notar que no se realiza ninguna modificación a los tipos básicos, y que la sustitución se debe propagar para todos los tipos internos.
+
+%La operación de sustitución para variables de tipo, debe reemplazar todas las variables que ocurren en un tipo $\theta$ particular, según lo dictado por la función de sustitución $\delta_{tv}$ provista.
+El operador de aplicación de substitución, aplica la substitución a todas las variables de tipo, como es esperable que no se realiza ninguna modificación a los tipos básicos, y para el caso de los tipos más complejos simplemente tenemos que propagar la aplicación del operador.
+% y que la sustitución se debe propagar para todos los tipos internos.
 \begin{align*}
 \delta_{tv}
 &\in
@@ -643,20 +657,23 @@ tn \; \T{of} \; \theta_1, \ldots, \theta_n \mid \delta_{tv}
 tn \; \T{of} \; (\theta_1 \mid \delta_{tv}), \ldots, (\theta_n \mid \delta_{tv})
 \end{align*}
 
-\subsubsection{Sustitución de Tamaños Dinámicos}
+\subsubsection{Sustitución de Identificadores de Tamaños Dinámicos}
 
-De forma análoga a la sustitución anterior, un tipo que posee ocurrencias de tamaños dinámicos, podrá ser instanciado reemplazando estos elementos por otros tamaños particulares.
-Esta situación solo podrá suceder por una causa determinada.
-En la declaración de tipos no se permite la utilización de tamaños dinámicos para definir nuevos tipos, por lo que a diferencia del caso previo, esta sustitución no será necesaria en este ámbito.
-En cambio, cuando se declara una función o un procedimiento, ciertos parámetros podrán contener tamaños dinámicos en sus arreglos.
-A la hora de realizar una llamada a una de estas construcciones, será preciso intentar igualar los tamaños de las dimensiones de los arreglos esperados por los parámetros, contra las dimensiones de los arreglos recibidos como argumentos mediante una sustitución.
-Se define al conjunto de todas las sustituciones de tamaños dinámicos en tamaños, de la siguiente forma.
+De forma análoga a la sustitución anterior, un tipo que posee ocurrencias de identificadores de tamaños dinámicos, podrá ser instanciado reemplazando estos elementos por otros tamaños particulares.
+%Esta situación solo podrá suceder por una causa determinada.
+%En la declaración de tipos no se permite la utilización de tamaños dinámicos para definir nuevos tipos, por lo que a diferencia del caso previo, esta sustitución no será necesaria en este ámbito.
+%En cambio, cuando se declara una función o un procedimiento, ciertos parámetros podrán contener tamaños dinámicos en sus arreglos.
+%A la hora de realizar una llamada a una de estas construcciones, será preciso intentar igualar los tamaños de las dimensiones de los arreglos esperados por los parámetros, contra las dimensiones de los arreglos recibidos como argumentos mediante una sustitución.
+Se define al conjunto de todas las sustituciones de identificadores de tamaños dinámicos en tamaños, de la siguiente forma.
 \begin{gather*}
 \Delta_{sn} = \NT{sname} \rightarrow \NT{arraysize}
 \end{gather*}
 
-La operación de sustitución para tamaños dinámicos, debe reemplazar todos estos elementos que ocurren en un tipo $\theta$ particular, en base a lo dictado por la función de sustitución $\delta_{sn}$ provista.
-Notar que no se realiza ninguna modificación a los tipos básicos, y que la sustitución se propaga para todos los tipos y tamaños internos.
+La operación de sustitución para identificadores de tamaños dinámicos opera de manera análoga a la de substitución para variables de tipos. Aunque es importante remarcar que la operación se debe propagar a los identificadores de tamaños para las dimensiones de arreglos que ocurren en el tipo. De esta manera si el tamaño $as$ es variable, deberá ser reemplazado según lo determinado por $\delta_{sn}$.
+En caso contrario, no se realizará ninguna modificación al mismo.
+
+%, debe reemplazar todos estos elementos que ocurren en un tipo $\theta$ particular, en base a lo dictado por la función de sustitución $\delta_{sn}$ provista.
+%Notar que no se realiza ninguna modificación a los tipos básicos, y que la sustitución se propaga para todos los tipos y tamaños internos.
 \begin{align*}
 \delta_{sn}
 &\in
@@ -699,9 +716,9 @@ tn \; \T{of} \; \theta_1, \ldots, \theta_n \mid \delta_{sn}
 tn \; \T{of} \; (\theta_1 \mid \delta_{sn}), \ldots, (\theta_n \mid \delta_{sn})
 \end{align*}
 
-Permitiendo el abuso de notación, la operación de sustitución se debe propagar a los tamaños para las dimensiones de arreglos que ocurren en el tipo.
-De esta manera si el tamaño $as$ es variable, deberá ser reemplazado según lo determinado por $\delta_{sn}$.
-En caso contrario, no se realizará ninguna modificación al mismo.
+%Permitiendo el abuso de notación, la operación de sustitución se debe propagar a los tamaños para las dimensiones de arreglos que ocurren en el tipo.
+%De esta manera si el tamaño $as$ es variable, deberá ser reemplazado según lo determinado por $\delta_{sn}$.
+%En caso contrario, no se realizará ninguna modificación al mismo.
 \begin{align*}
 as \mid \delta_{sn} =
 \begin{cases*}
@@ -717,50 +734,47 @@ si $as \in \NT{sname}$
 
 \subsection{Instancias de Clases}
 
-Similar a \Haskell{}, una clase puede ser pensada como una especie de interfaz que define algún comportamiento.
-Se dice que un tipo es una \textit{instancia} de la clase, cuando soporta e implementa el comportamiento que esta clase describe.
-En el lenguaje, este comportamiento se define mediante una serie de funciones y/o procedimientos que caracterizan las operaciones que ofrece la interfaz de la clase.
-Diremos que un tipo \textit{satisface} una clase, cuando es una instancia de la misma.
+En \Haskell{}~\cite{marlow2010haskell}, una clase puede ser pensada como una especie de interfaz que define algún comportamiento.
+Se dice que un tipo tiene una \textit{instancia} de la clase cuando soporta e implementa el comportamiento que esta clase describe. Recordamos que en este lenguaje tenemos un sistema de clases e instancias con el mismo espíritu pero mucho más restringido ya que no permitimos declarar nuevas clases ni instancias.
+%En el lenguaje, este comportamiento se define mediante una serie de funciones y/o procedimientos que caracterizan las operaciones que ofrece la interfaz de la clase.
+%Diremos que un tipo \textit{satisface} una clase, cuando es una instancia de la misma.
 
-Ciertos operadores solo pueden ser aplicados con valores cuyos tipos satisfacen determinadas clases.
-Siendo más específicos, nos referimos a los operadores de orden y de igualdad.
-Adicionalmente, al definir funciones y procedimientos, es posible especificar restricciones de clases como una especie de polimorfismo restringido.
-De esta manera, en la aplicación de las construcciones mencionadas, se impone el cumplimiento de una serie de clases para los tipos de las expresiones detalladas como argumentos.
-Debido a esto, es necesario precisar formalmente cuando un tipo determinado satisface cierta clase particular.
-
-Actualmente, en el lenguaje se encuentran declaradas solo dos clases.
-Todos los tipos que pueden ser comparados en base a su igualdad, son instancias de la clase \textbf{Eq}.
-Mientras, los tipos que manifiestan una noción de orden son instancias de la clase \textbf{Ord}.
-Eventualmente haremos mención de otras clases de manera informal.
-Por ejemplo, la que caracteriza a las estructuras iterables, o la que representa a los tipos que pueden ser enumerados.
-De todas maneras, ninguna de estas últimas clases se encuentra formalmente definida en el lenguaje.
-
-Debido que aún no se ha determinado un mecanismo concluyente para implementar instancias de clases, para los tipos definidos por el usuario, este aspecto del lenguaje puede resultar ambiguo.
-En base a la categoría de un tipo, y al entorno en el que se encuentra situado, habrá distintas condiciones para que el mismo pueda satisfacer, o no, una determinada clase del lenguaje.
-Se dice que un tipo $\theta$ satisface una clase $cl$, si cumple alguna de las siguientes reglas.
+%Ciertos operadores solo pueden ser aplicados con valores cuyos tipos satisfacen determinadas clases.
+%Siendo más específicos, nos referimos a los operadores de orden y de igualdad.
+%Adicionalmente, al definir funciones y procedimientos, es posible especificar restricciones de clases como una especie de polimorfismo restringido.
+%De esta manera, en la aplicación de las construcciones mencionadas, se impone el cumplimiento de una serie de clases para los tipos de las expresiones detalladas como argumentos.
+%Debido a esto, es necesario precisar formalmente cuando un tipo determinado satisface cierta clase particular.
+A continuación, describiremos entonces de manera informal cuando un tipo tiene instancia de alguna clase. Actualmente, en el lenguaje se encuentran definidas de forma nativa solo dos clases, \textbf{Eq} y \textbf{Ord}.% Todos los tipos básicos tienen instancias de estas clases.
+%Mientras, los tipos que manifiestan una noción de orden son instancias de la clase \textbf{Ord}.
+%Eventualmente haremos mención de otras clases de manera informal.
+%Por ejemplo, la que caracteriza a las estructuras iterables, o la que representa a los tipos que pueden ser enumerados.
+%De todas maneras, ninguna de estas últimas clases se encuentra formalmente definida en el lenguaje.
+%Debido que aún no se ha determinado un mecanismo concluyente para implementar instancias de clases, para los tipos definidos por el usuario, este aspecto del lenguaje puede resultar ambiguo.
+ En base a la categoría de un tipo, y al entorno en el que se encuentra situado, habrá distintas condiciones para que el mismo pueda satisfacer, o no, una determinada clase del lenguaje.
+Diremos informalmente que un tipo $\theta$ satisface una clase $cl$ cuando:
 \begin{enumerate}
 \item Si es un tipo básico, es decir $\theta \in \{ \T{int}, \T{real}, \T{char}, \T{bool} \}$, entonces satisface naturalmente ambas clases \textbf{Eq}, y \textbf{Ord}.
 Las operaciones de orden y de igualdad que ofrecen estas clases, se definen de la manera habitual.
-\item Si es un tipo puntero $\T{pointer} \; \theta$, solo va a satisfacer la clase \textbf{Eq}.
-Esta condición es independiente del tipo $\theta$.
-La igualdad de punteros se determina en base al lugar de memoria que se referencia, y no al valor almacenado en el.
-\item Si es un arreglo $\T{array} \; as_1, \ldots, as_n \; \T{of} \; \theta$, solo podrá satisfacer la clase \textbf{Eq}.
-Condicionado a que el tipo $\theta$ también sea instancia de esta misma clase.
-La igualdad depende que todos los valores almacenados en las distintas posiciones de los arreglos sean equivalentes. 
+%\item Si es un tipo puntero $\T{pointer} \; \theta$, solo va a satisfacer la clase \textbf{Eq}.
+%Esta condición es independiente del tipo $\theta$.
+%La igualdad de punteros se determina en base al lugar de memoria que se referencia, y no al valor almacenado en el.
+%\item Si es un arreglo $\T{array} \; as_1, \ldots, as_n \; \T{of} \; \theta$, solo podrá satisfacer la clase \textbf{Eq}.
+%Condicionado a que el tipo $\theta$ también sea instancia de esta misma clase.
+%La igualdad depende que todos los valores almacenados en las distintas posiciones de los arreglos sean equivalentes. 
 \item En el cuerpo de una función o un procedimiento $fp$, una variable de tipo $tv$ satisface una determinada clase $cl_{i}$, solo si en el prototipo correspondiente se impone como restricción.
 Es decir, en $cs$ ocurre la restricción de clases $tv : cl_1, \ldots, cl_{i}, \ldots, cl_m$.
 Las operaciones son determinadas de acuerdo al tipo concreto que la variable asume durante la ejecución.
 \item Si es un tipo enumerado $tn$, definido de la forma $\T{enum} \; tn = cn_1, \ldots, cn_m$, entonces satisface ambas clases \textbf{Eq}, y \textbf{Ord}.
-La instancia de igualdad se define como $cn_i = cn_i$, y la de orden como $cn_i < cn_{i + j}$, donde vale que $1 \leq i, i + j \leq m$.
-\item Si es un sinónimo de tipo $tn$, definido de la forma $\T{syn} \; tn = \theta$, entonces va a satisfacer las mismas clases que el tipo de su definición.
+La instancia de igualdad se define como $cn_i = cn_i$ para todo $i$, y la de orden como $cn_i < cn_{j}$, donde vale que $1 \leq i \leq j \leq m$.
+%\item Si es un sinónimo de tipo $tn$, definido de la forma $\T{syn} \; tn = \theta$, entonces va a satisfacer las mismas clases que el tipo de su definición.
 Las operaciones de orden e igualdad serían las que implementa $\theta$.
 \item Si es un sinónimo de tipo con parámetros $tn \; \T{of} \; \theta_1, \ldots, \theta_l$, definido de la forma $\T{syn} \; tn \; \T{of} \allowbreak \; tv_1, \dots, tv_l = \theta$, entonces va a satisfacer las mismas clases que el tipo al que representa.
 El cual se obtiene de aplicar la sustitución finita adecuada $\theta \mid [tv_1 : \theta_1, \ldots, tv_l : \theta_l]_{tv}$.
 Las operaciones disponibles del sinónimo, son las definidas por este último tipo.
-\item Si es una estructura de tipo tupla $tn$, definida de la forma $\T{tuple} \; tn = fd_1, \ldots, fd_m$, entonces va a satisfacer una clase siempre y cuando se encuentre implementada la instancia apropiada para la tupla.
-Ya que aún no se ha formalizado la manera de definir instancias para tuplas, esta categoría de tipos no satisface ninguna clase.
-\item Si es una estructura de tipo tupla con parámetros $tn \; \T{of} \; \theta_1, \ldots, \theta_l$, definida de la forma $\T{tuple} \; tn \; \T{of} \; tv_1, \ldots, tv_l = fd_1, \ldots, fd_m$, entonces va a satisfacer una clase siempre y cuando se encuentre implementada la instancia apropiada para la tupla y sus parámetros de tipo actuales.
-Ya que aún no se ha formalizado la manera de definir instancias para tuplas con parámetros, esta categoría de tipos no satisface ninguna clase.
+%\item Si es una estructura de tipo tupla $tn$, definida de la forma $\T{tuple} \; tn = fd_1, \ldots, fd_m$, entonces va a satisfacer una clase siempre y cuando se encuentre implementada la instancia apropiada para la tupla.
+%Ya que aún no se ha formalizado la manera de definir instancias para tuplas, esta categoría de tipos no satisface ninguna clase.
+%\item Si es una estructura de tipo tupla con parámetros $tn \; \T{of} \; \theta_1, \ldots, \theta_l$, definida de la forma $\T{tuple} \; tn \; \T{of} \; tv_1, \ldots, tv_l = fd_1, \ldots, fd_m$, entonces va a satisfacer una clase siempre y cuando se encuentre implementada la instancia apropiada para la tupla y sus parámetros de tipo actuales.
+%Ya que aún no se ha formalizado la manera de definir instancias para tuplas con parámetros, esta categoría de tipos no satisface ninguna clase.
 \end{enumerate}
 
 \iffalse
