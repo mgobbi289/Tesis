@@ -1,26 +1,22 @@
 % Chequeos Estáticos
 \section{Implementación de Chequeos Estáticos}
 
-Para terminar este capítulo presentaremos los detalles principales sobre un
-primer prototipo de implementación de los chequeos estáticos. Decimos prototipo porque a diferencia de la implementación del parser todavía quedan
-muchos aspectos por mejorar e implementar.
+Para terminar con el capítulo presentaremos los detalles principales sobre un primer prototipo de implementación para los chequeos estáticos.
+Decimos prototipo porque, a diferencia de la implementación del parser, todavía quedan muchos aspectos por desarrollar y mejorar.
 
-%Una vez definidos los chequeos estáticos de manera formal, ya estamos en condiciones para describir los detalles principales sobre su implementación en el intérprete.
-%Durante el desarrollo se procuró implementar las verificaciones adecuadas, manteniendo la mayor semejanza posible a los conceptos y razonamientos presentados a lo largo de la sección.
-%Claramente no siempre fue posible respetar la documentación teórica de manera exacta.
-%A continuación haremos mención de las decisiones más relevantes tomadas durante el desarrollo, la dificultades encontradas en el camino, y algunas limitaciones que debieron ser resueltas.
+% IDEA: Una vez definidos los chequeos estáticos de manera formal, ya estamos en condiciones para describir los detalles principales sobre su implementación en el intérprete.
+% IDEA: Durante el desarrollo se procuró implementar las verificaciones adecuadas, manteniendo la mayor semejanza posible a los conceptos y razonamientos presentados a lo largo de la sección.
+% IDEA: Claramente no siempre fue posible respetar la documentación teórica de manera exacta.
+% IDEA: A continuación haremos mención de las decisiones más relevantes tomadas durante el desarrollo, la dificultades encontradas en el camino, y algunas limitaciones que debieron ser resueltas.
 
 \subsection{Diseño General}
 
-Estudiando el desarrollo de Castegren y Reyes~\cite{MonadicTC} se adaptó el diseño presentado en este trabajo para nuestra implementación de los chequeos estáticos.
-El articulo reporta las experiencias durante el desarrollo de un compilador para un lenguaje concurrente orientado a los objetos, utilizando para su implementación el lenguaje funcional \Haskell{}.
+Estudiando el desarrollo de \textit{Castegren} y \textit{Reyes}~\cite{MonadicTC}, se adaptó el diseño presentado en este trabajo para nuestra implementación de los chequeos estáticos.
+El artículo reporta las experiencias durante el desarrollo de un compilador para un lenguaje concurrente orientado a los objetos, utilizando para su implementación el lenguaje funcional \Haskell{}.
 El foco del trabajo consiste en la implementación del \textit{chequeo de tipos}, donde de manera incremental se agregan funcionalidades complejas adicionales al diseño general inicial.
 Se hace fuerte hincapié en el uso de mónadas, como una herramienta fundamental para el desarrollo de los chequeos estáticos.
 
-% Mónada
-
-%El diseño del \textit{análisis semántico} para nuestro intérprete utiliza varios de los conceptos presentados en el trabajo.
-La mónada \lstinline[style = haskell]{RWS} es empleada para definir el \textit{chequeo de tipos}~(\ref{Monad}) del lenguaje.
+La mónada \lstinline[style = haskell]{RWS} es empleada para definir los \textit{chequeos estáticos}~(\ref{Monad}) del lenguaje.
 El entorno de lectura \lstinline[style = haskell]{Scope}, indica el identificador de la función o el procedimiento que actualmente está siendo verificado.
 La salida de escritura \lstinline[style = haskell]{SCWarnings}, consiste del listado de advertencias generadas durante el análisis estático.
 El estado variable \lstinline[style = haskell]{Context}, comprende toda la información reunida durante la verificación del programa; su composición es similar a los contextos formalizados durante los \textit{juicios de tipado}.
@@ -31,31 +27,25 @@ Al encontrar un error estático \lstinline[style = haskell]{SCError}, se utiliza
 type Check = RWST Scope SCWarnings Context (Except SCError)
 \end{lstlisting}
 
-% Traza
-
 Es fundamental que durante el análisis, cuando se genera un error o una advertencia, sea posible indicar \textit{donde} ocurre cada una.
-%La satisfacción de la propiedad requiere de la adaptación de nuestro \textit{typechecker}.
-Se define a la \textit{traza} del programa~(\ref{Backtrace}) como una lista de \textit{nodos}, donde cada uno posee información especifica del elemento sintáctico que representa.
-La definición del tipo \lstinline[style = haskell]{Backtrace} nos permitirá
-llevar un contexto global de donde es que está ocurriendo el chequeo de tipos.
-%es posible rastrear la posición en el \textit{árbol de sintaxis abstracta} de nuestro \textit{chequeo de tipos}, a medida que avanza en su verificación del programa.
+% IDEA: La satisfacción de la propiedad requiere de la adaptación de nuestro \textit{typechecker}.
+Se define a la \textit{traza} del programa~(\ref{Backtrace}) como una lista de \textit{nodos}, donde cada uno posee información específica del elemento sintáctico que representa.
+La definición del tipo \lstinline[style = haskell]{Backtrace} nos permite llevar un contexto global sobre donde ocurre el chequeo estático.
+% IDEA: Es posible rastrear la posición en el \textit{árbol de sintaxis abstracta} de nuestro \textit{chequeo de tipos}, a medida que avanza en su verificación del programa.
 
 La traza es actualizada cuando el análisis visita un nuevo nodo, lo cual permite que la posición sea rastreada de manera apropiada.
 Durante la verificación, su comportamiento es similar al de una pila.
 Cuando se analiza un nuevo elemento sintáctico se genera un nodo con la información correspondiente, para usar en el caso de necesitar producir un mensaje de error o advertencia.
-Si no hay ningún problema, el chequeador de tipos elimina al nodo creado y retorna la traza al estado anterior, continuando con el análisis del programa.
+Si no hay ningún problema, el \textit{chequeador} elimina al nodo creado y retorna la traza al estado anterior, continuando con el análisis del programa.
 
 \begin{lstlisting}[ style = haskell, caption = Traza de Análisis, label = Backtrace ]
 -- Backtrace
 newtype Backtrace = BT [BTNode]
 \end{lstlisting}
 
-% Error / Advertencia
-
 Cuando la verificación del programa falla, se genera un error estático~(\ref{Error}) con un mensaje descriptivo sobre su causa, junto con la respectiva traza de análisis y la posición en el archivo donde ocurre.
-El \textit{chequeador de tipos} solo reporta un único error a la vez pero es posible extenderlo para soportar múltiples mensajes de error.
-% las funcionalidades del actual \textit{análisis semántico} para soportar múltiples mensajes de error.
-En el articulo se describe una manera factible para la implementación de esta característica.
+El \textit{chequeador estático} solo reporta un único error a la vez, pero es posible extenderlo para soportar múltiples mensajes de error.
+En el artículo se describe una manera factible para la implementación de esta característica.
 
 \begin{lstlisting}[ style = haskell, caption = Error en Análisis Estático, label = Error ]
 -- StaticCheck Error
@@ -64,10 +54,10 @@ data SCError = SCE { errorMsg :: Error
                    }
 \end{lstlisting}
 
-%El intérprete debe informar al programador de patrones que puedan provocar errores en su programa.
-El \textit{chequeador de tipos} acumulará advertencias~(\ref{Warning}) durante el análisis, y en caso de no encontrar errores, deberá retornarlas una vez finalizado.
+% IDEA: El intérprete debe informar al programador de patrones que puedan provocar errores en su programa.
+El \textit{chequeador estático} acumulará advertencias~(\ref{Warning}) durante el análisis, y en caso de no encontrar errores, deberá retornarlas una vez finalizado.
 Una advertencia consiste de un mensaje descriptivo, junto con la traza de análisis adecuada y la posición en el archivo donde ocurre.
-%Durante la verificación del programa, se deben acumular la mayor cantidad posible de advertencias.
+% IDEA: Durante la verificación del programa, se deben acumular la mayor cantidad posible de advertencias.
 
 \begin{lstlisting}[ style = haskell, caption = Advertencia en Análisis Estático, label = Warning ]
 -- StaticCheck Warning
@@ -78,52 +68,47 @@ data SCWarning = SCW { warningMsg :: Warning
 type SCWarnings = [SCWarning]
 \end{lstlisting}
 
-% Contexto
-
 Durante el análisis del programa, la información reunida es almacenada en el contexto general~(\ref{Context}).
 Similar a la teoría, es necesario acumular las construcciones declaradas junto con los elementos introducidos en el alcance actual.
-El contexto general está compuesto por la \textit{traza} de análisis, y una serie de contextos específicos; como el de tipos definidos \lstinline[style = haskell]{CType}, el de funciones y procedimientos declarados \lstinline[style = haskell]{CFunProc}, y el de variables de tipo, tamaños dinámicos, y variables introducidas en el respectivo prototipo o cuerpo siendo analizado \lstinline[style = haskell]{CBlock}.
+El contexto general está compuesto por la \textit{traza} de análisis, y una serie de contextos específicos; como el de tipos definidos \lstinline[style = haskell]{CType}, el de funciones y procedimientos declarados \lstinline[style = haskell]{CFunProc}, y el de variables de tipo, identificadores para tamaños de arreglos, y variables introducidas en el respectivo prototipo o cuerpo siendo analizado \lstinline[style = haskell]{CBlock}.
 Cada uno de los \textit{datatypes} mencionados, cuenta con un conjunto de operaciones propias para trabajar con los datos almacenados en sus estructuras.
 
 \begin{lstlisting}[ style = haskell, caption = Contexto de Análisis, label = Context ]
 -- Context
 data Context = C { bTrace   :: Backtrace
-                 , cFunProc :: CM.CFunProc
+                 , cFunProc :: CFP.CFunProc
                  , cType    :: CT.CType
                  , cBlock   :: CB.CBlock
                  }
 \end{lstlisting}
 
-% Alcance
-
 Ciertas reglas para la derivación de los \textit{juicios de tipado}, son indexadas por el nombre de la función o el procedimiento siendo analizado.
 Esta particularidad es adaptada en la implementación~(\ref{Scope}).
 Es importante mencionar que si se consultara la \textit{traza} de análisis presente, sería posible obtener el identificador correspondiente a la construcción actual; evitando de esta forma la declaración del \textit{datatype}.
-Por cuestiones de simplicidad, se prefirió conservar la definición mencionada.
+Por cuestiones de simplicidad en la implementación, se prefirió conservar la definición mencionada.
 
 \begin{lstlisting}[ style = haskell, caption = Alcance de Análisis, label = Scope ]
 -- Scope
 data Scope = InFun  {getID :: Id}
            | InProc {getID :: Id}
+           | InType {getTN :: TName}
            | Out
 \end{lstlisting}
 
-% Tarea: Múltiples Errores / Fases
-
 \subsection{Módulos}
 
-En virtud de la complejidad de la implementación del \textit{chequeador de tipos}, se decidió separar su implementación en varios directorios.
+En virtud de la complejidad para el desarrollo del \textit{chequeador estático}, se decidió separar su implementación en varios directorios.
 Cada uno representa conceptos propios, y se encarga de ciertos aspectos específicos sobre la verificación del programa.
-A continuación, describiremos los detalles más relevantes sobre los módulos que componen esta implementación. %al \textit{typechecker}.
+A continuación, describiremos los detalles más relevantes sobre los módulos que componen esta implementación.
 
 \subsubsection{Error}
 
 El directorio \lstinline[style = module]{Error} está conformado por tres módulos diferentes.
-La \textit{traza} de análisis y sus operadores propios, junto con los \textit{nodos} que almacenan la información relevante sobre la posición del \textit{typechecker}, se encuentran definidos en \lstinline[style = module]{Error.Backtrace}.
-Haciendo uso de las construcciones declaradas en este módulo, se especifican los errores y las advertencias de los \textit{chequeos estáticos}.
+La \textit{traza} de análisis y sus operadores propios, junto con los \textit{nodos} que almacenan la información relevante sobre la posición del \textit{chequeador estático}, se encuentran definidos en \lstinline[style = module]{Error.Backtrace}.
+Haciendo uso de las construcciones declaradas en este módulo, se especifican los errores y las advertencias sobre los \textit{chequeos estáticos}.
 Los errores estáticos, junto con los respectivos mensajes informativos de error, son definidos en \lstinline[style = module]{Error.Error}.
 Las advertencias estáticas, junto con los respectivos mensajes informativos de advertencia, son definidas en \lstinline[style = module]{Error.Warning}.
-%Notar que la información relevante sobre cualquier problema encontrado durante el \textit{análisis semántico}, es administrada en el actual directorio.
+% IDEA: Notar que la información relevante sobre cualquier problema encontrado durante el \textit{análisis semántico}, es administrada en el actual directorio.
 La organización de los módulos fue adaptada de la bibliografía previamente citada.
 
 \subsubsection{Monad}
@@ -132,48 +117,47 @@ El directorio \lstinline[style = module]{Monad} está conformado por cinco módu
 La declaración de la mónada para los chequeos estáticos se encuentra en el módulo principal, \lstinline[style = module]{Monad.Monad}.
 La totalidad de las operaciones sobre la mónada está propiamente definida en el módulo.
 Se especifican las funciones para generar errores \lstinline[style = haskell]{errorSC} y advertencias \lstinline[style = haskell]{warningSC}, al igual que para administrar la \textit{traza} de análisis \lstinline[style = haskell]{withBT}.
-Adicionalmente todas las operaciones específicas sobre el contexto general y el alcance de análisis, son definidas de manera correspondiente para la mónada.
-%De esta forma se logran respetar las abstracciones, separando las funciones puras e impuras.
+Adicionalmente todas las operaciones específicas sobre el contexto general y el alcance de análisis, son definidas de manera adecuada para la mónada.
+% IDEA: De esta forma se logran respetar las abstracciones, separando las funciones puras e impuras.
 
 La información contextual necesaria para efectuar el análisis del programa, se divide en los contextos específicos mencionados anteriormente.
 Cada uno de los contextos es declarado en un módulo particular, junto con todos los operadores esenciales para acceder a su información almacenada.
 En \lstinline[style = module]{Monad.FunProc}, se define el contexto para funciones y procedimientos.
 En \lstinline[style = module]{Monad.Type}, se define el contexto para tipos de datos.
-En \lstinline[style = module]{Monad.Block}, se define el contexto para variables de tipo, tamaños dinámicos, y variables.
+En \lstinline[style = module]{Monad.Block}, se define el contexto para variables de tipo, identificadores para tamaños de arreglos, y variables.
 Notar que en el último contexto, también se almacenan las restricciones de clases que aún no han sido empleados en el respectivo cuerpo de la función o el procedimiento; la información es fundamental para el caso que fuese necesario generar una advertencia sobre la especificación de restricciones sin uso.
-Por último, el \textit{alcance} de análisis que determina si el \textit{chequeo de tipos} se encuentra dentro de una función o un procedimiento, se define en \lstinline[style = module]{Monad.Scope}.
+Por último, el \textit{alcance} de análisis que determina si el \textit{chequeo de tipos} se encuentra dentro de una función, un procedimiento, o una declaración de tipo, se define en \lstinline[style = module]{Monad.Scope}.
 
 \subsubsection{Check}
 
-El directorio \lstinline[style = module]{Check} está conformado por ocho módulos diferentes, en los cuales se encuentra la implementación de los
-\textit{juicios de tipado} y los demás \textit{chequeos estáticos} definidos
-formalemente en este capítulo.
-%Se procuró que las verificaciones implementadas sean semejantes a las formalizadas en la documentación.
-%De todas maneras, es claro que existen ciertas disparidades entre ambas.
-%Notar que las suposiciones e invariantes establecidas en la documentación, se convierten en propiedades que deben ser verificadas en la implementación.
+El directorio \lstinline[style = module]{Check} está conformado por ocho módulos diferentes, en los cuales se encuentra la implementación de los \textit{juicios de tipado} y los demás \textit{chequeos estáticos} definidos formalmente en este capítulo.
+% IDEA: Se procuró que las verificaciones implementadas sean semejantes a las formalizadas en la documentación.
+% IDEA: De todas maneras, es claro que existen ciertas disparidades entre ambas.
+% IDEA: Notar que las suposiciones e invariantes establecidas en la documentación, se convierten en propiedades que deben ser verificadas en la implementación.
 
 La llamada principal para la verificación de un programa se realiza en \lstinline[style = module]{Check.Program}.
 Su análisis se divide de acuerdo a los tipos declarados, y las funciones y los procedimientos definidos.
-Primero se efectúa el análisis para la declaración de nuevos tipos de datos, donde la verificación se especifica en \lstinline[style = module]{Check.TypeDecl}; en tanto que la validación para los tipos del lenguaje se detalla en \lstinline[style = module]{Check.Type}.
+Primero se efectúa el análisis para la declaración de tipos de datos, donde la verificación se especifica en \lstinline[style = module]{Check.TypeDecl}; en tanto que la validación para los tipos del lenguaje se detalla en \lstinline[style = module]{Check.Type}.
 Segundo se efectúa el análisis para las funciones y los procedimientos definidos, donde su verificación se especifica en el módulo \lstinline[style = module]{Check.FPDecl}; entre tanto los chequeos generales para sus respectivos cuerpos, y en particular las declaraciones de variables, se detallan en \lstinline[style = module]{Check.Block}.
 La definición para las funciones sobre la escritura y lectura de variables, al igual que las verificaciones asociadas al uso de variables, son especificadas en \lstinline[style = module]{Check.Variable}.
 Por último, el análisis de las sentencias del lenguaje se realiza en \lstinline[style = module]{Check.Statement}; a la vez que el análisis para las expresiones se detalla en \lstinline[style = module]{Check.Expr}.
 
 \subsubsection{TypeSystem}
-% Informal / Gut Feeling
 
-El directorio \lstinline[style = module]{TypeSystem} está conformado por cuatro módulos diferentes. Esta implementación es la gran responsable de que esta implementación sea considerada un primer prototipo: para resolver el polimorfismo que admiten ciertas construcciones del lenguaje la implementación resulta ser una solución \textit{ad hoc} básica. %, conveniente para auxiliar al \textit{typechecker} en la verificación del programa.
-%En futuras iteraciones de desarrollo del intérprete, será fundamental plantear alternativas para superar las limitaciones de la actual implementación.
+El directorio \lstinline[style = module]{TypeSystem} está conformado por cuatro módulos diferentes.
+La implementación en cuestión es la responsable que esta primer versión del lenguaje sea solo un prototipo.
+Para resolver el polimorfismo que admiten ciertas construcciones del lenguaje, la implementación resulta ser una solución \textit{ad hoc} básica.
+% IDEA: En futuras iteraciones de desarrollo del intérprete, será fundamental plantear alternativas para superar las limitaciones de la actual implementación.
 
-% propiamente al \textit{sistema de tipos}.
-%Notar que a pesar de su semejanza con la declaración de los tipos del lenguaje, existen diferencias fundamentales entre ambos.
-En \lstinline[style = module]{TypeSystem.TypeSystem} se define un sistema de tipos de \textit{uso interno} del chequeador de tipos. En este módulo, se implementa por ejemplo a los constructores de tipos enumerados o tuplas como tipo del sistema y en el caso de los sinónimos, son reemplazados por el tipo que representan.
-Además, implementamos un tipo polimórfico que esta específicamente definido para la constante \textbf{null}.
-En el módulo también se declara la función de sustitución finita, utilizada para instanciar a los tipos paramétricos del sistema.
+% IDEA: Notar que a pesar de su semejanza con la declaración de los tipos del lenguaje, existen diferencias fundamentales entre ambos.
+En \lstinline[style = module]{TypeSystem.TypeSystem} se define un sistema de tipos de \textit{uso interno} para nuestro \textit{chequeador de tipos}.
+En este módulo se implementan, por ejemplo, a los tipos enumerados o a las estructuras de tipo tupla como tipos del sistema, y en el caso de los sinónimos, son reemplazados por el tipo al que representan.
+Además se implementa un tipo polimórfico que es definido específicamente para la constante \textbf{null}.
+% IDEA: En el módulo también se declara la función de sustitución finita, utilizada para instanciar a los tipos paramétricos del sistema.
 
-En \lstinline[style = module]{TypeSystem.Instance} se definen las instancias de clase satisfechas por cada uno de los tipos del sistema.
-%Notar que las propiedades descriptas previamente en la documentación, son adaptadas en la implementación.
-Incluso también se declaran las instancias para los tipos enumerados, a pesar de no formar parte de una clase formal.
+En \lstinline[style = module]{TypeSystem.Instance} se definen las instancias de clases satisfechas por cada uno de los tipos del sistema.
+Notar que las propiedades descriptas previamente en la documentación, son adaptadas en la implementación.
+Incluso también se declaran las instancias para los tipos enumerables, a pesar de no formar parte de una clase formalmente definida.
 
 En \lstinline[style = module]{TypeSystem.Transform} se definen las operaciones para convertir un tipo de la sintaxis del lenguaje, a un tipo del sistema de tipos.
 La transformación es directa, salvo para los tipos definidos donde es necesario realizar un paso adicional para separarlos de acuerdo a su naturaleza.
@@ -183,45 +167,5 @@ Adicionalmente, se especifican las funciones auxiliares para obtener el tipo sin
 En \lstinline[style = module]{TypeSystem.Unification} se define un algoritmo de \textit{unificación} bien primitivo.
 En la llamada de una función o un procedimiento, es necesario demostrar la existencia de las funciones de sustitución adecuadas para igualar el tipo esperado por los parámetros, con el tipo recibido por los argumentos.
 En el caso de la implementación, con \lstinline[style = haskell]{unification} se intentan construir las sustituciones mencionadas de manera incremental.
-Iniciando con un \textit{contexto de unificación} vacío, se procura incorporar las sustituciones pertinentes a variables de tipo y tamaños dinámicos, para hacer coincidir los tipos esperados con los tipos recibidos.
+Iniciando con un \textit{contexto de unificación} vacío, se procura incorporar las sustituciones pertinentes a variables de tipo e identificadores de tamaños, para hacer coincidir los tipos esperados con los tipos recibidos.
 En caso exitoso, se verifica la satisfacción de las restricciones de clase de acuerdo a la sustitución construida.
-
-% ############################################
-% Esta reflexión re da más para la conclusión.
-% ############################################
-%Es importante destacar que la implementación puede llegar a resultar limitada en ciertos aspectos, debido que existen determinadas cuestiones que no han podido ser solucionadas.
-%La primera radica en que el \textit{sistema de tipos} especificado no soporta el subtipado numérico formalizado en la documentación.
-%De alguna manera, se debe permitir precisar una expresión entera cuando se espera una expresión real.
-%La segunda consiste de la imposibilidad de llamar a una función o un procedimiento con la constante \textbf{null} como argumento.
-%A causa del polimorfismo propio de la constante, se imposibilita hallar una sustitución apropiada en el algoritmo de \textit{unificación}; es posible que la implementación de \textit{inferencia de tipos} sea fundamental en este aspecto.
-
-% Telegram
-\iffalse
-yo diría que si usaste como guía bastante del paper
-
-podes arrancar contando un poco en general la implementación completa
-
-sin entrar en muchos detalles, quizá contando que mónadas usas, etc
-
-digo, un párrafo largo podría alcanzar
-
-y para cerrar podes mencionar esto, un poco de que trata cada módulo a modo de documentación
-%
-en resumen:
-- Daría una presentación general de la implementación utilizando al paper como base. Es decir, por ejemplo comentando qué  features implementa el typechecker y cómo; acá entra contar sobre las mónadas, etc. Una forma de verla a esta parte es un pequeño resumen del paper mezclado por supuesto con tu implementación digamos.
-- Una parte final de más documentación donde contás tanto como quieras de que trata cada módulo, o los módulos relevantes
-
-podría ser una sección no muy larga, donde el foco para mi debería estar en plasmar la arquitectura general del typechecker
-\fi
-% Operadores de Backtrace
-\iffalse
--- Constructor Functions
-emptyBT :: Backtrace
-emptyBT = BT []
-
-push :: BTNode -> Backtrace -> Backtrace
-push btn (BT btns) = BT (btn : btns)
-
-pop :: Backtrace -> Backtrace
-pop (BT btns) = BT (tail btns)
-\fi

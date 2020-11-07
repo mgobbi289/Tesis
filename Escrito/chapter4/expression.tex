@@ -1,25 +1,22 @@
 % Chequeos para Expresiones
 \subsection{Chequeos para Expresiones}
 
-%En esta sección, presentaremos las verificaciones para las expresiones del lenguaje.
-%Las propiedades a analizar consistirán, en esencia, de los chequeos de tipos para expresiones; por lo que las reglas especificadas posiblemente resulten ser las más naturales de pensar hasta el momento.
-%Adicionalmente también se formalizará el concepto de subtipado, fundamental para la derivación de \textit{juicios de tipado} donde intervienen expresiones de distintos tipos numéricos.
-
-%\subsubsection{Reglas para Expresiones}
+% IDEA: En esta sección, presentaremos las verificaciones para las expresiones del lenguaje.
+% IDEA: Las propiedades a analizar consistirán, en esencia, de los chequeos de tipos para expresiones; por lo que las reglas especificadas posiblemente resulten ser las más naturales de pensar hasta el momento.
+% IDEA: Adicionalmente también se formalizará el concepto de subtipado, fundamental para la derivación de \textit{juicios de tipado} donde intervienen expresiones de distintos tipos numéricos.
 
 La notación utilizada para el análisis de expresiones ya fue introducida en la sección previa, de todas formas, a continuación describiremos su significado formalmente.
-El siguiente \textit{juicio de tipado} denota que la expresión $e$ tiene tipo $\theta$ bajo los contextos $\PI{P}$, en el cuerpo de función o procedimiento $fp$.
-%El siguiente \textit{juicio de tipado} determina que una expresión $e$ de tipo $\theta$ es válida, bajo los contextos comprendidos por $\PI{P}$, en el cuerpo de la función o el procedimiento $fp$.
-%Notar que la información empleada en este análisis, es idéntica a la utilizada para sentencias.
+El siguiente \textit{juicio de tipado} denota que la expresión $e$ tiene tipo $\theta$ bajo los contextos comprendidos por $\PI{P}$, en el cuerpo de la función o el procedimiento $fp$.
+% IDEA: El siguiente \textit{juicio de tipado} determina que una expresión $e$ de tipo $\theta$ es válida, bajo los contextos comprendidos por $\PI{P}$, en el cuerpo de la función o el procedimiento $fp$.
+% IDEA: Notar que la información empleada en este análisis, es idéntica a la utilizada para sentencias.
 \begin{gather*}
 \PI{P} \DASHFP{fp}{e} e : \theta
 \end{gather*}
 
-%La verificación para las constantes del lenguaje es trivial.
+% IDEA: La verificación para las constantes del lenguaje es trivial.
 Las reglas para las constantes son directas, ya que no presentan ninguna premisa.
-Además, cualquier constante enumerada presente en su respectivo contexto nos da una prueba de que esta tiene el tipo que la declara.
-%, y su resultado es esperable.
-%Recordar que cada una de las metavariables especificadas representa un elemento particular cualquiera de la construcción sintáctica a la que se asocia.
+Además cualquier constante enumerada presente en el contexto correspondiente, demuestra que posee el tipo con el que fue declarada.
+% IDEA: Recordar que cada una de las metavariables especificadas representa un elemento particular cualquiera de la construcción sintáctica a la que se asocia.
 
 \begin{ERegla}
 \label{EConstante}
@@ -79,8 +76,8 @@ $}
 \end{prooftree}
 \end{ERegla}
 
-%Cuando se utiliza una constante enumerada, es necesario consultar el respectivo contexto de tipos definidos.
-%El resultado del \textit{juicio de tipado}, corresponderá al nombre empleado en la definición de tipo en el que la constante fue declarada.
+% IDEA: Cuando se utiliza una constante enumerada, es necesario consultar el respectivo contexto de tipos definidos.
+% IDEA: El resultado del \textit{juicio de tipado}, corresponderá al nombre empleado en la definición de tipo en el que la constante fue declarada.
 
 \begin{ERegla}
 \label{EEnumerada}
@@ -97,14 +94,15 @@ $}
 \end{prooftree}
 \end{ERegla}
 
-%La verificación de la constante \textbf{inf} es inmediata.
-%Se asume que posee tipo numérico entero.
-%Con la introducción de la regla de subtipado, también podrá ser utilizada como un valor numérico real.
-%La constante representa al límite superior o inferior, si se encuentra negada, para los conjuntos numéricos del lenguaje.
+% IDEA: La verificación de la constante \textbf{inf} es inmediata.
+% IDEA: Se asume que posee tipo numérico entero.
+% IDEA:Con la introducción de la regla de subtipado, también podrá ser utilizada como un valor numérico real.
+% IDEA: La constante representa al límite superior o inferior, si se encuentra negada, para los conjuntos numéricos del lenguaje.
 
-%La constante \textbf{null} tiene tipo polimórfico.
-La constante \textbf{null} simboliza un puntero que direcciona a una posición inválida de memoria. Por lo tanto, la constante puede ser utilizada como un puntero que señala a un tipo particular cualquiera.
-%En la implementación del intérprete, esto implicará el desarrollo de un algoritmo para la inferencia de tipos.
+% IDEA: La constante \textbf{null} tiene tipo polimórfico.
+La constante \textbf{null} simboliza un puntero que direcciona a una posición inválida de memoria.
+Por lo tanto, la constante puede ser utilizada como un puntero que señala a un tipo particular cualquiera.
+% IDEA: En la implementación del intérprete, esto implicará el desarrollo de un algoritmo para la inferencia de tipos.
 
 \begin{ERegla}
 \label{ENull}
@@ -118,16 +116,17 @@ $}
 \end{prooftree}
 \end{ERegla}
 
-Una variable puede haber sido introducida de dos formas: mediante la declaración en el cuerpo de una función o procedimiento, o como un parámetro. Definimos tres reglas que nos permitirán deducir el tipo de una variable en base al contexto correspondiente. En el caso de los identificadores de tamaño dinámico ocurre algo similar pero solo pueden ser introducidos en un
-prototipo de función o procedimiento y su tipo debe ser siempre $\T{int}$.
+Una variable puede haber sido introducida de dos maneras: mediante la declaración en el cuerpo de una función o un procedimiento, o como parámetro de alguna de estas construcciones.
+Definimos tres reglas que nos permitirán deducir el tipo de una variable en base al contexto correspondiente.
+En el caso de los identificadores para tamaños de arreglos ocurre algo similar, pero solo pueden ser introducidos en el prototipo de funciones o procedimientos, y su tipo debe ser siempre entero.
 
-%Los tamaños dinámicos introducidos en el prototipo de la función o el procedimiento, podrán ser empleados como cualquier otro valor en el respectivo cuerpo.
-%El tipo inferido para estos elementos será siempre entero.
-%Recordar que la sintaxis concreta del lenguaje utiliza el mismo formato para los identificadores de variables y los de tamaños dinámicos.
+% IDEA: Los tamaños dinámicos introducidos en el prototipo de la función o el procedimiento, podrán ser empleados como cualquier otro valor en el respectivo cuerpo.
+% IDEA: El tipo inferido para estos elementos será siempre entero.
+% IDEA: Recordar que la sintaxis concreta del lenguaje utiliza el mismo formato para los identificadores de variables y los de tamaños dinámicos.
 
-%Para una variable utilizada en el cuerpo de una función o un procedimiento, hay varias reglas distintas para la deducción de su tipo.
-%De acuerdo al entorno en el que fue introducida, se tendrá que emplear una u otra de las siguientes reglas.
-%En el caso de una variable que fue declarada dentro del cuerpo, solo hay que consultar al contexto adecuado.
+% IDEA: Para una variable utilizada en el cuerpo de una función o un procedimiento, hay varias reglas distintas para la deducción de su tipo.
+% IDEA: De acuerdo al entorno en el que fue introducida, se tendrá que emplear una u otra de las siguientes reglas.
+% IDEA: En el caso de una variable que fue declarada dentro del cuerpo, solo hay que consultar al contexto adecuado.
 
 \begin{ERegla}
 \label{EVariable}
@@ -144,8 +143,8 @@ $}
 \end{prooftree}
 \end{ERegla}
 
-%Al analizar el cuerpo de una función, con identificador $f$, puede suceder que nos encontremos con uno de los parámetros definidos en su prototipo.
-%En esta situación, el tipo con el que fue declarado será el tipo inferido por el \textit{juicio de tipado}.
+% IDEA: Al analizar el cuerpo de una función, con identificador $f$, puede suceder que nos encontremos con uno de los parámetros definidos en su prototipo.
+% IDEA: En esta situación, el tipo con el que fue declarado será el tipo inferido por el \textit{juicio de tipado}.
 
 \begin{ERegla}
 \label{EParametroF}
@@ -162,8 +161,8 @@ $}
 \end{prooftree}
 \end{ERegla}
 
-%Al analizar el cuerpo de un procedimiento, con nombre $p$, puede ocurrir una situación análoga a la anterior.
-%Si se encuentra al identificador de uno de sus parámetros, el tipo inferido por el \textit{juicio} será el declarado en el respectivo prototipo.
+% IDEA: Al analizar el cuerpo de un procedimiento, con nombre $p$, puede ocurrir una situación análoga a la anterior.
+% IDEA: Si se encuentra al identificador de uno de sus parámetros, el tipo inferido por el \textit{juicio} será el declarado en el respectivo prototipo.
 
 \begin{ERegla}
 \label{EParametroP}
@@ -182,7 +181,7 @@ $}
 
 \begin{ERegla}
 \label{EDinamico}
-Tamaños Dinámicos
+Identificadores de Tamaños
 \begin{prooftree}
 \AxiomC
 {$
@@ -196,10 +195,10 @@ $}
 \end{ERegla}
 
 El siguiente grupo de reglas nos permiten chequear la correcta aplicación de los operadores sobre variables.
-%Las siguientes reglas nos permitirán chequear la aplicación de los operadores de variables.
-%Comenzando con los punteros, es necesario verificar que la variable ha acceder sea efectivamente uno.
-%El tipo inferido por el \textit{juicio}, será el referido por el puntero.
-%Durante el análisis dinámico del programa, se deberá asegurar que el acceso solo pueda ser efectuado en memoria reservada.
+% IDEA: Las siguientes reglas nos permitirán chequear la aplicación de los operadores de variables.
+% IDEA: Comenzando con los punteros, es necesario verificar que la variable ha acceder sea efectivamente uno.
+% IDEA: El tipo inferido por el \textit{juicio}, será el referido por el puntero.
+% IDEA: Durante el análisis dinámico del programa, se deberá asegurar que el acceso solo pueda ser efectuado en memoria reservada.
 El operador $\star$ aplicado a una variable $v$ nos permite acceder al valor del bloque de memoria apuntado por esta, por lo tanto el tipo de $v$ debe ser un puntero.
 
 \begin{ERegla}
@@ -217,13 +216,14 @@ $}
 \end{prooftree}
 \end{ERegla}
 
-%Para el acceso a tuplas, la regla presenta una complejidad adicional.
-%Es necesario verificar que la variable involucrada sea efectivamente una tupla.
-%Recordar que la única manera de operar con tuplas, es habiendo definido previamente un tipo con esta estructura.
-La regla para el acceso a un campo de una tuplas es interesante,
-recordemos que el tipo tupla no existe, sino que es una construcción sintáctica que nos permite declarar nuevos tipos, por lo tanto la
-variable a la cual le aplicamos el operador ``$.$'', para acceder a alguno de sus campos, debe tener como tipo el nombre de uno que fue declarado usando tuplas. En base a los parámetros declarados en la definición del tipo, y los argumentos de tipo que fueron especificados cuando se introdujo la variable, debe existir una correspondiente sustitución. % al campo solicitado.
-% Notar que solamente se necesita una sustitución finita, aplicada exclusivamente a variables de tipo, debido a las propiedades que cumplen las declaraciones de tipo del lenguaje.
+% IDEA: Para el acceso a tuplas, la regla presenta una complejidad adicional.
+% IDEA: Es necesario verificar que la variable involucrada sea efectivamente una tupla.
+% IDEA: Recordar que la única manera de operar con tuplas, es habiendo definido previamente un tipo con esta estructura.
+La regla para el acceso al campo de una tuplas es interesante.
+Recordemos que el tipo tupla no existe propiamente, sino que es una construcción sintáctica que nos permite declarar nuevos tipos.
+Por lo tanto, la variable a la cual le aplicamos el operador para acceder a uno de sus campos, debe haber sido declarada como una estructura de tipo tupla.
+De acuerdo a los parámetros declarados en la definición del tipo, y los argumentos de tipo que fueron especificados cuando se introdujo la variable, debe existir una sustitución adecuada.
+% IDEA: Notar que solamente se necesita una sustitución finita, aplicada exclusivamente a variables de tipo, debido a las propiedades que cumplen las declaraciones de tipo del lenguaje.
 
 \begin{ERegla}
 \label{ETupla}
@@ -245,11 +245,10 @@ $}
 \end{prooftree}
 \end{ERegla}
 
-La regla para el acceso a los valores de un arreglo debe comprobar que la variable involucrada sea en efecto un arreglo.
-Además, todas las expresiones que determinan cual es el elemento del arreglo al cual queremos acceder deben tener tipo $\T{int}$.
-%es necesario verificar que todas las expresiones sean de tipo entero, y que su cantidad coincida con las dimensiones que posee la estructura.
+La regla para el acceso a valores de un arreglo debe comprobar que la variable involucrada sea en efecto un arreglo.
+Además todas las expresiones que determinan cual es la posición que se quiere acceder deben tener tipo entero, y su cantidad tiene que coincidir con las dimensiones que posee la estructura.
 Notar que no es posible realizar un acceso parcial de un arreglo.
-%Durante el análisis dinámico del programa, se deberá asegurar que el acceso solo pueda ser realizado dentro de los límites válidos de las dimensiones del arreglo.
+% IDEA: Durante el análisis dinámico del programa, se deberá asegurar que el acceso solo pueda ser realizado dentro de los límites válidos de las dimensiones del arreglo.
 
 \begin{ERegla}
 \label{EArreglo}
@@ -270,12 +269,11 @@ $}
 \end{prooftree}
 \end{ERegla}
 
-El siguiente conjunto de reglas definen las reglas intuitivas para los operadores aritméticos y booleanos.
-%Definiendo las reglas para los operadores del lenguaje, se puede observar que varios se encuentran sobrecargados.
-%Lo cual significa que el comportamiento de los operadores dependerá del tipo de argumentos que se le aplican.
-%En particular, los operadores numéricos pueden ser utilizados para trabajar con valores enteros y reales.
-%Luego de introducida la regla de subtipado, se podrá notar que las deducciones son aún más flexibles permitiendo operandos de distintos tipos.
-%Por ejemplo, la sumatoria de números enteros con números reales.
+El siguiente conjunto de reglas define los chequeos intuitivos ha realizar para los operadores aritméticos y booleanos.
+% IDEA: Definiendo las reglas para los operadores del lenguaje, se puede observar que varios se encuentran sobrecargados.
+% IDEA: Lo cual significa que el comportamiento de los operadores dependerá del tipo de argumentos que se le aplican.
+Notar que los operadores numéricos pueden ser utilizados para trabajar con valores enteros y reales.
+% IDEA: Luego de introducida la regla de subtipado, se podrá notar que las deducciones son aún más flexibles permitiendo operandos de distintos tipos.
 
 \begin{ERegla}
 \label{EOperadorBN}
@@ -348,9 +346,9 @@ $}
 \end{prooftree}
 \end{ERegla}
 
-%En el caso de los operadores booleanos, sus reglas resultan ser más básicas.
-%Nos encontramos con una situación donde no se utiliza ninguna especie de polimorfismo, ni subtipado, interesante.
-%Para el análisis de los operadores, solo es necesario verificar que los operandos involucrados tengan el tipo adecuado.
+% IDEA: En el caso de los operadores booleanos, sus reglas resultan ser más básicas.
+% IDEA: Nos encontramos con una situación donde no se utiliza ninguna especie de polimorfismo, ni subtipado, interesante.
+% IDEA: Para el análisis de los operadores, solo es necesario verificar que los operandos involucrados tengan el tipo adecuado.
 
 \begin{ERegla}
 \label{EOperadorBB}
@@ -371,7 +369,10 @@ $}
 \end{prooftree}
 donde $\oplus \in \{ \&\&, || \}$.
 \end{ERegla}
-%
+
+% Salto de Página
+\newpage
+
 \begin{ERegla}
 \label{EOperadorUB}
 Operadores Unarios Booleanos
@@ -387,12 +388,13 @@ $}
 \end{prooftree}
 \end{ERegla}
 
-%Los operadores que restan por dotar de reglas son los de igualdad y orden.
-Para el caso de las operaciones de igualdad y orden, sus operandos tiene que tener el mismo tipo. Más importante hay una condición informal que pedimos, dado que como ya mencionamos aun no tenemos una definición formal del concepto de instancia, y es que $\theta$ debe tener instancia \textbf{Eq} y/o \textbf{Ord} según corresponda.
-%Sus argumentos tendrán que tener el mismo tipo, y el resultado de su aplicación será un valor booleano.
-%Solo estarán definidos para los tipos que sean instancias de las clases \textbf{Eq}, y \textbf{Ord} respectivamente.
-%El concepto de instancias de clases ya fue introducido, donde se dio una descripción informal sobre cuales son las condiciones para que un tipo particular satisfaga las clases mencionadas.
-%Considerando esta información, las reglas se detallan a continuación.
+% IDEA: Los operadores que restan por dotar de reglas son los de igualdad y orden.
+Para el caso de las operaciones de igualdad y orden, sus operandos deben ser del mismo tipo.
+Más importante aún existe una condición informal que requerimos, dado que aún no contamos con una definición formal del concepto de instancia, donde $\theta$ debe tener instancia \textbf{Eq} u \textbf{Ord} según corresponda.
+% IDEA: Sus argumentos tendrán que tener el mismo tipo, y el resultado de su aplicación será un valor booleano.
+% IDEA: Solo estarán definidos para los tipos que sean instancias de las clases \textbf{Eq}, y \textbf{Ord} respectivamente.
+% IDEA: El concepto de instancias de clases ya fue introducido, donde se dio una descripción informal sobre cuales son las condiciones para que un tipo particular satisfaga las clases mencionadas.
+% IDEA: Considerando esta información, las reglas se detallan a continuación.
 
 \begin{ERegla}
 \label{EOperadorI}
@@ -435,28 +437,31 @@ $}
 donde $\oplus \in \{ <, >, <=, >= \}$, y se satisface que el tipo $\theta$ tiene instancia \textbf{Ord}.
 \end{ERegla}
 
-%El análisis de la llamada a una función es el más complejo de todos los especificados, hasta el momento, para las expresiones.
-%Es necesario verificar una serie de propiedades relacionadas con el polimorfismo que admite la función; para las cuales emplearemos los conceptos previos sobre la operación de sustitución, y las instancias de clases del lenguaje.
-%El primero será utilizado para resolver el polimorfismo paramétrico, mientras que el segundo para garantizar el cumplimiento de las restricciones de clases.
+\iffalse
+El análisis de la llamada a una función es el más complejo de todos los especificados, hasta el momento, para las expresiones.
+Es necesario verificar una serie de propiedades relacionadas con el polimorfismo que admite la función; para las cuales emplearemos los conceptos previos sobre la operación de sustitución, y las instancias de clases del lenguaje.
+El primero será utilizado para resolver el polimorfismo paramétrico, mientras que el segundo para garantizar el cumplimiento de las restricciones de clases.
 
-%Claramente existe una analogía con el análisis para la llamada de procedimientos, por lo que no entraremos en demasiados detalles sobre el razonamiento detrás del análisis de la expresión.
+Claramente existe una analogía con el análisis para la llamada de procedimientos, por lo que no entraremos en demasiados detalles sobre el razonamiento detrás del análisis de la expresión.
 
-%La operación de \textit{unificación} intenta demostrar la existencia de las funciones de sustitución necesarias para hacer coincidir los tipos esperados por los parámetros de la función, contra los tipos de los argumentos recibidos en la respectiva llamada.
-%En el caso que se pueda probar su existencia, la aplicación de las funciones mencionadas deberá ser propagada al retorno de la función analizada.
-%De esta manera, reemplazando todas las ocurrencias de las variables de tipo y los tamaños dinámicos, se obtiene el tipo del resultado de la función.
+La operación de \textit{unificación} intenta demostrar la existencia de las funciones de sustitución necesarias para hacer coincidir los tipos esperados por los parámetros de la función, contra los tipos de los argumentos recibidos en la respectiva llamada.
+En el caso que se pueda probar su existencia, la aplicación de las funciones mencionadas deberá ser propagada al retorno de la función analizada.
+De esta manera, reemplazando todas las ocurrencias de las variables de tipo y los tamaños dinámicos, se obtiene el tipo del resultado de la función.
 
-%En la llamada de una función es necesario verificar tres propiedades.
-%Por claridad, ciertas premisas de la regla serán especificadas fuera de la misma.
-%Primero, la función debe haber sido definida y la cantidad de argumentos en la llamada tiene que coincidir con el número de parámetros en la declaración.
-%Segundo, es posible unificar los tipos esperados con los tipos actuales de las expresiones, mediante la aplicación de alguna función de sustitución; donde la aplicación debe ser propagada al retorno de la función.
-%Tercero, se satisfacen las restricciones de clases impuestas para las variables de tipo de la declaración.
-%Notar que si la función definida no introduce ningún elemento polimórfico en su prototipo, es decir variables de tipo o tamaños dinámicos, entonces no será necesario probar la existencia de ninguna función de sustitución.
+En la llamada de una función es necesario verificar tres propiedades.
+Por claridad, ciertas premisas de la regla serán especificadas fuera de la misma.
+Primero, la función debe haber sido definida y la cantidad de argumentos en la llamada tiene que coincidir con el número de parámetros en la declaración.
+Segundo, es posible unificar los tipos esperados con los tipos actuales de las expresiones, mediante la aplicación de alguna función de sustitución; donde la aplicación debe ser propagada al retorno de la función.
+Tercero, se satisfacen las restricciones de clases impuestas para las variables de tipo de la declaración.
+Notar que si la función definida no introduce ningún elemento polimórfico en su prototipo, es decir variables de tipo o tamaños dinámicos, entonces no será necesario probar la existencia de ninguna función de sustitución.
+\fi
 
-La regla para la aplicación de un función puede considerarse como la más compleja de las reglas para expresiones, de manera similar a lo que ocurría
-en el caso de las sentencias con la llamada a un procedimiento. A su vez, esta regla tiene una fuerte similitud con la regla para los procedimientos.
-La regla posee cuatro premisas. La primera, debe asegurar la existencia
-de la función. La segunda y tercera que existe una sustitución que permita
-unificar determinados tipos. La cuarta, que se satisfagan las restricciones de clases que fueron introducidas en el prototipo de la función.
+La regla para la aplicación de una función puede considerarse como la más compleja de las reglas para expresiones, de manera similar a lo que ocurría
+en el caso de las sentencias con la llamada a un procedimiento; las cuales poseen una fuerte similitud entre sí.
+La regla posee cuatro premisas.
+La primera, debe asegurar la existencia de la función y que la cantidad de argumentos sea adecuada.
+La segunda y tercera, prueban la existencia de una sustitución que permita unificar los tipos en cuestión.
+La cuarta, comprueba que se satisfacen las restricciones de clases que fueron declaradas en el prototipo de la función.
 
 \begin{ERegla}
 \label{EFuncion}
@@ -495,12 +500,11 @@ Si esta sustitución existe, entonces se deben satisfacer todas las restriccione
 \end{equation*}
 \end{ERegla}
 
-\subsubsection{Ejemplo de Derivación}
+\subsubsection{Ejemplo de Prueba}
 
-Tomando la derivación del fragmento~(\ref{tail}), podemos construir una nueva derivación para el juicio de tipado que involucra a la aplicación del procedimiento \textit{free} a la variable $p$.
+Retomando la demostración del fragmento~(\ref{tail}), podemos construir una nueva derivación para el juicio de tipado que involucra la aplicación del procedimiento \textit{free} con la variable $p$.
 Recordar que al encontrarnos en el cuerpo del procedimiento $tail$, contamos con toda la información reunida hasta ese punto.
 En particular disponemos de la declaración de la \textit{lista abstracta}, la cual comprende los tipos definidos junto con el prototipo de los operadores verificados; y los elementos introducidos en el alcance actual, como los parámetros del procedimiento y las variables declaradas en su cuerpo.
-% Disponemos de las reglas para expresiones y sentencias
 
 \begin{Prueba}
 \label{PSFree}
@@ -523,15 +527,18 @@ $}
 \end{prooftree}
 \end{Prueba}
 
-%\subsubsection{Subtipado}
+\subsubsection{Conversión Numérica}
 
-Al conjunto de reglas actuales le sumaremos una regla bien general, respecto  que la definimos para cualquier expresión, que nos extiende el sistema de tipos con una versión extremadamente primitiva de subtipado; solo definimos la posibilidad de tipar correctamente una expresión con tipo $\T{real}$ cuando esta misma tiene $\T{int}$.
+Al conjunto de reglas actuales para expresiones, le añadiremos una regla bien general que estará definida para cualquier expresión.
+La cual extenderá al sistema de tipos con una versión extremadamente primitiva de subtipado; donde solo definimos la posibilidad de tipar correctamente una expresión con tipo $\T{real}$, cuando la misma sea de tipo $\T{int}$.
 
-%El subtipado es una forma de polimorfismo donde un tipo $\theta$, denominado \textit{subtipo}, está relacionado con otro tipo $\theta'$, denominado \textit{supertipo}, por alguna noción de sustitución~\cite{Subtipado}.
-%Siendo más precisos, cualquier expresión de tipo $\theta$ puede ser utilizada en un contexto en el que se espera una expresión de tipo $\theta'$.
-%En el lenguaje se define una relación de subtipado básica, donde solo se precisa una única regla sobre los tipos numéricos.
-%La regla de subtipado permite utilizar expresiones de tipo entero donde correspondería especificar expresiones de tipo real.
-%Lo cual significa que ciertas secciones de un programa, donde se trabajan con números reales, también podrían hacerlo con números enteros.
+\iffalse
+El subtipado es una forma de polimorfismo donde un tipo $\theta$, denominado \textit{subtipo}, está relacionado con otro tipo $\theta'$, denominado \textit{supertipo}, por alguna noción de sustitución~\cite{Subtipado}.
+Siendo más precisos, cualquier expresión de tipo $\theta$ puede ser utilizada en un contexto en el que se espera una expresión de tipo $\theta'$.
+En el lenguaje se define una relación de subtipado básica, donde solo se precisa una única regla sobre los tipos numéricos.
+La regla de subtipado permite utilizar expresiones de tipo entero donde correspondería especificar expresiones de tipo real.
+Lo cual significa que ciertas secciones de un programa, donde se trabajan con números reales, también podrían hacerlo con números enteros.
+\fi
 
 \begin{ERegla}
 \label{ESubtipado}
@@ -548,13 +555,15 @@ $}
 \end{prooftree}
 \end{ERegla}
 
-%Al introducir esta regla, se puede observar que de alguna manera se flexibiliza el sistema de tipos del lenguaje.
-%Ciertos \textit{juicios de tipado} que no eran posibles derivar con el conjunto de reglas especificadas hasta el momento, ahora podrán ser demostrados como válidos.
-%Incluso existen los medios para que un \textit{juicio} determinado tenga más de una derivación asociada.
-%Esto claramente supondrá una complejidad adicional en el futuro estudio teórico del lenguaje, como la definición de su semántica denotacional.
+\iffalse
+Al introducir esta regla, se puede observar que de alguna manera se flexibiliza el sistema de tipos del lenguaje.
+Ciertos \textit{juicios de tipado} que no eran posibles derivar con el conjunto de reglas especificadas hasta el momento, ahora podrán ser demostrados como válidos.
+Incluso existen los medios para que un \textit{juicio} determinado tenga más de una derivación asociada.
+Esto claramente supondrá una complejidad adicional en el futuro estudio teórico del lenguaje, como la definición de su semántica denotacional.
+\fi
 
-Esta regla si bien simple nos permite, por ejemplo, la posibilidad de realizar asignaciones de expresiones enteras a variables declaradas con tipo real. Incluso menos natural, podemos dar una derivación para el juicio de tipado de
-una asignación cuya componente izquierda tiene tipo $\T{int}$ y la derecha tipo $\T{real}$.
+Esta regla si bien simple nos permite, por ejemplo, realizar asignaciones de expresiones enteras a variables declaradas con tipo real.
+Incluso menos natural, resulta posible dar una derivación para el juicio de tipado de una asignación cuya componente izquierda tiene tipo $\T{int}$ y derecha tiene tipo $\T{real}$.
 
 \begin{prooftree}
 \AxiomC
@@ -587,8 +596,8 @@ $}
 $}
 \end{prooftree}
 
-Así mismo, introducir esta regla es
-suficiente para que ahora exista la posibilidad de tener más de una derivación para un mismo juicio de tipado notar que para el \textit{juicio} de la expresión $1 + 2$ existen al menos dos derivaciones distintas cuando se espera un valor real.
+Así mismo, introducir esta regla es suficiente para que ahora exista la posibilidad de tener más de una derivación para un mismo juicio de tipado.
+Notar que para el \textit{juicio} de la expresión $1 + 2$ existen al menos dos derivaciones distintas cuando se espera un valor real.
 Supongamos que los contextos comprendidos en $\PI{P}$ están definidos de forma adecuada.
 
 \begin{prooftree}
@@ -650,15 +659,14 @@ $}
 \subsection{Equivalencia de Tipos}
 
 Se puede observar que ciertos tipos de nuestro sistema son equivalentes entre sí, a pesar de utilizar construcciones sintácticas diferentes.
-Un ejemplo es la declaración de un sinónimo de tipo $\T{syn} \; tn = \theta$. %por parte del usuario, junto con el tipo especificado en el cuerpo de su definición.
-Sintácticamente estos dos elementos serán distintos ya que el primero se representará solo con su nombre $tn$ y sus argumentos (si tuviese), mientras que el segundo podrá ser un tipo $\theta$ válido cualquiera del lenguaje.
-En determinados contextos querremos que esta igualdad sea válida.
-%De todas maneras es claro que se puede establecer una igualdad semántica entre ambos elementos, y de hecho queremos que esta equivalencia valga.
+Un ejemplo es la declaración de un sinónimo de tipo $\T{syn} \; tn = \theta$.
+Sintácticamente ambos elementos serán distintos, ya que el primero se representará solo con su nombre $tn$ y sus argumentos (si tuviese), mientras que el segundo podrá ser un tipo $\theta$ válido cualquiera del lenguaje.
+En determinados contextos queremos que la igualdad sea válida.
+% IDEA: De todas maneras es claro que se puede establecer una igualdad semántica entre ambos elementos, y de hecho queremos que esta equivalencia valga.
 
 \subsubsection{Reglas para Equivalencia de Tipos}
 
 Durante el análisis de un programa si un tipo $\theta$ es equivalente a otro tipo $\theta'$, entonces en cualquier contexto en el que se espera una expresión $e$ del primer tipo, se podrá utilizar una expresión $e'$ del segundo tipo.
-%Donde esta facultad no altera ninguna de las propiedades estáticas deseables del programa.
 El \textit{juicio de equivalencia} determina que un tipo $\theta$ es equivalente a otro tipo $\theta'$, bajo el contexto de tipos $\PI{T}$.
 \begin{gather*}
 \PI{T} \DASH{u} \theta \sim \theta'
@@ -739,6 +747,9 @@ Claramente es necesario definir las reglas de equivalencia restantes para las co
 Comenzando con los punteros, la deducción es bastante simple.
 Si ciertos tipos cualquiera son equivalentes, entonces un puntero que referencia a uno de estos es equivalente a un puntero que señala al otro.
 
+% Salto de Página
+\newpage
+
 \begin{ETRegla}
 \label{ETPuntero}
 Punteros
@@ -791,8 +802,8 @@ $}
 \end{prooftree}
 \end{ETRegla}
 
-Las otras reglas más relevantes de todo este contexto son las que nos permiten probar la equivalencia de un sinónimo de tipo con el tipo que lo define.
-%La razón por la cual se formalizó el concepto de equivalencia de tipos, es para las siguientes reglas sobre los sinónimos de tipo del lenguaje. 
+Las reglas más relevantes de todo este contexto, son las que nos permiten probar la equivalencia de un sinónimo de tipo con el tipo que lo define.
+% IDEA: La razón por la cual se formalizó el concepto de equivalencia de tipos, es para las siguientes reglas sobre los sinónimos de tipo del lenguaje.
 Las cuales permiten intercambiar con libertad el uso de un tipo declarado, con el tipo de su respectiva definición a lo largo de un programa.
 Para el caso puntual de los sinónimos sin parámetros, la derivación es directa ya que solo es necesario demostrar su existencia en el correspondiente contexto de sinónimos definidos.
 
@@ -811,10 +822,9 @@ $}
 \end{prooftree}
 \end{ETRegla}
 
-En el caso de un sinónimo con parámetros, es necesario realizar % una operación adicional.
-%Limitar la verificación a solo chequear que el tipo se encuentre declarado, y que la cantidad de argumentos sea correcta, no es suficiente.
-%Adicionalmente se debe aplicar
-la sustitución de variables de tipo correspondiente al cuerpo de su definición, de acuerdo a los parámetros declarados junto con los argumentos recibidos, obteniendo de esta manera el tipo al que equivale.
+En el caso de un sinónimo con parámetros, es necesario realizar la sustitución apropiada.
+% IDEA: Limitar la verificación a solo chequear que el tipo se encuentre declarado, y que la cantidad de argumentos sea correcta, no es suficiente.
+Aplicando la sustitución de variables de tipo al cuerpo de su definición, de acuerdo a los parámetros declarados junto con los argumentos recibidos, se obtiene el tipo equivalente.
 
 \begin{ETRegla}
 \label{ETSinonimoP}
@@ -831,11 +841,14 @@ $}
 \end{prooftree}
 \end{ETRegla}
 
-\subsubsection{Ejemplo de Derivación}
+\subsubsection{Ejemplo de Prueba}
 
-%Una vez definidas las reglas para probar la equivalencia de tipos, ya estamos en condiciones para demostrar la igualdad entre la \textit{lista} declarada, y el \textit{puntero a nodo} de su definición.
+Estamos en condiciones para demostrar la igualdad entre la \textit{lista} declarada, y el \textit{puntero a nodo} de su definición.
 Siguiendo en el contexto de chequeo de tipos del procedimiento \textit{tail}, continuaremos con la prueba del fragmento~(\ref{tail}).
 Notar que en el código se combinan expresiones de ambos tipos de forma intercambiable, por lo que la siguiente prueba es fundamental para comprobar la validez de las sentencias del procedimiento que aún restan por verificar.
+
+% Salto de Página
+\newpage
 
 \begin{Prueba}
 \label{PETLista}
@@ -868,14 +881,15 @@ $}
 \end{prooftree}
 \end{Prueba}
 
-%Utilizando un razonamiento similar al empleado en la prueba anterior, es posible demostrar la validez de la función \textit{isEmpty} especificada en el fragmento de código~(\ref{isEmpty}).
-%Observar que solo resta por verificar la asignación efectuada en su cuerpo, ya que el análisis del prototipo fue realizado previamente.
-%Su deducción es dejada como ejercicio para el lector.
+\iffalse
+Utilizando un razonamiento similar al empleado en la prueba anterior, es posible demostrar la validez de la función \textit{isEmpty} especificada en el fragmento de código~(\ref{isEmpty}).
+Observar que solo resta por verificar la asignación efectuada en su cuerpo, ya que el análisis del prototipo fue realizado previamente.
+Su deducción es dejada como ejercicio para el lector.
+\fi
 
-%Continuando con el análisis, al utilizar la prueba de equivalencia, es posible validar la inicialización de la variable dentro del procedimiento.
-Notar para la siguiente derivación que el tipo de la variable $p$ es \textit{puntero a nodo}, por lo que difiere del tipo del parámetro $l$ el cual es \textit{lista}.
-Al introducir las reglas sobre equivalencia de tipos podemos ahora dar una derivación para esta asignación.
-%, contamos con las herramientas necesarias para demostrar la validez de la asignación en cuestión.
+% IDEA: Continuando con el análisis, al utilizar la prueba de equivalencia, es posible validar la inicialización de la variable dentro del procedimiento.
+Notar en la siguiente derivación que el tipo de la variable $p$ es \textit{puntero a nodo}, por lo que difiere del tipo del parámetro $l$ el cual es \textit{lista}.
+Al introducir las reglas sobre equivalencia de tipos, somos capaces de dar una derivación para esta asignación.
 
 \begin{Prueba}
 \label{PSAsignacion}
@@ -906,9 +920,10 @@ donde $\theta = \T{pointer} \; node \; \T{of} \; T$
 \end{Prueba}
 
 Para finalizar la derivación completa del procedimiento \textit{tail}, solo resta probar la sentencia que asigna al sucesor del primer elemento como nuevo primer elemento de la lista.
-%Debido que en esta derivación intervienen varios conceptos, su prueba es separada en dos partes por cuestiones de claridad.
-La primera derivación involucra los operadores para el acceso de variables, los cuales comprenden al de punteros y al de tuplas.
-Notar que se aplicó la traducción adecuada al \textit{azúcar sintáctico} empleado en el código. Por último, la segunda consiste propiamente de la asignación de las listas involucrados.
+% IDEA: Debido que en esta derivación intervienen varios conceptos, su prueba es separada en dos partes por cuestiones de claridad.
+La primer derivación involucra a los operadores para el acceso de variables, los cuales comprenden al de punteros y al de tuplas.
+Notar que se aplicó la traducción adecuada al \textit{azúcar sintáctico} empleado en el código.
+La segunda consiste propiamente de la asignación de las listas involucradas.
 
 \begin{Prueba}
 \label{PEFlecha}
@@ -962,36 +977,3 @@ $}
 \end{prooftree}
 donde $\theta = \T{pointer} \; node \; \T{of} \; T$
 \end{Prueba}
-
-% Prueba Eliminada: Lista en isEmpty
-\iffalse
-\begin{Prueba}
-\label{PETLista}
-Demostración de equivalencia de \emph{lista}.
-\begin{prooftree}
-\AxiomC
-{$
-\PI{FP}(isEmpty) = (\{ l : list \; \T{of} \; T \}, b : \T{bool}, \emptyset )
-$}
-\RightLabel{\RULE{\ref{EParametroF}}}
-\UnaryInfC
-{$
-\PI{P} \DASHFP{isEmpty}{e} l : list \; \T{of} \; T
-$}
-\AxiomC
-{$
-(list, \{ A \}, \T{pointer} \; node \; \T{of} \; A) \in \pi_{s}
-$}
-\RightLabel{\RULE{\ref{ETSinonimoP}}}
-\UnaryInfC
-{$
-\PI{T} \DASH{u} list \; \T{of} \; T \sim \T{pointer} \; node \; \T{of} \; T
-$}
-\RightLabel{\RULE{\ref{ETUnificacion}}}
-\BinaryInfC
-{$
-\PI{P} \DASHFP{isEmpty}{e} l : \T{pointer} \; node \; \T{of} \; T
-$}
-\end{prooftree}
-\end{Prueba}
-\fi

@@ -1,16 +1,15 @@
 % Sintaxis
 En el siguiente capítulo, nos dedicaremos principalmente a la definición del lenguaje.
 Se precisará de manera formal su sintaxis abstracta, y se presentará de manera informal su sintaxis concreta.
-Una vez definidas, comenzaremos con la descripción de los aspectos principales sobre la implementación del parser de \Lenguaje{}.
-%Idealmente, esta sección del trabajo formará parte de la documentación del futuro intérprete.
+Una vez definidas, comenzaremos con la descripción de los aspectos principales sobre la implementación del parser de nuestro lenguaje.
+% IDEA: Idealmente, esta sección del trabajo formará parte de la documentación del futuro intérprete.
 
 \section{Sintaxis Abstracta}
 
-La sintaxis del lenguaje ya se expuso de manera informal en el capítulo anterior, mediante los distintos ejemplos que se fueron ilustrando a lo largo del desarrollo. A continuación, describiremos de manera formal la \textit{sintaxis abstracta} de \Lenguaje{}, como ya mencionamos esta sintaxis
-pretende capturar las componentes relevantes de las distintas construcciones sintácticas del lenguaje eliminando detalles poco relevantes de una sintaxis
-concreta.
-%A pesar de esta situación, si se quisiera hacer un estudio formal del lenguaje, lo correcto sería dar una definición precisa de su sintaxis.
-%Por lo tanto, a continuación se describirá la \textit{sintaxis abstracta} de \Lenguaje{}.
+La sintaxis del lenguaje ya se expuso de manera informal en el capítulo anterior, mediante los distintos ejemplos que se fueron ilustrando a lo largo de su desarrollo.
+A continuación describiremos de manera formal la \textit{sintaxis abstracta} de \Lenguaje{}, donde ya mencionamos que esta sintaxis pretende capturar las componentes relevantes de las distintas construcciones sintácticas del lenguaje eliminando detalles poco importantes de su sintaxis concreta.
+% IDEA: A pesar de esta situación, si se quisiera hacer un estudio formal del lenguaje, lo correcto sería dar una definición precisa de su sintaxis.
+% IDEA: Por lo tanto, a continuación se describirá la \textit{sintaxis abstracta} de \Lenguaje{}.
 
 \subsection{Expresiones}
 
@@ -84,8 +83,8 @@ $\NT{procedurecall}$ $::=$ $\NT{id}$ $($ $\NT{expression}$ $\ldots$ $\NT{express
 \end{lstlisting}
 
 La especificación de la sentencia \textit{if} es compleja en lo que refiere a su sintaxis concreta.
-Para simplificar la sintaxis abstracta, nos limitaremos a solo permitir una única alternativa para su especificación.
-%Notar que las versiones complejas de la sentencia, empleadas en capítulos anteriores, pueden ser definidas mediante azúcar sintáctico.
+En cambio para obtener una sintaxis abstracta simple, nos limitaremos a solo permitir una única alternativa para su especificación.
+% IDEA: Notar que las versiones complejas de la sentencia, empleadas en capítulos anteriores, pueden ser definidas mediante azúcar sintáctico.
 
 \begin{lstlisting}[style = syntax]
 $\NT{if}$ $::=$ $\T{if}$ $\NT{expression}$ $\T{then}$ $\NT{sentences}$ $\T{else}$ $\NT{sentences}$
@@ -93,7 +92,7 @@ $\NT{if}$ $::=$ $\T{if}$ $\NT{expression}$ $\T{then}$ $\NT{sentences}$ $\T{else}
 
 Finalizando con las sentencias, otra instrucción que presenta varias alternativas es el \textit{for}.
 Con la sentencia es posible declarar una variable, la cual tomará valores en un rango determinado, y ejecutar de forma iterada un bloque de sentencias específico.
-Los rangos ascendentes se definen con \textbf{to}, y los descendentes con \textbf{downto}.
+Los rangos ascendentes se definen con \textbf{to}, y los rangos descendentes con \textbf{downto}.
 
 \begin{lstlisting}[style = syntax]
 $\NT{for}$ $::=$ $\T{for}$ $\NT{id}$ $:=$ $\NT{expression}$ $\T{to}$ $\NT{expression}$ $\T{do}$ $\NT{sentences}$
@@ -103,7 +102,7 @@ $\NT{for}$ $::=$ $\T{for}$ $\NT{id}$ $:=$ $\NT{expression}$ $\T{to}$ $\NT{expres
 \subsection{Tipos}
 
 Los tipos que soporta \Lenguaje{} pueden dividirse en dos categorías, los nativos del lenguaje y los definidos por el usuario.
-A su vez los nativos puede separarse en básicos (\textbf{int}, \textbf{real}, \textbf{bool}, \textbf{char}), y estructurados ($\NT{array}$, $\NT{pointer}$).
+A su vez los nativos pueden separarse en básicos (\textbf{int}, \textbf{real}, \textbf{bool}, \textbf{char}), estructurados ($\NT{array}$), y punteros ($\NT{pointer}$).
 
 \begin{lstlisting}[style = syntax]
 $\NT{type}$ $::=$ $\T{int}$ | $\T{real}$ | $\T{bool}$ | $\T{char}$
@@ -113,10 +112,10 @@ $\NT{type}$ $::=$ $\T{int}$ | $\T{real}$ | $\T{bool}$ | $\T{char}$
       | $\NT{typevariable}$
 \end{lstlisting}
 
-Del lado de los tipos nativos estructurados, se tienen a los arreglos y a los punteros.
+Del lado de los tipos nativos restantes, se tienen a los arreglos y a los punteros.
 Para los primeros, hay que especificar como se definen los tamaños para sus dimensiones.
-El no terminal $\NT{sname}$ representa a los identificadores de tamaño dinámico introducido en el prototipo de funciones y procedimientos.
-Para los segundos, solo se debe indicar cual es el tipo de valores que se va a referenciar.
+El no terminal $\NT{sname}$ representa a los identificadores empleados para abstraer los tamaños de arreglos, los cuales son introducidos en el prototipo de funciones y procedimientos.
+Para los segundos, solo se debe indicar cual es el tipo de valores que serán señalados por el puntero.
 
 \begin{lstlisting}[style = syntax]
 $\NT{array}$ $::=$ $\T{array}$ $\NT{arraysize}$ $\ldots$ $\NT{arraysize}$ $\T{of}$ $\NT{type}$
@@ -126,8 +125,8 @@ $\NT{arraysize}$ $::=$ $\NT{natural}$ | $\NT{sname}$
 $\NT{pointer}$ $::=$ $\T{pointer}$ $\NT{type}$
 \end{lstlisting}
 
-En el caso de las variables de tipo, las mismas poseen su propia clase de identificadores.
-En cambio para los tipos definidos por el usuario, además de su nombre representado por el no terminal $\NT{tname}$, se deben detallar los tipos en los cuales será instanciado.
+En el caso de las variables de tipo, las mismas poseen su propia clase de identificadores específicos.
+En cambio para los tipos definidos por el usuario, además de su nombre representado por el no terminal $\NT{tname}$, se deberán detallar los tipos en los cuales es instanciado.
 Si el mismo no posee parámetros, el terminal \textbf{of} podrá ser obviado para abreviar la notación.
 
 \begin{lstlisting}[style = syntax]
@@ -143,17 +142,16 @@ Lo cual significa que se debe detallar, para todos los parámetros individualmen
 $\NT{io}$ $::=$ $\T{in}$ | $\T{out}$ | $\T{in/out}$
 \end{lstlisting}
 
-Existe una serie de clases predefinidas para los tipos del programa.
-Las cuales representan una especie de interfaz que caracteriza las propiedades que cumplen cada uno de los tipos que las definen.
-En la primer versión del lenguaje, solo se precisan formalmente dos clases.
+Existen una serie de clases predefinidas para los tipos del lenguaje, donde cada clase representa una especie de interfaz que caracteriza las propiedades que cumplen cada uno de los tipos que las definen.
+En la versión actual del lenguaje solo se precisan formalmente dos clases, la primera para comprobar igualdad de elementos y la segunda para ordenar valores.
 
 \begin{lstlisting}[style = syntax]
 $\NT{class}$ $::=$ $\T{Eq}$ | $\T{Ord}$
 \end{lstlisting}
 
-En la declaración de nuevos tipos por parte del usuario hay tres posibilidades.
-Se pueden definir tipos enumerados, sinónimos de tipos, y estructuras de tipo tupla.
-Para los dos últimos, se pueden especificar parámetros de tipo que permiten crear construcciones más abstractas.
+Para la declaración de un nuevo tipo por parte del usuario, existen tres posibilidades.
+En el lenguaje se pueden definir tipos enumerados, sinónimos de tipos, y estructuras de tipo tupla.
+Exceptuando al primero, al declarar un tipo es posible especificar parámetros de tipo que permiten crear construcciones más abstractas, aprovechando el polimorfismo paramétrico soportado por el lenguaje.
 Similar a lo dicho previamente, si los tipos declarados no poseen argumentos entonces el terminal \textbf{of} se omite para abreviar la notación.
 
 \begin{lstlisting}[style = syntax]
@@ -168,7 +166,7 @@ $\NT{field}$ $::=$ $\NT{fname}$ $:$ $\NT{type}$
 
 \subsection{Programas}
 
-Para finalizar con la sintaxis abstracta del lenguaje, describiremos como se especifica un programa en la misma.
+Para finalizar con la sintaxis abstracta del lenguaje, debemos describir como se especifica un programa con la misma.
 Un programa está compuesto por una serie de declaraciones de tipo, seguidas de una serie de declaraciones de funciones y/o procedimientos.
 
 \begin{lstlisting}[style = syntax]
@@ -179,7 +177,7 @@ $\NT{funprocdecl}$ $::=$ $\NT{function}$ | $\NT{procedure}$
 
 El cuerpo de una función o un procedimiento está conformado primero por una lista de declaraciones de variables, y segundo por una lista de sentencias.
 Para declarar una variable solo se tiene que especificar su identificador, junto con el tipo que posee.
-Observar que existe la posibilidad de definir múltiples variables en una sola declaración, y que no es posible declarar variables entre sentencias.
+Observar que existe la posibilidad de definir múltiples variables en una sola declaración, y que no es posible declarar variables entre las sentencias del cuerpo.
 
 \begin{lstlisting}[style = syntax]
 $\NT{body}$ $::=$ $\NT{variabledecl}$ $\ldots$ $\NT{variabledecl}$ $\NT{sentences}$
@@ -188,7 +186,7 @@ $\NT{variabledecl}$ $::=$ $\T{var}$ $\NT{id}$ $\ldots$ $\NT{id}$ $:$ $\NT{type}$
 \end{lstlisting}
 
 Una función posee un identificador propio, una lista de argumentos, un retorno, y un bloque que conforma su cuerpo.
-Tanto para los argumentos, como para el retorno, solo se tienen que detallar sus identificadores junto con el tipo del valor que representarán.
+Tanto para los argumentos, como para el retorno, solo se tienen que detallar sus identificadores junto con el tipo de datos que representarán.
 
 \begin{lstlisting}[style = syntax]
 $\NT{function}$ $::=$ $\T{fun}$ $\NT{id}$ $($ $\NT{funargument}$ $\ldots$ $\NT{funargument}$ $)$ $\T{ret}$ $\NT{funreturn}$
@@ -231,7 +229,7 @@ De todas maneras, consideramos importante mencionar algunas características que
 En el lenguaje hay diversas categorías de identificadores.
 Las cuales pueden ser separadas en dos clases, las que comienzan con minúscula $\NT{lower}$, y las que comienzan con mayúscula $\NT{upper}$.
 Para el resto del cuerpo, se tiene la misma estructura $\NT{rest}$ en ambos casos.
-En la primera clase se encuentran los identificadores de variables, funciones y procedimientos, a los tamaños dinámicos de arreglos, los alias para campos de tuplas, y por último los tipos definidos por el usuario.
+En la primera clase se encuentran los identificadores de variables, funciones y procedimientos, a los tamaños abstractos de arreglos, los alias para campos de tuplas, y por último los tipos definidos por el usuario.
 Mientras que la segunda clase está conformada por los identificadores para variables de tipo, y las constantes enumeradas.
 
 \begin{lstlisting}[style = syntax]
@@ -248,8 +246,8 @@ $\NT{typeid}$ $::=$ $\NT{upper}$ $\NT{rest}$
 $\NT{cname}$ $::=$ $\NT{upper}$ $\NT{rest}$
 \end{lstlisting}
 
-Se puede observar que de acuerdo al contexto, y al formato del identificador parseado somos capaces de distinguir a que clase de elemento se está haciendo referencia en el código, a excepción de un caso particular.
-Dentro de una expresión, no es posible diferenciar al identificador de una variable del identificador empleado para el tamaño dinámico de un arreglo.
+Se puede observar que de acuerdo al contexto y al formato del identificador parseado, somos capaces de distinguir a que clase de elemento se está haciendo referencia en el código, a excepción de un caso particular.
+Dentro de una expresión, no es posible diferenciar al identificador de una variable del identificador empleado para abstraer el tamaño de un arreglo.
 Lo cual nos obliga a tener una precaución adicional a la hora de los chequeos estáticos para ser capaces de reconocer a cada uno.
 
 A continuación describimos los distintos caracteres que pueden conformar un identificador del lenguaje.
@@ -273,8 +271,8 @@ $\NT{other}$ $::=$ $\_$ | $'$
 \subsection{Azúcar Sintáctico}
 
 Existen una serie de construcciones concretas en \Lenguaje{} que son definidas mediante azúcar sintáctico, es decir que pueden ser construidas utilizando una o más construcciones de la sintaxis abstracta.
-%Las cuales pueden ser expresadas utilizando elementos ya presentes en el lenguaje, y no expanden el poder expresivo del mismo.
-%De todas maneras, su utilidad radica en que ofrecen una forma sucinta y legible de especificar ciertas operaciones comunes en los algoritmos.
+% IDEA: Las cuales pueden ser expresadas utilizando elementos ya presentes en el lenguaje, y no expanden el poder expresivo del mismo.
+% IDEA: De todas maneras, su utilidad radica en que ofrecen una forma sucinta y legible de especificar ciertas operaciones comunes en los algoritmos.
 Una notación conveniente para acceder a los campos de una tupla apuntada por un puntero es la flecha ($\rightarrow$).
 De esta forma, en lugar de acceder a la memoria referenciada por un puntero con la estrella ($\star$), y luego consultar uno de los campos de la tupla con el punto ($.$), uno puede hacer uso de esta abreviatura que resulta más conveniente.
 \begin{gather*}
@@ -300,8 +298,8 @@ De esta forma queda más claro que todos los argumentos reunidos poseen el mismo
 \end{gather*}
 
 Las últimas construcciones para escribir código de manera cómoda en el lenguaje son las variantes de la sentencia \textit{if}.
-%Previamente solo se presentó una única manera para especificar la sentencia.
-%Con las definiciones a continuación, podemos hacer uso de los comandos introducidos en capítulos previos.
+% IDEA: Previamente solo se presentó una única manera para especificar la sentencia.
+% IDEA: Con las definiciones a continuación, podemos hacer uso de los comandos introducidos en capítulos previos.
 La primer notación, permite omitir el último bloque de sentencias ($\T{else}$).
 La segunda notación, nos da la capacidad de agregar una cantidad arbitraria de condiciones adicionales ($\T{elif}$).
 \begin{align*}
